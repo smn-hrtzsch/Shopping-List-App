@@ -33,12 +33,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         repository = new ShoppingListRepository(this);
-        shoppingLists = repository.getAllShoppingLists();
+
+        try {
+            shoppingLists = repository.getAllShoppingLists();
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.error_loading_lists), Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         RecyclerView recyclerView = findViewById(R.id.listRecyclerView);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setReverseLayout(false); // Ändern der Layout-Richtung
-        layoutManager.setStackFromEnd(true); // Items von unten nach oben
+        layoutManager.setReverseLayout(false);
+        layoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
 
         adapter = new ListRecyclerViewAdapter(this, shoppingLists, repository);
@@ -50,8 +56,12 @@ public class MainActivity extends AppCompatActivity {
         addListButton.setOnClickListener(v -> addShoppingList(listNameInput));
 
         listNameInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
-                addShoppingList(listNameInput);
+            if (actionId == EditorInfo.IME_ACTION_DONE ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
+
+                if (!listNameInput.getText().toString().trim().isEmpty()) { // Verhindere leeren Aufruf
+                    addShoppingList(listNameInput);
+                }
                 return true;
             }
             return false;
@@ -59,13 +69,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addShoppingList(EditText listNameInput) {
-        String listName = listNameInput.getText().toString();
-        if (!listName.isEmpty()) {
+        String listName = listNameInput.getText().toString().trim();
+        if (listName.isEmpty()) {
+            Toast.makeText(this, getString(R.string.invalid_list_name), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
             long id = repository.addShoppingList(listName);
-            ShoppingList newList = new ShoppingList(id, listName);
-            shoppingLists.add(newList);
-            adapter.notifyDataSetChanged();
-            listNameInput.setText("");
+            if (id > 0) {
+                ShoppingList newList = new ShoppingList(id, listName);
+                shoppingLists.add(newList);
+                adapter.notifyItemInserted(shoppingLists.size() - 1);
+                listNameInput.setText("");
+                Toast.makeText(this, getString(R.string.list_added), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, getString(R.string.error_adding_list), Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.error_adding_list), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -80,22 +102,28 @@ public class MainActivity extends AppCompatActivity {
         Button positiveButton = dialogView.findViewById(R.id.positiveButton);
         Button negativeButton = dialogView.findViewById(R.id.negativeButton);
 
-        title.setText("Liste löschen");
-        message.setText("Möchten Sie die Liste '" + list.getName() + "' wirklich löschen?");
+        title.setText(getString(R.string.delete_list_title));
+        message.setText(getString(R.string.delete_list_message, list.getName()));
 
         AlertDialog dialog = builder.create();
 
         positiveButton.setOnClickListener(v -> {
-            repository.deleteShoppingList(list.getId());
-            shoppingLists.removeIf(l -> l.getId() == list.getId());
-            adapter.notifyDataSetChanged();
-            Toast.makeText(this, list.getName() + " gelöscht", Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
+            try {
+                repository.deleteShoppingList(list.getId());
+                int position = shoppingLists.indexOf(list);
+                if (position >= 0) {
+                    shoppingLists.remove(position);
+                    adapter.notifyDataSetChanged(); // Aktualisiert die gesamte Liste
+                }
+                Toast.makeText(this, getString(R.string.list_deleted, list.getName()), Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            } catch (Exception e) {
+                Toast.makeText(this, getString(R.string.error_deleting_list), Toast.LENGTH_SHORT).show();
+            }
         });
 
         negativeButton.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
-
 }
