@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Einkaufsliste</string>
+    <string name="einkaufsliste">Einkaufsliste</string>
+    <string name="hello_user">Hello User!</string>
+    <string name="buttontolist">buttontolist</string>
+    <string name="click_the_button_below_to_view_your_shopping_list">Click the Button below to view your shopping list! :)</string>
+    <string name="add_list_item">add list item</string>
+    <string name="jumo_to_list_view">jumo to list view</string>
+    <string name="jump_to_list_view" />
+    <string name="banane">Banane</string>
+    <string name="switch_to_list_view">switch to list view</string>
+    <string name="clear_list">clear_list</string>
+    <string name="add">add</string>
+    <string name="enter_list_name">enter_list_name</string>
+    <string name="your_shopping_lists">your_shopping_lists</string>
+    <string name="enter_item_name">enter_item_name</string>
+    <string name="delete">delete</string>
+</resources>
