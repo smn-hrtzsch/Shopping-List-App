@@ -131,22 +131,18 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
      * Gruppiert die Items so, dass alle uncompleted Items oben und alle completed Items unten stehen.
      */
     public void resortItemsByCompletion() {
-        List<ShoppingItem> unchecked = new ArrayList<>();
-        List<ShoppingItem> checked = new ArrayList<>();
-        for (ShoppingItem item : mData) {
-            if (item.isCompleted()) {
-                checked.add(item);
+        // Sortiere mData so, dass unchecked Items vor checked Items stehen.
+        // Innerhalb der Gruppen wird nach dem bestehenden sortOrder sortiert.
+        Collections.sort(mData, (a, b) -> {
+            if (a.isCompleted() == b.isCompleted()) {
+                // Beide haben denselben completed-Status, sortiere nach dem vorhandenen sortOrder
+                return Integer.compare(a.getSortOrder(), b.getSortOrder());
             } else {
-                unchecked.add(item);
+                // Unchecked (false) kommt vor Checked (true)
+                return a.isCompleted() ? 1 : -1;
             }
-        }
-        unchecked.addAll(checked);
-        mData.clear();
-        mData.addAll(unchecked);
-        for (int i = 0; i < mData.size(); i++) {
-            mData.get(i).setSortOrder(i);
-        }
-        repository.updateShoppingItemsOrder(listId, mData);
+        });
+        // Optional: Wenn du die neue Reihenfolge in der Datenbank speichern möchtest, kannst du repository.updateShoppingItemsOrder(listId, mData) hier aufrufen.
         notifyDataSetChanged();
     }
 
