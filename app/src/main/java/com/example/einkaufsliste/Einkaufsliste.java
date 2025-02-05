@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,10 +39,13 @@ public class Einkaufsliste extends AppCompatActivity {
         repository = new ShoppingListRepository(this);
 
         String listName = getIntent().getStringExtra("list_name");
-        currentList = repository.getAllShoppingLists().stream()
-                .filter(list -> list.getName().equals(listName))
-                .findFirst()
-                .orElse(null);
+        currentList = null;
+        for (ShoppingList list : repository.getAllShoppingLists()) {
+            if (list.getName().equals(listName)) {
+                currentList = list;
+                break;
+            }
+        }
 
         if (currentList == null) {
             Toast.makeText(this, getString(R.string.list_not_found), Toast.LENGTH_SHORT).show();
@@ -58,8 +63,13 @@ public class Einkaufsliste extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
 
         currentList.setItems(repository.getItemsForList(currentList.getId()));
-        adapter = new MyRecyclerViewAdapter(this, currentList.getItems(), repository, recyclerView);
+        adapter = new MyRecyclerViewAdapter(this, currentList.getItems(), repository, recyclerView, currentList.getId());
         recyclerView.setAdapter(adapter);
+
+        // Drag & Drop für Items aktivieren
+        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
+        ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+        touchHelper.attachToRecyclerView(recyclerView);
 
         itemInput = findViewById(R.id.itemInput);
         ImageView addItemButton = findViewById(R.id.addItemButton);
@@ -98,14 +108,10 @@ public class Einkaufsliste extends AppCompatActivity {
                 ShoppingItem newItem = new ShoppingItem(itemId, itemName, false, currentList.getItems().size());
                 currentList.getItems().add(newItem);
 
-                // Nach dem Hinzufügen sofort die Liste neu sortieren, damit uncompleted Items
-                // über den abgehakten Artikeln stehen
-                adapter.resortItems();
+                // Nach dem Hinzufügen die Items neu gruppieren, damit alle abgehakten Items unten stehen.
+                adapter.resortItemsByCompletion();
 
-                // Scrollen an die Position des neuen Artikels (falls gewünscht)
                 recyclerView.scrollToPosition(currentList.getItems().size() - 1);
-
-                // Eingabefeld leeren – der Fokus bleibt erhalten.
                 itemInput.setText("");
             } else {
                 Toast.makeText(this, getString(R.string.error_adding_item), Toast.LENGTH_SHORT).show();
@@ -148,5 +154,20 @@ public class Einkaufsliste extends AppCompatActivity {
         negativeButton.setOnClickListener(v -> alertDialog.dismiss());
 
         alertDialog.show();
+
+        // Berechne die Breite: Bildschirmbreite minus 2 * 10dp (für links und rechts)
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int margin = dpToPx(10);  // 10dp in Pixel umrechnen
+        int dialogWidth = screenWidth - (2 * margin);
+
+        // Setze die Fensterbreite des Dialogs
+        if (alertDialog.getWindow() != null) {
+            alertDialog.getWindow().setLayout(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }

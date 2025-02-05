@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -49,6 +51,11 @@ public class MainActivity extends AppCompatActivity {
         adapter = new ListRecyclerViewAdapter(this, shoppingLists, repository);
         recyclerView.setAdapter(adapter);
 
+        // Drag & Drop für Einkaufslisten aktivieren
+        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
+        ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+        touchHelper.attachToRecyclerView(recyclerView);
+
         EditText listNameInput = findViewById(R.id.listNameInput);
         ImageView addListButton = findViewById(R.id.addListButton);
 
@@ -76,7 +83,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             long id = repository.addShoppingList(listName);
             if (id > 0) {
-                ShoppingList newList = new ShoppingList(id, listName);
+                // Erstelle ein neues List-Objekt (Sortierung: am Ende)
+                ShoppingList newList = new ShoppingList(id, listName, shoppingLists.size());
                 shoppingLists.add(newList);
                 adapter.notifyItemInserted(shoppingLists.size() - 1);
                 listNameInput.setText("");
@@ -121,5 +129,20 @@ public class MainActivity extends AppCompatActivity {
         negativeButton.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+
+        // Berechne die Breite: Bildschirmbreite minus 2 * 10dp (für links und rechts)
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int margin = dpToPx(10);  // 10dp in Pixel umrechnen
+        int dialogWidth = screenWidth - (2 * margin);
+
+        // Setze die Fensterbreite des Dialogs
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }

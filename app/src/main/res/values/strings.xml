@@ -23,6 +23,12 @@
     <string name="title">Title</string>
     <string name="message">Message</string>
     <string name="undo">undo</string>
+    <string name="edit">Edit</string>
+    <string name="edit_item_hint">Enter new item name</string>
+    <string name="edit_item_title">Edit item</string>
+    <string name="edit_list_hint">Enter new list name</string>
+    <string name="edit_list_title">Edit list</string>
+    <string name="ok">ok</string>
 
     <!-- Allgemeine Fehler -->
     <string name="error_loading_lists">Error loading shopping lists. Please try again.</string>

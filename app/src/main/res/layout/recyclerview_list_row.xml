@@ -13,7 +13,7 @@
         android:id="@+id/deleteButton"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:contentDescription="Löschen"
+        android:contentDescription="@string/delete"
         android:padding="4dp"
         android:src="@android:drawable/ic_menu_delete" />
 
@@ -25,5 +25,13 @@
         android:paddingStart="4dp"
         android:paddingEnd="4dp"
         android:textSize="13pt" />
-</LinearLayout>
 
+    <!-- Neuer Edit-Button (Stift) -->
+    <ImageView
+        android:id="@+id/editButton"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/edit"
+        android:padding="4dp"
+        android:src="@android:drawable/ic_menu_edit" />
+</LinearLayout>

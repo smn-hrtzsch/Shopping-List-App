@@ -16,44 +16,56 @@ public class ShoppingListRepository {
     private static final String TAG = "ShoppingListRepository";
     private final SQLiteOpenHelper dbHelper;
 
-    // Constructor initializes the database helper
     public ShoppingListRepository(Context context) {
         dbHelper = new ShoppingListDatabaseHelper(context);
     }
 
-    // Adds a new shopping list to the database
     public long addShoppingList(String name) {
         long id = -1;
         try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
+            Cursor cursor = db.rawQuery("SELECT MAX(sort_order) FROM shopping_lists", null);
+            int order = 0;
+            if (cursor.moveToFirst()) {
+                order = cursor.getInt(0) + 1;
+            }
+            cursor.close();
+
             ContentValues values = new ContentValues();
             values.put("name", name);
-            id = db.insertOrThrow("shopping_lists", null, values); // Insert with exception handling
+            values.put("sort_order", order);
+            id = db.insertOrThrow("shopping_lists", null, values);
         } catch (SQLiteConstraintException e) {
             Log.e(TAG, "Constraint violation while adding shopping list: " + name, e);
         } catch (Exception e) {
             Log.e(TAG, "Unexpected error while adding shopping list: " + name, e);
         }
-        return id; // Returns the ID of the newly created shopping list
+        return id;
     }
 
-    // Adds a new item to a specific shopping list
     public long addShoppingItem(long listId, String itemName) {
         long id = -1;
         try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
+            Cursor cursor = db.rawQuery("SELECT MAX(sort_order) FROM shopping_items WHERE list_id = ?", new String[]{String.valueOf(listId)});
+            int order = 0;
+            if (cursor.moveToFirst()) {
+                order = cursor.getInt(0) + 1;
+            }
+            cursor.close();
+
             ContentValues values = new ContentValues();
             values.put("list_id", listId);
             values.put("name", itemName);
-            values.put("completed", 0); // Default value for completion is false (0)
+            values.put("completed", 0);
+            values.put("sort_order", order);
             id = db.insertOrThrow("shopping_items", null, values);
         } catch (SQLiteConstraintException e) {
             Log.e(TAG, "Constraint violation while adding shopping item: " + itemName + " to list " + listId, e);
         } catch (Exception e) {
             Log.e(TAG, "Unexpected error while adding shopping item: " + itemName, e);
         }
-        return id; // Returns the ID of the newly created shopping item
+        return id;
     }
 
-    // Deletes a specific shopping item
     public void deleteShoppingItem(long id) {
         try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
             int rowsAffected = db.delete("shopping_items", "id = ?", new String[]{String.valueOf(id)});
@@ -65,7 +77,6 @@ public class ShoppingListRepository {
         }
     }
 
-    // Deletes a specific shopping list and all its items
     public void deleteShoppingList(long id) {
         try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
             db.beginTransaction();
@@ -85,17 +96,17 @@ public class ShoppingListRepository {
         }
     }
 
-    // Retrieves all shopping lists from the database
     public List<ShoppingList> getAllShoppingLists() {
         List<ShoppingList> shoppingLists = new ArrayList<>();
         try (SQLiteDatabase db = dbHelper.getReadableDatabase();
-             Cursor cursor = db.query("shopping_lists", null, null, null, null, null, null)) {
+             Cursor cursor = db.query("shopping_lists", null, null, null, null, null, "sort_order ASC")) {
 
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     long id = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
                     String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
-                    shoppingLists.add(new ShoppingList(id, name)); // Adds each shopping list to the result list
+                    int sortOrder = cursor.getInt(cursor.getColumnIndexOrThrow("sort_order"));
+                    shoppingLists.add(new ShoppingList(id, name, sortOrder));
                 } while (cursor.moveToNext());
             } else {
                 Log.i(TAG, "No shopping lists found in the database.");
@@ -103,25 +114,23 @@ public class ShoppingListRepository {
         } catch (Exception e) {
             Log.e(TAG, "Error retrieving shopping lists", e);
         }
-        return shoppingLists; // Returns the list of shopping lists
+        return shoppingLists;
     }
 
-    // Retrieves all items for a specific shopping list
+    // ACHTUNG: Hier wurde der ORDER BY angepasst!
     public List<ShoppingItem> getItemsForList(long listId) {
         List<ShoppingItem> items = new ArrayList<>();
-        int position = 0;
-
         try (SQLiteDatabase db = dbHelper.getReadableDatabase();
              Cursor cursor = db.query("shopping_items", null, "list_id = ?",
-                     new String[]{String.valueOf(listId)}, null, null, null)) {
+                     new String[]{String.valueOf(listId)}, null, null, "completed ASC, sort_order ASC")) {
 
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     long id = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
                     String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
                     boolean completed = cursor.getInt(cursor.getColumnIndexOrThrow("completed")) > 0;
-                    items.add(new ShoppingItem(id, name, completed, position));
-                    position++;
+                    int sortOrder = cursor.getInt(cursor.getColumnIndexOrThrow("sort_order"));
+                    items.add(new ShoppingItem(id, name, completed, sortOrder));
                 } while (cursor.moveToNext());
             } else {
                 Log.i(TAG, "No items found for shopping list with id: " + listId);
@@ -129,10 +138,9 @@ public class ShoppingListRepository {
         } catch (Exception e) {
             Log.e(TAG, "Error retrieving items for shopping list with id: " + listId, e);
         }
-        return items; // Returns the list of items
+        return items;
     }
 
-    // Updates the completion status of a shopping item
     public void updateShoppingItemStatus(long id, boolean completed) {
         try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
             ContentValues values = new ContentValues();
@@ -143,6 +151,68 @@ public class ShoppingListRepository {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating shopping item status with id: " + id, e);
+        }
+    }
+
+    public void updateShoppingListsOrder(List<ShoppingList> lists) {
+        try (SQLiteDatabase db = dbHelper.getWritableDatabase()){
+            db.beginTransaction();
+            try {
+                for (int i = 0; i < lists.size(); i++) {
+                    ContentValues values = new ContentValues();
+                    values.put("sort_order", i);
+                    db.update("shopping_lists", values, "id = ?", new String[]{String.valueOf(lists.get(i).getId())});
+                }
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating shopping lists order", e);
+        }
+    }
+
+    public void updateShoppingItemsOrder(long listId, List<ShoppingItem> items) {
+        try (SQLiteDatabase db = dbHelper.getWritableDatabase()){
+            db.beginTransaction();
+            try {
+                for (int i = 0; i < items.size(); i++) {
+                    ContentValues values = new ContentValues();
+                    values.put("sort_order", i);
+                    db.update("shopping_items", values, "id = ?", new String[]{String.valueOf(items.get(i).getId())});
+                }
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating shopping items order", e);
+        }
+    }
+
+    public void updateShoppingItemName(long id, String newName) {
+        try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
+            ContentValues values = new ContentValues();
+            values.put("name", newName);
+            int rowsAffected = db.update("shopping_items", values, "id = ?", new String[]{String.valueOf(id)});
+            if (rowsAffected == 0) {
+                Log.w(TAG, "No shopping item found with id: " + id);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating shopping item name with id: " + id, e);
+        }
+    }
+
+    public void updateShoppingListName(long id, String newName) {
+        try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
+            ContentValues values = new ContentValues();
+            values.put("name", newName);
+            int rowsAffected = db.update("shopping_lists", values, "id = ?", new String[]{String.valueOf(id)});
+            if (rowsAffected == 0) {
+                Log.w(TAG, "No shopping list found with id: " + id);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating shopping list name with id: " + id, e);
         }
     }
 }

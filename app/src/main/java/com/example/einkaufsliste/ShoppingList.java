@@ -6,11 +6,13 @@ import java.util.List;
 public class ShoppingList {
     private long id;
     private String name;
+    private int sortOrder; // für persistente Reihenfolge
     private List<ShoppingItem> items;
 
-    public ShoppingList(long id, String name) {
+    public ShoppingList(long id, String name, int sortOrder) {
         this.id = id;
         this.name = name;
+        this.sortOrder = sortOrder;
         this.items = new ArrayList<>();
     }
 
@@ -20,6 +22,19 @@ public class ShoppingList {
 
     public String getName() {
         return name;
+    }
+
+    // Neuer Setter für den Namen:
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
     }
 
     public List<ShoppingItem> getItems() {

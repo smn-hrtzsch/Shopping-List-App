@@ -4,13 +4,13 @@ public class ShoppingItem {
     private long id;
     private String name;
     private boolean completed;
-    private int originalPosition; // Fügen Sie dies hinzu
+    private int sortOrder; // für persistente Reihenfolge
 
-    public ShoppingItem(long id, String name, boolean completed, int originalPosition) {
+    public ShoppingItem(long id, String name, boolean completed, int sortOrder) {
         this.id = id;
         this.name = name;
         this.completed = completed;
-        this.originalPosition = originalPosition; // Initialisieren Sie dies
+        this.sortOrder = sortOrder;
     }
 
     public long getId() {
@@ -21,6 +21,11 @@ public class ShoppingItem {
         return name;
     }
 
+    // Neuer Setter für den Namen:
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public boolean isCompleted() {
         return completed;
     }
@@ -29,11 +34,11 @@ public class ShoppingItem {
         this.completed = completed;
     }
 
-    public int getOriginalPosition() {
-        return originalPosition;
+    public int getSortOrder() {
+        return sortOrder;
     }
 
-    public void setOriginalPosition(int originalPosition) {
-        this.originalPosition = originalPosition;
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }

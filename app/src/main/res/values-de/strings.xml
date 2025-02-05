@@ -23,6 +23,12 @@
     <string name="title">Titel</string>
     <string name="message">Nachricht</string>
     <string name="undo">Rückgängig</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="edit_item_hint">Neuen Artikelnamen eingeben</string>
+    <string name="edit_item_title">Artikel bearbeiten</string>
+    <string name="edit_list_hint">Neuen Listennamen eingeben</string>
+    <string name="edit_list_title">Liste bearbeiten</string>
+    <string name="ok">ok</string>
 
     <!-- Allgemeine Fehler -->
     <string name="error_loading_lists">Fehler beim Laden der Einkaufslisten. Bitte versuche es erneut.</string>

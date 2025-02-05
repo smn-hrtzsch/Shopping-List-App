@@ -7,7 +7,9 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -18,27 +20,27 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
-public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.ViewHolder> {
+public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.ViewHolder>
+        implements ItemTouchHelperAdapter {
 
     private List<ShoppingItem> mData;
-    private List<ShoppingItem> recentlyDeletedItems; // Temporäre Liste für gelöschte Artikel
+    private List<ShoppingItem> recentlyDeletedItems;
     private LayoutInflater mInflater;
     private ShoppingListRepository repository;
     private Context context;
     private RecyclerView recyclerView;
+    private long listId;
 
-    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> data, ShoppingListRepository repository, RecyclerView recyclerView) {
+    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> data, ShoppingListRepository repository, RecyclerView recyclerView, long listId) {
         this.mInflater = LayoutInflater.from(context);
         this.mData = data;
         this.repository = repository;
         this.context = context;
         this.recyclerView = recyclerView;
         this.recentlyDeletedItems = new ArrayList<>();
-        saveOriginalPositions();
-        sortItems(); // Sortiere Items beim Initialisieren, damit abgeschlossene Items bereits unten stehen.
+        this.listId = listId;
     }
 
     @NonNull
@@ -61,21 +63,23 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 item.setCompleted(isChecked);
                 repository.updateShoppingItemStatus(item.getId(), isChecked);
                 updateTextViewAppearance(holder.myTextView, isChecked);
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    sortItems();
-                    notifyDataSetChanged();
-                });
+                resortItemsByCompletion();
             }
         });
 
         holder.deleteButton.setOnClickListener(v -> {
             int pos = holder.getAdapterPosition();
             ShoppingItem itemToRemove = mData.get(pos);
-            recentlyDeletedItems.add(itemToRemove); // Artikel in die temporäre Liste hinzufügen
+            recentlyDeletedItems.add(itemToRemove);
             repository.deleteShoppingItem(itemToRemove.getId());
             mData.remove(pos);
             notifyItemRemoved(pos);
-            showUndoSnackbar(itemToRemove, pos); // Snackbar anzeigen
+            showUndoSnackbar(itemToRemove, pos);
+        });
+
+        // Neuer Listener für den Edit-Button:
+        holder.editButton.setOnClickListener(v -> {
+            showEditItemDialog(item, holder.getAdapterPosition());
         });
     }
 
@@ -87,34 +91,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         }
     }
 
-    private void saveOriginalPositions() {
-        for (int i = 0; i < mData.size(); i++) {
-            mData.get(i).setOriginalPosition(i);
-        }
-    }
-
-    private void sortItems() {
-        Collections.sort(mData, new Comparator<ShoppingItem>() {
-            @Override
-            public int compare(ShoppingItem o1, ShoppingItem o2) {
-                if (o1.isCompleted() && !o2.isCompleted()) {
-                    return 1;
-                } else if (!o1.isCompleted() && o2.isCompleted()) {
-                    return -1;
-                } else if (!o1.isCompleted() && !o2.isCompleted()) {
-                    return Integer.compare(o1.getOriginalPosition(), o2.getOriginalPosition());
-                } else {
-                    return 0;
-                }
-            }
-        });
-    }
-
-    public void resortItems() {
-        sortItems(); // sortItems() bleibt unverändert als private Methode
-        notifyDataSetChanged();
-    }
-
     private void showUndoSnackbar(ShoppingItem item, int position) {
         Snackbar snackbar = Snackbar.make(recyclerView, "'" + item.getName() + "' " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG);
         snackbar.setAction(context.getString(R.string.undo), v -> undoDelete(item, position));
@@ -124,7 +100,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private void undoDelete(ShoppingItem item, int position) {
         mData.add(position, item);
         recentlyDeletedItems.remove(item);
-        repository.addShoppingItem(item.getId(), item.getName()); // Item zurück zur Datenbank hinzufügen
+        repository.addShoppingItem(listId, item.getName());
         notifyItemInserted(position);
     }
 
@@ -133,16 +109,110 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         return mData.size();
     }
 
+    // Drag & Drop innerhalb der gleichen Gruppe (completed/uncompleted) zulassen
+    @Override
+    public boolean onItemMove(int fromPosition, int toPosition) {
+        if (mData.get(fromPosition).isCompleted() != mData.get(toPosition).isCompleted()) {
+            return false;
+        }
+        if (fromPosition < mData.size() && toPosition < mData.size()) {
+            Collections.swap(mData, fromPosition, toPosition);
+            notifyItemMoved(fromPosition, toPosition);
+            for (int i = 0; i < mData.size(); i++) {
+                mData.get(i).setSortOrder(i);
+            }
+            repository.updateShoppingItemsOrder(listId, mData);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Gruppiert die Items so, dass alle uncompleted Items oben und alle completed Items unten stehen.
+     */
+    public void resortItemsByCompletion() {
+        List<ShoppingItem> unchecked = new ArrayList<>();
+        List<ShoppingItem> checked = new ArrayList<>();
+        for (ShoppingItem item : mData) {
+            if (item.isCompleted()) {
+                checked.add(item);
+            } else {
+                unchecked.add(item);
+            }
+        }
+        unchecked.addAll(checked);
+        mData.clear();
+        mData.addAll(unchecked);
+        for (int i = 0; i < mData.size(); i++) {
+            mData.get(i).setSortOrder(i);
+        }
+        repository.updateShoppingItemsOrder(listId, mData);
+        notifyDataSetChanged();
+    }
+
+    private void showEditItemDialog(ShoppingItem item, int position) {
+        // Lade das benutzerdefinierte Layout für den Editierdialog
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View dialogView = inflater.inflate(R.layout.dialog_edit_item, null);
+
+        // Hole den EditText aus dem Layout und setze den aktuellen Namen
+        EditText input = dialogView.findViewById(R.id.editTextDialog);
+        input.setText(item.getName());
+
+        // Erzeuge einen Dialog, der ausschließlich dein Layout verwendet
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
+        builder.setView(dialogView);
+        // Verwende NICHT builder.setTitle(), builder.setPositiveButton(), etc., damit keine Standarddialogelemente hinzugefügt werden.
+        android.app.AlertDialog dialog = builder.create();
+
+        // Hole die Buttons aus deinem Layout
+        Button positive = dialogView.findViewById(R.id.positiveButton);
+        Button negative = dialogView.findViewById(R.id.negativeButton);
+
+        // Setze den Listener für den OK-Button
+        positive.setOnClickListener(v -> {
+            String newName = input.getText().toString().trim();
+            if (!newName.isEmpty() && !newName.equals(item.getName())) {
+                item.setName(newName);
+                repository.updateShoppingItemName(item.getId(), newName);
+                notifyItemChanged(position);
+            }
+            dialog.dismiss();
+        });
+
+        // Setze den Listener für den Abbrechen-Button
+        negative.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+
+        // Berechne die Breite: Bildschirmbreite minus 2 * 10dp (für links und rechts)
+        int screenWidth = context.getResources().getDisplayMetrics().widthPixels;
+        int margin = dpToPx(10);  // 10dp in Pixel umrechnen
+        int dialogWidth = screenWidth - (2 * margin);
+
+        // Setze die Fensterbreite des Dialogs
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView myTextView;
         CheckBox myCheckBox;
         ImageView deleteButton;
+        ImageView editButton; // Neuer Edit-Button
 
         ViewHolder(View itemView) {
             super(itemView);
             myTextView = itemView.findViewById(R.id.itemName);
             myCheckBox = itemView.findViewById(R.id.itemCheckbox);
             deleteButton = itemView.findViewById(R.id.deleteButton);
+            editButton = itemView.findViewById(R.id.editButton);
         }
     }
 }
