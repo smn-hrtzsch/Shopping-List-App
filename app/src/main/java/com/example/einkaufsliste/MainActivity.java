@@ -5,7 +5,6 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -58,8 +57,7 @@ public class MainActivity extends AppCompatActivity {
         listNameInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE ||
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
-
-                if (!listNameInput.getText().toString().trim().isEmpty()) { // Verhindere leeren Aufruf
+                if (!listNameInput.getText().toString().trim().isEmpty()) {
                     addShoppingList(listNameInput);
                 }
                 return true;
@@ -82,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
                 shoppingLists.add(newList);
                 adapter.notifyItemInserted(shoppingLists.size() - 1);
                 listNameInput.setText("");
-                Toast.makeText(this, getString(R.string.list_added), Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, getString(R.string.error_adding_list), Toast.LENGTH_SHORT).show();
             }
@@ -94,13 +91,13 @@ public class MainActivity extends AppCompatActivity {
     public void showDeleteListDialog(ShoppingList list) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_custom, null);
+        View dialogView = inflater.inflate(R.layout.dialog_delete, null);
         builder.setView(dialogView);
 
         TextView title = dialogView.findViewById(R.id.dialogTitle);
         TextView message = dialogView.findViewById(R.id.dialogMessage);
-        Button positiveButton = dialogView.findViewById(R.id.positiveButton);
-        Button negativeButton = dialogView.findViewById(R.id.negativeButton);
+        TextView positiveButton = dialogView.findViewById(R.id.positiveButton);
+        TextView negativeButton = dialogView.findViewById(R.id.negativeButton);
 
         title.setText(getString(R.string.delete_list_title));
         message.setText(getString(R.string.delete_list_message, list.getName()));
@@ -113,9 +110,8 @@ public class MainActivity extends AppCompatActivity {
                 int position = shoppingLists.indexOf(list);
                 if (position >= 0) {
                     shoppingLists.remove(position);
-                    adapter.notifyDataSetChanged(); // Aktualisiert die gesamte Liste
+                    adapter.notifyDataSetChanged();
                 }
-                Toast.makeText(this, getString(R.string.list_deleted, list.getName()), Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
             } catch (Exception e) {
                 Toast.makeText(this, getString(R.string.error_deleting_list), Toast.LENGTH_SHORT).show();

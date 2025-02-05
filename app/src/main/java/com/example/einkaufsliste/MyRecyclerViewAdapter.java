@@ -10,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -39,10 +38,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         this.recyclerView = recyclerView;
         this.recentlyDeletedItems = new ArrayList<>();
         saveOriginalPositions();
+        sortItems(); // Sortiere Items beim Initialisieren, damit abgeschlossene Items bereits unten stehen.
     }
 
-    @Override
     @NonNull
+    @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = mInflater.inflate(R.layout.recyclerview_row, parent, false);
         return new ViewHolder(view);
@@ -110,9 +110,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         });
     }
 
+    public void resortItems() {
+        sortItems(); // sortItems() bleibt unverändert als private Methode
+        notifyDataSetChanged();
+    }
+
     private void showUndoSnackbar(ShoppingItem item, int position) {
-        Snackbar snackbar = Snackbar.make(recyclerView, item.getName() + " gelöscht", Snackbar.LENGTH_LONG);
-        snackbar.setAction("Rückgängig", v -> undoDelete(item, position));
+        Snackbar snackbar = Snackbar.make(recyclerView, "'" + item.getName() + "' " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG);
+        snackbar.setAction(context.getString(R.string.undo), v -> undoDelete(item, position));
         snackbar.show();
     }
 

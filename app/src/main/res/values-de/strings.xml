@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">Einkaufsliste</string>
+    <string name="shopping_list">Einkaufsliste</string>
+    <string name="hello_user">Hallo Nutzer!</string>
+    <string name="buttontolist">Zur Liste</string>
+    <string name="click_the_button_below_to_view_your_shopping_list">Klicke auf den Button unten, um deine Einkaufsliste anzusehen! :)</string>
+    <string name="add_list_item">Artikel zur Liste hinzufügen</string>
+    <string name="jumo_to_list_view">Zur Listenansicht springen</string>
+    <string name="jump_to_list_view">Zur Listenansicht</string>
+    <string name="banane">Banane</string>
+    <string name="switch_to_list_view">Zur Listenansicht wechseln</string>
+    <string name="clear_list">Liste leeren</string>
+    <string name="add">Hinzufügen</string>
+    <string name="enter_list_name">Listenname eingeben</string>
+    <string name="shopping_list_overview">Deine Einkaufslisten</string>
+    <string name="enter_item_name">Artikelname eingeben</string>
+    <string name="delete">Löschen</string>
+    <string name="deleted">gelöscht</string>
+    <string name="clear">Leeren</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="add_item">Artikel hinzufügen</string>
+    <string name="add_list">Liste hinzufügen</string>
+    <string name="title">Titel</string>
+    <string name="message">Nachricht</string>
+    <string name="undo">Rückgängig</string>
+
+    <!-- Allgemeine Fehler -->
+    <string name="error_loading_lists">Fehler beim Laden der Einkaufslisten. Bitte versuche es erneut.</string>
+    <string name="error_adding_list">Fehler beim Hinzufügen der Einkaufsliste. Bitte versuche es erneut.</string>
+    <string name="error_deleting_list">Fehler beim Löschen der Einkaufsliste. Bitte versuche es erneut.</string>
+    <string name="error_adding_item">Fehler beim Hinzufügen des Artikels. Bitte versuche es erneut.</string>
+    <string name="error_clearing_list">Fehler beim Leeren der Einkaufsliste. Bitte versuche es erneut.</string>
+
+    <!-- Erfolgsnachrichten -->
+    <string name="item_added">Artikel erfolgreich hinzugefügt.</string>
+    <string name="list_added">Einkaufsliste erfolgreich hinzugefügt.</string>
+    <string name="list_deleted">Einkaufsliste %1$s wurde erfolgreich gelöscht.</string>
+    <string name="list_cleared">%1$s wurde erfolgreich geleert.</string>
+    <string name="list_not_found">Die angegebene Einkaufsliste konnte nicht gefunden werden.</string>
+
+    <!-- Validierung -->
+    <string name="invalid_list_name">Bitte einen gültigen Listennamen eingeben.</string>
+    <string name="invalid_item_name">Bitte einen gültigen Artikelnamen eingeben.</string>
+
+    <!-- Dialogtexte -->
+    <string name="delete_list_title">Liste löschen</string>
+    <string name="delete_list_message">Möchtest du die Liste \'%1$s\' wirklich löschen?</string>
+    <string name="clear_list_title">Liste leeren</string>
+    <string name="clear_list_message">Möchtest du die Liste \'%1$s\' wirklich leeren?</string>
+</resources>

@@ -10,7 +10,7 @@
         android:id="@+id/dialogTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Titel"
+        android:text="@string/title"
         android:textAppearance="?attr/textAppearanceHeadline6"
         android:textColor="@color/light_gray"
         android:textSize="25sp" />
@@ -20,7 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Nachricht"
+        android:text="@string/message"
         android:textColor="@color/light_gray"
         android:textSize="18sp" />
 
@@ -38,9 +38,12 @@
             android:layout_marginLeft="15dp"
             android:layout_weight="1"
             android:backgroundTint="@color/orange"
-            android:text="Löschen"
+            android:text="@string/clear"
             android:textColor="@color/light_gray"
-            android:textSize="17sp" />
+            android:textSize="15sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:minWidth="100dp" />
 
         <Button
             android:id="@+id/negativeButton"
@@ -50,9 +53,12 @@
             android:layout_marginRight="15dp"
             android:layout_weight="1"
             android:backgroundTint="@color/teal_700"
-            android:text="Abbrechen"
+            android:text="@string/cancel"
             android:textColor="@color/light_gray"
-            android:textSize="17sp" />
+            android:textSize="15sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:minWidth="100dp" />
 
     </LinearLayout>
 

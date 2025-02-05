@@ -53,8 +53,8 @@ public class Einkaufsliste extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recyclerview);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setReverseLayout(false); // Neues Element kommt an den unteren Rand
-        layoutManager.setStackFromEnd(true); // Ansichts-Positionierung bleibt am unteren Rand
+        layoutManager.setReverseLayout(false);
+        layoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
 
         currentList.setItems(repository.getItemsForList(currentList.getId()));
@@ -66,17 +66,16 @@ public class Einkaufsliste extends AppCompatActivity {
 
         addItemButton.setOnClickListener(v -> addItem());
 
-        // ENTER-Taste zum Hinzufügen eines Eintrags
         itemInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE ||
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
                 String itemName = itemInput.getText().toString().trim();
-                if (!itemName.isEmpty()) { // Nur bei nicht leerer Eingabe auslösen
+                if (!itemName.isEmpty()) {
                     addItem();
                 } else {
                     Toast.makeText(this, getString(R.string.invalid_item_name), Toast.LENGTH_SHORT).show();
                 }
-                return true; // Blockiere die Standardverarbeitung
+                return true;
             }
             return false;
         });
@@ -86,32 +85,29 @@ public class Einkaufsliste extends AppCompatActivity {
     }
 
     private void addItem() {
-        // Speichere den aktuellen Wert des Inputs
         String itemName = itemInput.getText().toString().trim();
 
-        // Prüfe, ob der Name leer ist
         if (itemName.isEmpty()) {
             Toast.makeText(this, getString(R.string.invalid_item_name), Toast.LENGTH_SHORT).show();
-            return; // Beende die Methode, wenn die Eingabe leer ist
+            return;
         }
 
         try {
             long itemId = repository.addShoppingItem(currentList.getId(), itemName);
             if (itemId > 0) {
-                // Neues Item erfolgreich hinzugefügt
                 ShoppingItem newItem = new ShoppingItem(itemId, itemName, false, currentList.getItems().size());
                 currentList.getItems().add(newItem);
 
-                // RecyclerView-Adapter benachrichtigen
-                adapter.notifyItemInserted(currentList.getItems().size() - 1);
+                // Nach dem Hinzufügen sofort die Liste neu sortieren, damit uncompleted Items
+                // über den abgehakten Artikeln stehen
+                adapter.resortItems();
 
-                // RecyclerView nach unten scrollen
+                // Scrollen an die Position des neuen Artikels (falls gewünscht)
                 recyclerView.scrollToPosition(currentList.getItems().size() - 1);
 
-                // Eingabefeld zurücksetzen, aber den Fokus behalten
+                // Eingabefeld leeren – der Fokus bleibt erhalten.
                 itemInput.setText("");
             } else {
-                // Fehler beim Hinzufügen
                 Toast.makeText(this, getString(R.string.error_adding_item), Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
@@ -122,7 +118,7 @@ public class Einkaufsliste extends AppCompatActivity {
     private void showClearListDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_custom, null);
+        View dialogView = inflater.inflate(R.layout.dialog_clear, null);
         builder.setView(dialogView);
 
         TextView dialogTitle = dialogView.findViewById(R.id.dialogTitle);
@@ -142,8 +138,7 @@ public class Einkaufsliste extends AppCompatActivity {
                     repository.deleteShoppingItem(item.getId());
                 }
                 currentList.clearItems();
-                adapter.notifyItemRangeRemoved(0, itemCount); // Aktualisiere spezifisch den Bereich
-                Toast.makeText(this, getString(R.string.list_cleared, currentList.getName()), Toast.LENGTH_SHORT).show();
+                adapter.notifyItemRangeRemoved(0, itemCount);
                 alertDialog.dismiss();
             } catch (Exception e) {
                 Toast.makeText(this, getString(R.string.error_clearing_list), Toast.LENGTH_SHORT).show();
