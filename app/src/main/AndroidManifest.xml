@@ -15,7 +15,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".Einkaufsliste"
+            android:name=".EinkaufslisteActivity"
             android:exported="true" />
         <activity
             android:name=".MainActivity"
