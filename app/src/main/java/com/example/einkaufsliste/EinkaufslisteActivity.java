@@ -20,7 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-public class Einkaufsliste extends AppCompatActivity {
+public class EinkaufslisteActivity extends AppCompatActivity {
     private ShoppingListRepository repository;
     private ShoppingList currentList;
     private RecyclerView recyclerView;

@@ -55,7 +55,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         });
 
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, Einkaufsliste.class);
+            Intent intent = new Intent(context, EinkaufslisteActivity.class);
             intent.putExtra("list_name", list.getName());
             context.startActivity(intent);
         });
