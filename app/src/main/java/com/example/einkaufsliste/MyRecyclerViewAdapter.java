@@ -1,214 +1,285 @@
+// MyRecyclerViewAdapter.java
 package com.example.einkaufsliste;
 
+// Wichtig: Sicherstellen, dass dieser Import korrekt ist und nicht rot
+import com.example.einkaufsliste.R;
+
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Paint;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.view.inputmethod.EditorInfo;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.ViewHolder>
-        implements ItemTouchHelperAdapter {
+public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTouchHelperAdapter {
 
-    private List<ShoppingItem> mData;
-    private List<ShoppingItem> recentlyDeletedItems;
-    private LayoutInflater mInflater;
-    private ShoppingListRepository repository;
-    private Context context;
-    private RecyclerView recyclerView;
-    private long listId;
+    private List<ShoppingItem> items;
+    private final Context context;
+    private final ShoppingListRepository repository;
+    private final long currentListId;
+    private final OnItemInteractionListener interactionListener;
 
-    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> data, ShoppingListRepository repository, RecyclerView recyclerView, long listId) {
-        this.mInflater = LayoutInflater.from(context);
-        this.mData = data;
-        this.repository = repository;
+    private static final int VIEW_TYPE_ITEM = 0;
+    private int editingItemPosition = -1;
+
+    public interface OnItemInteractionListener {
+        void onItemCheckboxChanged(ShoppingItem item, boolean isChecked);
+        void onDataSetChanged();
+        void requestItemResort();
+    }
+
+    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, long currentListId, OnItemInteractionListener listener) {
         this.context = context;
-        this.recyclerView = recyclerView;
-        this.recentlyDeletedItems = new ArrayList<>();
-        this.listId = listId;
+        this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
+        this.repository = repository;
+        this.currentListId = currentListId;
+        this.interactionListener = listener;
+        sortItemsLocal();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return VIEW_TYPE_ITEM;
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = mInflater.inflate(R.layout.recyclerview_row, parent, false);
-        return new ViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        View view = inflater.inflate(R.layout.recyclerview_row, parent, false);
+        return new ItemViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        ShoppingItem item = mData.get(position);
-        holder.myTextView.setText(item.getName());
-        holder.myCheckBox.setOnCheckedChangeListener(null);
-        holder.myCheckBox.setChecked(item.isCompleted());
-        updateTextViewAppearance(holder.myTextView, item.isCompleted());
-
-        holder.myCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (item.isCompleted() != isChecked) {
-                item.setCompleted(isChecked);
-                repository.updateShoppingItemStatus(item.getId(), isChecked);
-                updateTextViewAppearance(holder.myTextView, isChecked);
-                resortItemsByCompletion();
-            }
-        });
-
-        holder.deleteButton.setOnClickListener(v -> {
-            int pos = holder.getAdapterPosition();
-            ShoppingItem itemToRemove = mData.get(pos);
-            recentlyDeletedItems.add(itemToRemove);
-            repository.deleteShoppingItem(itemToRemove.getId());
-            mData.remove(pos);
-            notifyItemRemoved(pos);
-            showUndoSnackbar(itemToRemove, pos);
-        });
-
-        // Neuer Listener für den Edit-Button:
-        holder.editButton.setOnClickListener(v -> {
-            showEditItemDialog(item, holder.getAdapterPosition());
-        });
-    }
-
-    private void updateTextViewAppearance(TextView textView, boolean isCompleted) {
-        if (isCompleted) {
-            textView.setPaintFlags(textView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-        } else {
-            textView.setPaintFlags(textView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-        }
-    }
-
-    private void showUndoSnackbar(ShoppingItem item, int position) {
-        Snackbar snackbar = Snackbar.make(recyclerView, "'" + item.getName() + "' " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG);
-        snackbar.setAction(context.getString(R.string.undo), v -> undoDelete(item, position));
-        snackbar.show();
-    }
-
-    private void undoDelete(ShoppingItem item, int position) {
-        mData.add(position, item);
-        recentlyDeletedItems.remove(item);
-        repository.addShoppingItem(listId, item.getName());
-        notifyItemInserted(position);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        ItemViewHolder itemViewHolder = (ItemViewHolder) holder;
+        ShoppingItem currentItem = items.get(position);
+        itemViewHolder.bind(currentItem, position == editingItemPosition);
     }
 
     @Override
     public int getItemCount() {
-        return mData.size();
+        return items.size();
     }
 
-    // Drag & Drop innerhalb der gleichen Gruppe (completed/uncompleted) zulassen
-    @Override
-    public boolean onItemMove(int fromPosition, int toPosition) {
-        if (mData.get(fromPosition).isCompleted() != mData.get(toPosition).isCompleted()) {
-            return false;
+    public void setItems(List<ShoppingItem> newItems) {
+        this.items.clear();
+        if (newItems != null) {
+            this.items.addAll(newItems);
         }
-        if (fromPosition < mData.size() && toPosition < mData.size()) {
-            Collections.swap(mData, fromPosition, toPosition);
-            notifyItemMoved(fromPosition, toPosition);
-            for (int i = 0; i < mData.size(); i++) {
-                mData.get(i).setSortOrder(i);
-            }
-            repository.updateShoppingItemsOrder(listId, mData);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Gruppiert die Items so, dass alle uncompleted Items oben und alle completed Items unten stehen.
-     */
-    public void resortItemsByCompletion() {
-        // Sortiere mData so, dass unchecked Items vor checked Items stehen.
-        // Innerhalb der Gruppen wird nach dem bestehenden sortOrder sortiert.
-        Collections.sort(mData, (a, b) -> {
-            if (a.isCompleted() == b.isCompleted()) {
-                // Beide haben denselben completed-Status, sortiere nach dem vorhandenen sortOrder
-                return Integer.compare(a.getSortOrder(), b.getSortOrder());
-            } else {
-                // Unchecked (false) kommt vor Checked (true)
-                return a.isCompleted() ? 1 : -1;
-            }
-        });
-        // Optional: Wenn du die neue Reihenfolge in der Datenbank speichern möchtest, kannst du repository.updateShoppingItemsOrder(listId, mData) hier aufrufen.
+        sortItemsLocal();
         notifyDataSetChanged();
     }
 
-    private void showEditItemDialog(ShoppingItem item, int position) {
-        // Lade das benutzerdefinierte Layout für den Editierdialog
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View dialogView = inflater.inflate(R.layout.dialog_edit_item, null);
-
-        // Hole den EditText aus dem Layout und setze den aktuellen Namen
-        EditText input = dialogView.findViewById(R.id.editTextDialog);
-        input.setText(item.getName());
-
-        // Erzeuge einen Dialog, der ausschließlich dein Layout verwendet
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
-        builder.setView(dialogView);
-        // Verwende NICHT builder.setTitle(), builder.setPositiveButton(), etc., damit keine Standarddialogelemente hinzugefügt werden.
-        android.app.AlertDialog dialog = builder.create();
-
-        // Hole die Buttons aus deinem Layout
-        Button positive = dialogView.findViewById(R.id.positiveButton);
-        Button negative = dialogView.findViewById(R.id.negativeButton);
-
-        // Setze den Listener für den OK-Button
-        positive.setOnClickListener(v -> {
-            String newName = input.getText().toString().trim();
-            if (!newName.isEmpty() && !newName.equals(item.getName())) {
-                item.setName(newName);
-                repository.updateShoppingItemName(item.getId(), newName);
-                notifyItemChanged(position);
+    private void sortItemsLocal() {
+        Collections.sort(items, (item1, item2) -> {
+            if (item1.isDone() == item2.isDone()) {
+                return Integer.compare(item1.getPosition(), item2.getPosition());
             }
-            dialog.dismiss();
+            return item1.isDone() ? 1 : -1;
         });
+    }
 
-        // Setze den Listener für den Abbrechen-Button
-        negative.setOnClickListener(v -> dialog.dismiss());
-
-        dialog.show();
-
-        // Berechne die Breite: Bildschirmbreite minus 2 * 10dp (für links und rechts)
-        int screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        int margin = dpToPx(10);  // 10dp in Pixel umrechnen
-        int dialogWidth = screenWidth - (2 * margin);
-
-        // Setze die Fensterbreite des Dialogs
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT);
+    @Override
+    public boolean onItemMove(int fromPosition, int toPosition) {
+        if (fromPosition >= items.size() || toPosition >= items.size() || fromPosition < 0 || toPosition < 0) {
+            return false;
         }
+        ShoppingItem movedItem = items.remove(fromPosition);
+        items.add(toPosition, movedItem);
+        notifyItemMoved(fromPosition, toPosition);
+
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).setPosition(i);
+        }
+        repository.updateItemPositions(new ArrayList<>(items));
+
+        if (interactionListener != null) {
+            interactionListener.requestItemResort();
+        }
+        return true;
     }
 
-    private int dpToPx(int dp) {
-        float density = context.getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
+    @Override
+    public void onItemDismiss(int position) {
+        if (position < 0 || position >= items.size()) return;
+        ShoppingItem itemToDelete = items.get(position);
+
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.confirm_delete_item_title) // Aus deiner strings.xml
+                .setMessage(String.format(context.getString(R.string.confirm_delete_item_message), itemToDelete.getName())) // Aus deiner strings.xml
+                .setPositiveButton(R.string.button_delete, (dialog, which) -> { // Aus deiner strings.xml
+                    repository.deleteItemFromList(itemToDelete.getId());
+                    items.remove(position);
+                    notifyItemRemoved(position);
+                    if (interactionListener != null) {
+                        interactionListener.onDataSetChanged();
+                    }
+                    // Toast-Nachricht ggf. anpassen oder String-Ressource verwenden
+                    Toast.makeText(context, "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Toast.LENGTH_SHORT).show(); // <string name="deleted">gelöscht</string>
+                })
+                .setNegativeButton(R.string.button_cancel, (dialog, which) -> { // Aus deiner strings.xml
+                    notifyItemChanged(position);
+                })
+                .setOnCancelListener(dialog -> notifyItemChanged(position))
+                .show();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView myTextView;
-        CheckBox myCheckBox;
-        ImageView deleteButton;
-        ImageView editButton; // Neuer Edit-Button
+    public class ItemViewHolder extends RecyclerView.ViewHolder {
+        CheckBox checkBox;
+        TextView textViewName, textViewQuantity, textViewUnit;
+        ImageButton buttonEdit, buttonDelete, buttonSave;
+        LinearLayout layoutDisplay, layoutEdit;
+        EditText editTextName, editTextQuantity, editTextUnit;
 
-        ViewHolder(View itemView) {
+        public ItemViewHolder(@NonNull View itemView) {
             super(itemView);
-            myTextView = itemView.findViewById(R.id.itemName);
-            myCheckBox = itemView.findViewById(R.id.itemCheckbox);
-            deleteButton = itemView.findViewById(R.id.deleteButton);
-            editButton = itemView.findViewById(R.id.editButton);
+            checkBox = itemView.findViewById(R.id.item_checkbox);
+            textViewName = itemView.findViewById(R.id.item_name_text_view);
+            textViewQuantity = itemView.findViewById(R.id.item_quantity_text_view);
+            textViewUnit = itemView.findViewById(R.id.item_unit_text_view);
+            buttonEdit = itemView.findViewById(R.id.button_edit_item_inline);
+            buttonDelete = itemView.findViewById(R.id.button_delete_item_inline);
+            buttonSave = itemView.findViewById(R.id.button_save_item_inline);
+            layoutDisplay = itemView.findViewById(R.id.item_details_layout_display);
+            layoutEdit = itemView.findViewById(R.id.item_details_layout_edit);
+            editTextName = itemView.findViewById(R.id.edit_text_item_name_inline);
+            editTextQuantity = itemView.findViewById(R.id.edit_text_item_quantity_inline);
+            editTextUnit = itemView.findViewById(R.id.edit_text_item_unit_inline);
+        }
+
+        public void bind(final ShoppingItem item, boolean isInEditMode) {
+            textViewName.setText(item.getName());
+            textViewQuantity.setText(item.getQuantity());
+            textViewUnit.setText(item.getUnit());
+
+            if (item.isDone()) {
+                textViewName.setTextColor(ContextCompat.getColor(context, R.color.gray));
+                textViewQuantity.setTextColor(ContextCompat.getColor(context, R.color.gray));
+                textViewUnit.setTextColor(ContextCompat.getColor(context, R.color.gray));
+                textViewName.setPaintFlags(textViewName.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                textViewQuantity.setPaintFlags(textViewQuantity.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                textViewUnit.setPaintFlags(textViewUnit.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                buttonEdit.setEnabled(false);
+                buttonEdit.setAlpha(0.5f);
+            } else {
+                textViewName.setTextColor(ContextCompat.getColor(context, android.R.color.primary_text_light));
+                textViewQuantity.setTextColor(ContextCompat.getColor(context, android.R.color.secondary_text_light));
+                textViewUnit.setTextColor(ContextCompat.getColor(context, android.R.color.secondary_text_light));
+                textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                textViewQuantity.setPaintFlags(textViewQuantity.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                textViewUnit.setPaintFlags(textViewUnit.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                buttonEdit.setEnabled(true);
+                buttonEdit.setAlpha(1.0f);
+            }
+
+            if (isInEditMode && !item.isDone()) {
+                layoutDisplay.setVisibility(View.GONE);
+                layoutEdit.setVisibility(View.VISIBLE);
+                buttonEdit.setVisibility(View.GONE);
+                buttonSave.setVisibility(View.VISIBLE);
+                editTextName.setText(item.getName());
+                editTextQuantity.setText(item.getQuantity());
+                editTextUnit.setText(item.getUnit());
+                editTextName.requestFocus();
+            } else {
+                layoutDisplay.setVisibility(View.VISIBLE);
+                layoutEdit.setVisibility(View.GONE);
+                buttonEdit.setVisibility(item.isDone() ? View.GONE : View.VISIBLE);
+                buttonSave.setVisibility(View.GONE);
+            }
+
+            checkBox.setOnCheckedChangeListener(null);
+            checkBox.setChecked(item.isDone());
+            checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (editingItemPosition != -1 && editingItemPosition == getAdapterPosition()) {
+                    checkBox.setChecked(!isChecked);
+                    Toast.makeText(context, "Bitte zuerst die Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                item.setDone(isChecked);
+                repository.updateItemInList(item);
+                if (interactionListener != null) {
+                    interactionListener.onItemCheckboxChanged(item, isChecked);
+                    interactionListener.requestItemResort();
+                }
+            });
+
+            buttonEdit.setOnClickListener(v -> {
+                if (item.isDone()) {
+                    Toast.makeText(context, "Erledigte Artikel können nicht bearbeitet werden.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                int previousEditingPosition = editingItemPosition;
+                editingItemPosition = getAdapterPosition();
+                if (previousEditingPosition != -1) {
+                    notifyItemChanged(previousEditingPosition);
+                }
+                notifyItemChanged(editingItemPosition);
+            });
+
+            buttonSave.setOnClickListener(v -> saveItemChanges(item, getAdapterPosition()));
+            editTextUnit.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    saveItemChanges(item, getAdapterPosition());
+                    return true;
+                }
+                return false;
+            });
+
+            buttonDelete.setOnClickListener(v -> {
+                int currentPos = getAdapterPosition();
+                if (currentPos == RecyclerView.NO_POSITION || currentPos >= items.size()) return;
+                onItemDismiss(currentPos);
+            });
+
+            itemView.setOnClickListener(v -> {
+                if (layoutEdit.getVisibility() == View.GONE && getAdapterPosition() != RecyclerView.NO_POSITION) {
+                    Intent intent = new Intent(context, ItemDetailViewActivity.class);
+                    intent.putExtra("ITEM_ID", item.getId());
+                    intent.putExtra("LIST_ID", item.getListId());
+                    context.startActivity(intent);
+                }
+            });
+        }
+
+        private void saveItemChanges(ShoppingItem item, int position) {
+            if (position == RecyclerView.NO_POSITION || position >= items.size()) return;
+            String newName = editTextName.getText().toString().trim();
+            String newQuantity = editTextQuantity.getText().toString().trim();
+            String newUnit = editTextUnit.getText().toString().trim();
+
+            if (newName.isEmpty()) {
+                // <string name="invalid_item_name">Bitte einen gültigen Artikelnamen eingeben.</string>
+                Toast.makeText(context, R.string.invalid_item_name, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            item.setName(newName);
+            item.setQuantity(newQuantity);
+            item.setUnit(newUnit);
+            repository.updateItemInList(item);
+            editingItemPosition = -1;
+            notifyItemChanged(position);
+            if (interactionListener != null) {
+                interactionListener.requestItemResort();
+            }
         }
     }
 }

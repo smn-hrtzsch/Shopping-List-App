@@ -1,3 +1,4 @@
+<!-- deutsche strings.xml -->
 <resources>
     <string name="app_name">Einkaufsliste</string>
     <string name="shopping_list">Einkaufsliste</string>
@@ -9,8 +10,6 @@
     <string name="jump_to_list_view">Zur Listenansicht</string>
     <string name="banane">Banane</string>
     <string name="switch_to_list_view">Zur Listenansicht wechseln</string>
-    <string name="clear_list">Liste leeren</string>
-    <string name="add">Hinzufügen</string>
     <string name="enter_list_name">Listenname eingeben</string>
     <string name="shopping_list_overview">Deine Einkaufslisten</string>
     <string name="enter_item_name">Artikelname eingeben</string>
@@ -22,35 +21,78 @@
     <string name="add_list">Liste hinzufügen</string>
     <string name="title">Titel</string>
     <string name="message">Nachricht</string>
-    <string name="undo">Rückgängig</string>
     <string name="edit">Bearbeiten</string>
     <string name="edit_item_hint">Neuen Artikelnamen eingeben</string>
     <string name="edit_item_title">Artikel bearbeiten</string>
     <string name="edit_list_hint">Neuen Listennamen eingeben</string>
     <string name="edit_list_title">Liste bearbeiten</string>
-    <string name="ok">ok</string>
+    <string name="ok">OK</string>
 
-    <!-- Allgemeine Fehler -->
     <string name="error_loading_lists">Fehler beim Laden der Einkaufslisten. Bitte versuche es erneut.</string>
     <string name="error_adding_list">Fehler beim Hinzufügen der Einkaufsliste. Bitte versuche es erneut.</string>
     <string name="error_deleting_list">Fehler beim Löschen der Einkaufsliste. Bitte versuche es erneut.</string>
     <string name="error_adding_item">Fehler beim Hinzufügen des Artikels. Bitte versuche es erneut.</string>
     <string name="error_clearing_list">Fehler beim Leeren der Einkaufsliste. Bitte versuche es erneut.</string>
 
-    <!-- Erfolgsnachrichten -->
     <string name="item_added">Artikel erfolgreich hinzugefügt.</string>
     <string name="list_added">Einkaufsliste erfolgreich hinzugefügt.</string>
     <string name="list_deleted">Einkaufsliste %1$s wurde erfolgreich gelöscht.</string>
     <string name="list_cleared">%1$s wurde erfolgreich geleert.</string>
     <string name="list_not_found">Die angegebene Einkaufsliste konnte nicht gefunden werden.</string>
 
-    <!-- Validierung -->
     <string name="invalid_list_name">Bitte einen gültigen Listennamen eingeben.</string>
     <string name="invalid_item_name">Bitte einen gültigen Artikelnamen eingeben.</string>
 
-    <!-- Dialogtexte -->
-    <string name="delete_list_title">Liste löschen</string>
-    <string name="delete_list_message">Möchtest du die Liste \'%1$s\' wirklich löschen?</string>
-    <string name="clear_list_title">Liste leeren</string>
-    <string name="clear_list_message">Möchtest du die Liste \'%1$s\' wirklich leeren?</string>
+    <string name="delete_list_title_old">Liste löschen</string>
+    <string name="delete_list_message_old">Möchtest du die Liste \'%1$s\' wirklich löschen?</string>
+    <string name="clear_list_title_old">Liste leeren</string>
+    <string name="clear_list_message_old">Möchtest du die Liste \'%1$s\' wirklich leeren?</string>
+
+    <string name="action_settings">Einstellungen</string>
+    <string name="add_list_dialog_title">Neue Einkaufsliste erstellen</string>
+    <string name="add_list_dialog_hint">Name der Liste</string>
+    <string name="button_add">Hinzufügen</string>
+    <string name="button_cancel">Abbrechen</string>
+    <string name="button_save">Speichern</string>
+    <string name="button_delete">Löschen</string>
+    <string name="button_edit_list">Liste umbenennen</string>
+    <string name="button_delete_list">Liste löschen</string>
+    <string name="button_edit_item">Artikel bearbeiten</string>
+    <string name="button_delete_item">Artikel löschen</string>
+
+    <string name="button_clear_list_all">Alle Artikel löschen</string>
+    <string name="button_clear_list_done">Erledigte löschen</string>
+
+    <string name="confirm_delete_list_title">Liste löschen</string>
+    <string name="confirm_delete_list_message">Möchtest du die Liste \"%s\" wirklich löschen?</string>
+    <string name="confirm_delete_item_title">Artikel löschen</string>
+    <string name="confirm_delete_item_message">Möchtest du den Artikel \"%s\" wirklich löschen?</string>
+
+    <string name="confirm_clear_all_items_title">Alle Artikel löschen</string>
+    <string name="confirm_clear_all_items_message">Möchtest du wirklich alle Artikel aus dieser Liste entfernen (auch die nicht erledigten)?</string>
+    <string name="confirm_clear_done_items_title">Erledigte Artikel löschen</string>
+    <string name="confirm_clear_done_items_message">Möchtest du wirklich alle erledigten Artikel aus dieser Liste entfernen?</string>
+
+    <string name="hint_item_name">Artikelname</string>
+    <string name="hint_item_quantity">Menge</string>
+    <string name="hint_item_unit">Einheit</string>
+    <string name="hint_item_notes">Notizen (optional)</string>
+    <string name="hint_item_quantity_optional">Menge (opt.)</string>
+    <string name="hint_item_unit_optional">Einheit (opt.)</string>
+
+    <string name="button_add_item_label">Artikel Hinzufügen</string>
+    <string name="edit_item_dialog_title">Artikel bearbeiten</string>
+    <string name="edit_list_dialog_title">Liste umbenennen</string>
+
+    <string name="add_new_item_prompt">Neuen Artikel hinzufügen…</string>
+    <string name="button_add_item_confirm">Hinzufügen</string>
+    <string name="item_count_suffix_singular">Artikel</string>
+    <string name="item_count_suffix_plural">Artikel</string>
+    <string name="undo">Rückgängig</string>
+    <string name="item_deleted">Artikel gelöscht</string>
+
+    <string name="empty_no_lists">Noch keine Einkaufslisten vorhanden. Erstelle eine neue!</string>
+    <string name="empty_no_items">Diese Liste ist leer. Füge Artikel hinzu!</string>
+    <string name="clear_entire_list">Alle Artikel aus der Liste löschen.</string>
+    <string name="hint_add_item">Artikelname inline bearbeiten.</string>
 </resources>

@@ -1,141 +1,261 @@
 package com.example.einkaufsliste;
 
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
+// import android.content.Intent;
+import android.util.Log; // Import für Log hinzugefügt
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
-public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerViewAdapter.ViewHolder>
-        implements ItemTouchHelperAdapter {
+public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerViewAdapter.ViewHolder> implements ItemTouchHelperAdapter {
 
-    private List<ShoppingList> mData;
-    private LayoutInflater mInflater;
-    private ShoppingListRepository repository;
+    private List<ShoppingList> localDataSet;
+    private ShoppingListManager shoppingListManager;
     private Context context;
+    private OnListInteractionListener interactionListener;
+    private int editingPosition = -1;
 
-    public ListRecyclerViewAdapter(Context context, List<ShoppingList> data, ShoppingListRepository repository) {
-        this.mInflater = LayoutInflater.from(context);
-        this.mData = data;
-        this.repository = repository;
+
+    public interface OnListInteractionListener {
+        void onListClicked(ShoppingList list);
+        void onListDataSetChanged();
+        void requestListDeleteConfirmation(ShoppingList list);
+    }
+
+
+    public ListRecyclerViewAdapter(Context context, List<ShoppingList> dataSet, ShoppingListManager manager, OnListInteractionListener listener) {
         this.context = context;
+        localDataSet = dataSet; // ACHTUNG: Direkte Zuweisung. Änderungen an dataSet außen beeinflussen den Adapter. Besser Kopie?
+        shoppingListManager = manager;
+        this.interactionListener = listener;
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = mInflater.inflate(R.layout.recyclerview_list_row, parent, false);
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
+        View view = LayoutInflater.from(viewGroup.getContext())
+                .inflate(R.layout.recyclerview_list_row, viewGroup, false);
         return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        ShoppingList list = mData.get(position);
-        holder.myTextView.setText(list.getName());
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, final int position) {
+        // Verwende getAdapterPosition() innerhalb von Listenern, da 'position' veraltet sein kann
+        int adapterPosition = viewHolder.getAdapterPosition();
+        if (adapterPosition == RecyclerView.NO_POSITION || adapterPosition >= localDataSet.size()) {
+            Log.w("AdapterBind", "Invalid position in onBindViewHolder: " + adapterPosition);
+            return; // Position ist ungültig, nichts binden
+        }
+        ShoppingList list = localDataSet.get(adapterPosition);
+        boolean isEditing = adapterPosition == editingPosition;
 
-        holder.deleteButton.setOnClickListener(v -> {
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).showDeleteListDialog(list);
+        viewHolder.textViewListName.setText(list.getName());
+
+        String itemCountText = String.format(Locale.getDefault(), "%d %s",
+                list.getItemCount(),
+                list.getItemCount() == 1 ? context.getString(R.string.item_count_suffix_singular) : context.getString(R.string.item_count_suffix_plural));
+        viewHolder.textViewListItemCount.setText(itemCountText);
+
+
+        viewHolder.itemView.setOnClickListener(v -> {
+            int currentPos = viewHolder.getAdapterPosition();
+            if (currentPos == RecyclerView.NO_POSITION) return;
+            if (editingPosition != -1 && editingPosition == currentPos){
+                Toast.makeText(context, "Bitte Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (interactionListener != null) {
+                interactionListener.onListClicked(localDataSet.get(currentPos));
             }
         });
 
-        // Neuer Listener für den Edit-Button:
-        holder.editButton.setOnClickListener(v -> {
-            showEditListDialog(list, holder.getAdapterPosition());
+        viewHolder.textViewListName.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+        viewHolder.editTextListName.setVisibility(isEditing ? View.VISIBLE : View.GONE);
+        viewHolder.buttonEditListName.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+        viewHolder.buttonSaveListName.setVisibility(isEditing ? View.VISIBLE : View.GONE);
+        viewHolder.textViewListItemCount.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+
+
+        if (isEditing) {
+            viewHolder.editTextListName.setText(list.getName());
+            viewHolder.editTextListName.requestFocus();
+            viewHolder.editTextListName.setSelection(viewHolder.editTextListName.getText().length());
+        }
+
+
+        viewHolder.buttonEditListName.setOnClickListener(v -> {
+            int currentPos = viewHolder.getAdapterPosition();
+            if (currentPos != RecyclerView.NO_POSITION) {
+                int previousEditingPosition = editingPosition;
+                editingPosition = currentPos;
+                // Benachrichtige nur die geänderten Items
+                if (previousEditingPosition != -1) {
+                    notifyItemChanged(previousEditingPosition);
+                }
+                notifyItemChanged(editingPosition);
+            }
         });
 
-        holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, EinkaufslisteActivity.class);
-            intent.putExtra("list_name", list.getName());
-            context.startActivity(intent);
+        viewHolder.buttonSaveListName.setOnClickListener(v -> saveListName(viewHolder)); // Übergabe von 'list' nicht mehr nötig
+        viewHolder.editTextListName.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                saveListName(viewHolder);
+                return true;
+            }
+            return false;
+        });
+
+
+        viewHolder.buttonDeleteList.setOnClickListener(v -> {
+            int currentPos = viewHolder.getAdapterPosition(); // Immer getAdapterPosition() in Listenern verwenden
+            if (currentPos == RecyclerView.NO_POSITION) return; // Position ungültig
+
+            // Verhindern, dass gelöscht wird, während gerade editiert wird
+            if (editingPosition != -1 && editingPosition == currentPos){
+                Toast.makeText(context, "Bitte Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Die Liste zur aktuellen Position holen
+            ShoppingList listToDelete = localDataSet.get(currentPos);
+
+            // Die MainActivity über den Listener benachrichtigen, dass der Custom Dialog gezeigt werden soll
+            if (interactionListener != null) {
+                interactionListener.requestListDeleteConfirmation(listToDelete);
+            }
         });
     }
 
+    private void saveListName(ViewHolder viewHolder) {
+        int currentPosition = viewHolder.getAdapterPosition();
+        if (currentPosition == RecyclerView.NO_POSITION || currentPosition >= localDataSet.size()) return;
+
+        ShoppingList list = localDataSet.get(currentPosition);
+        String newName = viewHolder.editTextListName.getText().toString().trim();
+
+        if (!newName.isEmpty() && !newName.equals(list.getName())) {
+            shoppingListManager.updateShoppingListName(list.getId(), newName);
+            list.setName(newName); // Update local data set directy
+            Toast.makeText(context, "Liste umbenannt in \"" + newName + "\"", Toast.LENGTH_SHORT).show();
+            // Keine Notwendigkeit für onListDataSetChanged, da nur ein Item betroffen ist
+        }
+        editingPosition = -1;
+        notifyItemChanged(currentPosition); // Nur dieses Item neu zeichnen
+    }
+
+
+    private void showDeleteListDialog(ShoppingList list, int position) {
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.confirm_delete_list_title)
+                .setMessage(String.format(context.getString(R.string.confirm_delete_list_message), list.getName()))
+                .setPositiveButton(R.string.button_delete, (dialog, which) -> {
+                    shoppingListManager.deleteShoppingList(list.getId());
+                    // Entferne das Element sicher aus der Liste und benachrichtige den Adapter
+                    if (position != RecyclerView.NO_POSITION && position < localDataSet.size() && localDataSet.get(position).getId() == list.getId()) {
+                        localDataSet.remove(position);
+                        notifyItemRemoved(position);
+                        // Optional: notifyItemRangeChanged, aber oft reicht das Entfernen für die Animation
+                    } else {
+                        // Fallback: Finde die Liste nach ID, falls die Position nicht mehr stimmt
+                        int foundPos = -1;
+                        for (int i = 0; i < localDataSet.size(); i++) {
+                            if (localDataSet.get(i).getId() == list.getId()) {
+                                foundPos = i;
+                                break;
+                            }
+                        }
+                        if (foundPos != -1) {
+                            localDataSet.remove(foundPos);
+                            notifyItemRemoved(foundPos);
+                        } else {
+                            // Wenn nicht gefunden, einfach neu laden als sichersten Fallback
+                            if (interactionListener != null) {
+                                interactionListener.onListDataSetChanged(); // MainActivity lädt neu
+                            }
+                        }
+                    }
+
+                    Toast.makeText(context, "Liste \"" + list.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
+                    // Benachrichtige die Activity auch nach dem lokalen Entfernen, um z.B. die Empty View zu aktualisieren
+                    if (interactionListener != null) {
+                        interactionListener.onListDataSetChanged();
+                    }
+                })
+                .setNegativeButton(R.string.button_cancel, null)
+                .show();
+    }
+
+
     @Override
     public int getItemCount() {
-        return mData.size();
+        return localDataSet.size();
+    }
+
+    public void updateLists(List<ShoppingList> newLists) {
+        editingPosition = -1;
+        localDataSet.clear();
+        localDataSet.addAll(newLists);
+        notifyDataSetChanged();
+        // Kein Listener-Aufruf hier, MainActivity.loadShoppingLists ruft checkEmptyView auf.
     }
 
     @Override
     public boolean onItemMove(int fromPosition, int toPosition) {
-        if(fromPosition < mData.size() && toPosition < mData.size()){
-            Collections.swap(mData, fromPosition, toPosition);
-            notifyItemMoved(fromPosition, toPosition);
-            for (int i = 0; i < mData.size(); i++) {
-                mData.get(i).setSortOrder(i);
-            }
-            repository.updateShoppingListsOrder(mData);
-            return true;
+        editingPosition = -1;
+        if (fromPosition < 0 || fromPosition >= localDataSet.size() || toPosition < 0 || toPosition >= localDataSet.size()){
+            return false; // Ungültige Positionen
         }
-        return false;
-    }
-
-    private void showEditListDialog(ShoppingList list, int position) {
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View dialogView = inflater.inflate(R.layout.dialog_edit_list, null);
-        EditText input = dialogView.findViewById(R.id.editTextDialog);
-        input.setText(list.getName());
-
-        // Erstelle den Dialog ohne den Builder, der eigene Buttons hinzufügt:
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
-        // Entferne den Aufruf von setTitle, da der Titel in deinem Layout enthalten ist.
-        builder.setView(dialogView);
-        android.app.AlertDialog dialog = builder.create();
-
-        // Finde die Buttons in deinem benutzerdefinierten Layout
-        Button positive = dialogView.findViewById(R.id.positiveButton);
-        Button negative = dialogView.findViewById(R.id.negativeButton);
-
-        positive.setOnClickListener(v -> {
-            String newName = input.getText().toString().trim();
-            if (!newName.isEmpty() && !newName.equals(list.getName())) {
-                list.setName(newName);
-                repository.updateShoppingListName(list.getId(), newName);
-                notifyItemChanged(position);
+        if (fromPosition < toPosition) {
+            for (int i = fromPosition; i < toPosition; i++) {
+                Collections.swap(localDataSet, i, i + 1);
             }
-            dialog.dismiss();
-        });
-
-        negative.setOnClickListener(v -> dialog.cancel());
-
-        dialog.show();
-
-        // Berechne die Breite: Bildschirmbreite minus 2 * 10dp (für links und rechts)
-        int screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        int margin = dpToPx(10);  // 10dp in Pixel umrechnen
-        int dialogWidth = screenWidth - (2 * margin);
-
-        // Setze die Fensterbreite des Dialogs
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT);
+        } else {
+            for (int i = fromPosition; i > toPosition; i--) {
+                Collections.swap(localDataSet, i, i - 1);
+            }
         }
+        notifyItemMoved(fromPosition, toPosition);
+        // TODO: Persist new order in database for lists (if needed)
+        return true;
     }
 
-    private int dpToPx(int dp) {
-        float density = context.getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
+    @Override
+    public void onItemDismiss(int position) {
+        // Swipe not implemented for lists
     }
+
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView myTextView;
-        ImageView deleteButton;
-        ImageView editButton; // Neuer Edit-Button
+        final TextView textViewListName;
+        final EditText editTextListName;
+        final ImageButton buttonEditListName;
+        final ImageButton buttonSaveListName;
+        final ImageButton buttonDeleteList;
+        final TextView textViewListItemCount;
 
-        ViewHolder(View itemView) {
-            super(itemView);
-            myTextView = itemView.findViewById(R.id.listNameTextView);
-            deleteButton = itemView.findViewById(R.id.deleteButton);
-            editButton = itemView.findViewById(R.id.editButton);
+
+        public ViewHolder(View view) {
+            super(view);
+            textViewListName = view.findViewById(R.id.list_name_text_view);
+            editTextListName = view.findViewById(R.id.edit_text_list_name_inline);
+            buttonEditListName = view.findViewById(R.id.button_edit_list_name_inline);
+            buttonSaveListName = view.findViewById(R.id.button_save_list_name_inline);
+            buttonDeleteList = view.findViewById(R.id.button_delete_list_inline);
+            textViewListItemCount = view.findViewById(R.id.list_item_count_text_view);
         }
+        // Getter sind nicht unbedingt nötig, wenn die Views final sind
     }
-}
+} // <-- Diese schließende Klammer hat gefehlt

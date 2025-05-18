@@ -1,6 +1,6 @@
+<!-- englische strings.xml -->
 <resources>
-    <string name="app_name">Shopping list</string>
-    <string name="shopping_list">Shopping list</string>
+    <string name="app_name">Shopping List</string> <string name="shopping_list">Shopping list</string>
     <string name="hello_user">Hello User!</string>
     <string name="buttontolist">buttontolist</string>
     <string name="click_the_button_below_to_view_your_shopping_list">Click the Button below to view your shopping list! :)</string>
@@ -9,48 +9,69 @@
     <string name="jump_to_list_view" />
     <string name="banane">Banane</string>
     <string name="switch_to_list_view">Switch to list view</string>
-    <string name="clear_list">Clear list</string>
-    <string name="add">Add</string>
     <string name="enter_list_name">Enter list name</string>
     <string name="shopping_list_overview">Your shopping lists</string>
     <string name="enter_item_name">Enter item name</string>
-    <string name="delete">Delete</string>
-    <string name="deleted">deleted</string>
-    <string name="clear">Clear</string>
-    <string name="cancel">Cancel</string>
-    <string name="add_item">Add item</string>
-    <string name="add_list">Add list</string>
-    <string name="title">Title</string>
-    <string name="message">Message</string>
-    <string name="undo">undo</string>
-    <string name="edit">Edit</string>
-    <string name="edit_item_hint">Enter new item name</string>
-    <string name="edit_item_title">Edit item</string>
-    <string name="edit_list_hint">Enter new list name</string>
-    <string name="edit_list_title">Edit list</string>
-    <string name="ok">ok</string>
-
-    <!-- Allgemeine Fehler -->
-    <string name="error_loading_lists">Error loading shopping lists. Please try again.</string>
+    <string name="delete">Delete</string> <string name="deleted">deleted</string>
+    <string name="clear">Clear</string> <string name="cancel">Cancel</string> <string name="add_item">Add item</string> <string name="add_list">Add list</string> <string name="title">Title</string> <string name="message">Message</string> <string name="edit">Edit</string>
+    <string name="edit_item_hint">Enter new item name</string> <string name="edit_item_title">Edit item</string> <string name="edit_list_hint">Enter new list name</string> <string name="edit_list_title">Edit list</string> <string name="ok">OK</string> <string name="error_loading_lists">Error loading shopping lists. Please try again.</string>
     <string name="error_adding_list">Error adding shopping list. Please try again.</string>
     <string name="error_deleting_list">Error deleting shopping list. Please try again.</string>
     <string name="error_adding_item">Error adding item. Please try again.</string>
     <string name="error_clearing_list">Error clearing the shopping list. Please try again.</string>
 
-    <!-- Erfolgsnachrichten -->
     <string name="item_added">Item added successfully.</string>
     <string name="list_added">Shopping list added successfully.</string>
     <string name="list_deleted">Shopping list %1$s deleted successfully.</string>
     <string name="list_cleared">%1$s has been cleared successfully.</string>
     <string name="list_not_found">The specified shopping list could not be found.</string>
 
-    <!-- Validierung -->
     <string name="invalid_list_name">Please enter a valid list name.</string>
     <string name="invalid_item_name">Please enter a valid item name.</string>
 
-    <!-- Dialogtexte -->
-    <string name="delete_list_title">Delete List</string>
-    <string name="delete_list_message">Are you sure you want to delete the list \'%1$s?\'</string>
-    <string name="clear_list_title">Clear List</string>
-    <string name="clear_list_message">Do you really want to clear the list \'%1$s?\'</string>
+    <string name="delete_list_title_old">Delete List</string> <string name="delete_list_message_old">Are you sure you want to delete the list \'%1$s?\'</string>
+    <string name="clear_list_title_old">Clear List</string> <string name="clear_list_message_old">Do you really want to clear the list \'%1$s?\'</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="add_list_dialog_title">Create new shopping list</string>
+    <string name="add_list_dialog_hint">List name</string>
+    <string name="button_add">Add</string>
+    <string name="button_cancel">Cancel</string> <string name="button_save">Save</string>
+    <string name="button_delete">Delete</string> <string name="button_edit_list">Rename List</string>
+    <string name="button_delete_list">Delete List</string>
+    <string name="button_edit_item">Edit Item</string>
+    <string name="button_delete_item">Delete Item</string>
+
+    <string name="button_clear_list_all">Delete all items</string>
+    <string name="button_clear_list_done">Delete checked</string>
+
+    <string name="confirm_delete_list_title">Delete List</string>
+    <string name="confirm_delete_list_message">Do you really want to delete the list \"%s\"?</string>
+    <string name="confirm_delete_item_title">Delete Item</string>
+    <string name="confirm_delete_item_message">Do you really want to delete the item \"%s\"?</string>
+
+    <string name="confirm_clear_all_items_title">Delete all items</string>
+    <string name="confirm_clear_all_items_message">Do you really want to remove all items from this list (including unchecked ones)?</string>
+    <string name="confirm_clear_done_items_title">Delete checked items</string>
+    <string name="confirm_clear_done_items_message">Do you really want to remove all checked items from this list?</string>
+
+    <string name="hint_item_name">Item name</string>
+    <string name="hint_item_quantity">Quantity</string>
+    <string name="hint_item_unit">Unit</string>
+    <string name="hint_item_notes">Notes (optional)</string>
+    <string name="hint_item_quantity_optional">Qty (opt.)</string>
+    <string name="hint_item_unit_optional">Unit (opt.)</string>
+
+    <string name="button_add_item_label">Add Item</string>
+    <string name="edit_item_dialog_title">Edit Item</string> <string name="edit_list_dialog_title">Rename List</string> <string name="add_new_item_prompt">Add new item…</string>
+    <string name="button_add_item_confirm">Add</string>
+    <string name="item_count_suffix_singular">item</string>
+    <string name="item_count_suffix_plural">items</string>
+    <string name="undo">Undo</string> <string name="item_deleted">Item deleted</string>
+
+    <string name="empty_no_lists">No shopping lists yet. Create a new one!</string>
+    <string name="empty_no_items">This list is empty. Add some items!</string>
+    <string name="clear_entire_list">Clear entire list from items.</string>
+    <string name="hint_add_item">Modify item name inline.</string>
+
 </resources>

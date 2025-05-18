@@ -1,20 +1,37 @@
 package com.example.einkaufsliste;
 
-import java.util.ArrayList;
+import android.content.Context;
 import java.util.List;
+import android.database.sqlite.SQLiteDatabase;
 
 public class ShoppingListManager {
-    private static List<ShoppingList> shoppingLists = new ArrayList<>();
+    private ShoppingListDatabaseHelper dbHelper;
 
-    public static List<ShoppingList> getShoppingLists() {
-        return shoppingLists;
+    public ShoppingListManager(Context context) {
+        dbHelper = new ShoppingListDatabaseHelper(context);
     }
 
-    public static void addList(ShoppingList list) {
-        shoppingLists.add(list);
+    public List<ShoppingList> getAllShoppingLists() {
+        return dbHelper.getAllShoppingLists();
     }
 
-    public static void removeList(ShoppingList list) {
-        shoppingLists.remove(list);
+    public SQLiteDatabase getWritableDatabase() {
+        return dbHelper.getWritableDatabase();
+    }
+
+    public ShoppingList getShoppingList(long listId) {
+        return dbHelper.getShoppingList(listId);
+    }
+
+    public long addShoppingList(String name) {
+        return dbHelper.addShoppingList(name);
+    }
+
+    public void updateShoppingListName(long listId, String newName) {
+        dbHelper.updateShoppingListName(listId, newName);
+    }
+
+    public void deleteShoppingList(long listId) {
+        dbHelper.deleteShoppingList(listId);
     }
 }

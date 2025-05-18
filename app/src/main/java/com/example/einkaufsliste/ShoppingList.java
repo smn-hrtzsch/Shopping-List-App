@@ -6,54 +6,67 @@ import java.util.List;
 public class ShoppingList {
     private long id;
     private String name;
-    private int sortOrder; // für persistente Reihenfolge
-    private List<ShoppingItem> items;
+    private List<ShoppingItem> items; // Kann beibehalten werden, wird aber nicht direkt in DB als Blob gespeichert
+    private int itemCount; // Für die Anzeige
 
-    public ShoppingList(long id, String name, int sortOrder) {
+    public ShoppingList(long id, String name) {
         this.id = id;
         this.name = name;
-        this.sortOrder = sortOrder;
-        this.items = new ArrayList<>();
+        this.items = new ArrayList<>(); // Initialisieren, um NullPointerExceptions zu vermeiden
+        this.itemCount = 0; // Standardwert
     }
 
+    public ShoppingList(String name) {
+        this.name = name;
+        this.items = new ArrayList<>();
+        this.itemCount = 0;
+    }
+
+    // Getter und Setter
     public long getId() {
         return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getName() {
         return name;
     }
 
-    // Neuer Setter für den Namen:
     public void setName(String name) {
         this.name = name;
-    }
-
-    public int getSortOrder() {
-        return sortOrder;
-    }
-
-    public void setSortOrder(int sortOrder) {
-        this.sortOrder = sortOrder;
     }
 
     public List<ShoppingItem> getItems() {
         return items;
     }
 
+    public void setItems(List<ShoppingItem> items) {
+        this.items = items;
+    }
+
+    public int getItemCount() {
+        return itemCount;
+    }
+
+    public void setItemCount(int itemCount) {
+        this.itemCount = itemCount;
+    }
+
     public void addItem(ShoppingItem item) {
-        items.add(item);
+        this.items.add(item);
+        // this.itemCount = this.items.size(); // Deaktiviert, da itemCount aus DB kommt
     }
 
     public void removeItem(ShoppingItem item) {
-        items.remove(item);
+        this.items.remove(item);
+        // this.itemCount = this.items.size(); // Deaktiviert
     }
 
-    public void clearItems() {
-        items.clear();
-    }
-
-    public void setItems(List<ShoppingItem> items) {
-        this.items = items;
+    @Override
+    public String toString() {
+        return name; // Für Spinner oder einfache Textanzeigen
     }
 }
