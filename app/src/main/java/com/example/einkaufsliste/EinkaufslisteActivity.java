@@ -1,23 +1,23 @@
 // EinkaufslisteActivity.java
 package com.example.einkaufsliste;
 
-// Stelle sicher, dass dieser Import korrekt ist und nicht rot unterstrichen wird.
 import com.example.einkaufsliste.R;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.EditText;
+// LayoutInflater wird nicht mehr für den Add-Dialog benötigt
+import android.view.View; // Für Snackbar Root View
+import android.widget.EditText; // Wird nicht mehr direkt hier benötigt
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-// Stelle sicher, dass diese Klasse im Paket com.example.einkaufsliste liegt
 import com.example.einkaufsliste.SimpleItemTouchHelperCallback;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -32,9 +32,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private List<ShoppingItem> shoppingItems;
     private ShoppingListRepository shoppingListRepository;
     private long currentShoppingListId = -1L;
-    private FloatingActionButton fabAddItem;
+    // private FloatingActionButton fabAddItem; // Entfernt
     private FloatingActionButton fabClearList;
     private ShoppingList currentShoppingList;
+    private TextView toolbarTitleTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,27 +50,39 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             return;
         }
 
+        Toolbar toolbar = findViewById(R.id.toolbar_einkaufsliste);
+        setSupportActionBar(toolbar);
+        toolbarTitleTextView = findViewById(R.id.toolbar_title_einkaufsliste);
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+
         shoppingListRepository = new ShoppingListRepository(this);
         currentShoppingListId = getIntent().getLongExtra("LIST_ID", -1L);
 
         if (currentShoppingListId == -1L) {
-            Toast.makeText(this, "Fehler: Einkaufslisten-ID nicht gefunden.", Toast.LENGTH_LONG).show();
+            // Verwende einen passenden String aus deiner strings.xml
+            Toast.makeText(this, R.string.list_not_found, Toast.LENGTH_LONG).show();
             finish();
             return;
         }
 
         currentShoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
         if (currentShoppingList == null) {
-            Toast.makeText(this, "Fehler: Einkaufsliste (ID: " + currentShoppingListId + ") konnte nicht geladen werden.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.list_not_found) + " (ID: " + currentShoppingListId + ")", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
 
-        setTitle(currentShoppingList.getName());
+        if (toolbarTitleTextView != null) {
+            toolbarTitleTextView.setText(currentShoppingList.getName());
+        }
+
         shoppingItems = shoppingListRepository.getItemsForListId(currentShoppingListId);
         if (shoppingItems == null) {
             shoppingItems = new ArrayList<>();
-            Toast.makeText(this, "Artikel konnten nicht geladen werden (leere Liste wird verwendet).", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_loading_lists, Toast.LENGTH_SHORT).show(); // Beispiel für einen passenden String
         }
 
         recyclerView = findViewById(R.id.item_recycler_view);
@@ -81,75 +94,60 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
 
-        fabAddItem = findViewById(R.id.fab_add_item);
-        fabAddItem.setOnClickListener(view -> showAddItemDialog());
+        // fabAddItem und sein Listener wurden entfernt
 
         fabClearList = findViewById(R.id.button_clear_list_new_position);
         fabClearList.setOnClickListener(v -> showClearListOptionsDialog());
     }
 
+    // showAddItemDialog() wird nicht mehr benötigt, da wir den Inline-Editor haben
+    /*
     private void showAddItemDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = this.getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_edit_item, null); // Dein vorhandenes Layout
-        builder.setView(dialogView);
-
-        // Verwende einen String, der in deiner strings.xml existiert (z.B. "Artikel hinzufügen")
-        builder.setTitle(R.string.add_item); // <string name="add_item">Artikel hinzufügen</string>
-
-        final EditText itemNameEditText = dialogView.findViewById(R.id.editTextDialog); // ID aus deinem dialog_edit_item.xml
-
-        // Verwende Strings, die in deiner strings.xml existieren
-        builder.setPositiveButton(R.string.button_add, (dialog, which) -> { // <string name="button_add">Hinzufügen</string>
-            String name = itemNameEditText.getText().toString().trim();
-            String quantityStr = "1";
-            String unit = "";
-
-            if (name.isEmpty()) {
-                // <string name="invalid_item_name">Bitte einen gültigen Artikelnamen eingeben.</string>
-                Toast.makeText(EinkaufslisteActivity.this, R.string.invalid_item_name, Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            ShoppingItem newItem = new ShoppingItem(name, quantityStr, unit, false, currentShoppingListId, "", 0);
-            long itemId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
-
-            if (itemId != -1) {
-                newItem.setId(itemId);
-                refreshItemList();
-                // <string name="item_added">Artikel erfolgreich hinzugefügt.</string>
-                Toast.makeText(EinkaufslisteActivity.this, R.string.item_added, Toast.LENGTH_SHORT).show();
-            } else {
-                // <string name="error_adding_item">Fehler beim Hinzufügen des Artikels.</string>
-                Toast.makeText(EinkaufslisteActivity.this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
-            }
-        });
-        // <string name="button_cancel">Abbrechen</string>
-        builder.setNegativeButton(R.string.button_cancel, (dialog, which) -> dialog.dismiss());
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        // ... alter Code ...
     }
+    */
 
     private void showClearListOptionsDialog() {
-        new AlertDialog.Builder(this)
-                // Annahme: Du hast passende Strings oder kannst sie anlegen/umwidmen
-                .setTitle(R.string.clear) // <string name="clear">Leeren</string>
-                .setMessage(R.string.confirm_clear_all_items_message) // Wiederverwendung oder neuen String "Erledigte oder alle Artikel entfernen?"
-                .setPositiveButton(R.string.button_clear_list_done, (dialog, which) -> { // <string name="button_clear_list_done">Erledigte löschen</string>
-                    shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
-                    refreshItemList();
-                    // Eigenen String für "Erledigte Artikel entfernt" Toast erstellen oder wiederverwenden
-                    Toast.makeText(EinkaufslisteActivity.this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show();
-                })
-                .setNeutralButton(R.string.button_clear_list_all, (dialog, which) -> { // <string name="button_clear_list_all">Alle Artikel löschen</string>
-                    shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
-                    refreshItemList();
-                    // Eigenen String für "Alle Artikel entfernt" Toast erstellen oder wiederverwenden
-                    Toast.makeText(EinkaufslisteActivity.this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton(R.string.button_cancel, null) // <string name="button_cancel">Abbrechen</string>
-                .show();
+        // Titel und Nachricht für den Dialog - diese Strings müssen in deiner strings.xml sein!
+        // Basierend auf deinem Wunschtext:
+        // <string name="clear_list_dialog_title">Möchtest du wirklich die Liste Leeren?</string>
+        // <string name="clear_list_dialog_message">Wähle eine Option:</string>
+        // <string name="clear_list_option_checked">Ja, abgehakte Artikel entfernen</string>
+        // <string name="clear_list_option_all">Ja, alle Artikel entfernen</string>
+        // <string name="clear_list_option_cancel">Nein, abbrechen</string>
+        // (Ich nehme an, du hast ähnliche Strings oder kannst sie anlegen)
+
+        AlertDialog.Builder builder = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this); // Neue Zeile
+        builder.setTitle(R.string.dialog_clear_list_title) // Ersetze mit "Möchtest du wirklich die Liste Leeren?" String
+                .setMessage(R.string.dialog_clear_list_message); // Ersetze mit "Wähle eine Option:" String
+
+        // Button-Reihenfolge: 1. Abgehakte, 2. Alle, 3. Abbrechen
+        // Android platziert Buttons oft in der Reihenfolge: Positive, Negative, Neutral
+        // Wir verwenden hier Positive für "Abgehakte", Neutral für "Alle", Negative für "Abbrechen".
+
+        // 1. Button: "Ja, abgehakte Artikel entfernen" (z.B. Positive Action)
+        builder.setPositiveButton(R.string.dialog_option_remove_checked , (dialog, which) -> {
+            shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
+            refreshItemList();
+            Toast.makeText(EinkaufslisteActivity.this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show(); // Ggf. eigenen String
+        });
+
+        // 2. Button: "Ja, alle Artikel entfernen" (z.B. Neutral Action)
+        // In der Standard-Darstellung ist der Neutral-Button oft links oder mittig.
+        // Wenn die Reihenfolge wichtig ist, könnten wir hier setNeutralButton oder setNegativeButton vertauschen,
+        // aber die semantische Bedeutung (Positive=Hauptaktion, Negative=Abbruch) ist meist wichtiger.
+        builder.setNeutralButton(R.string.dialog_option_remove_all, (dialog, which) -> {
+            shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
+            refreshItemList();
+            Toast.makeText(EinkaufslisteActivity.this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show(); // Ggf. eigenen String
+        });
+
+        // 3. Button: "Nein, abbrechen" (z.B. Negative Action)
+        builder.setNegativeButton(R.string.dialog_option_cancel, (dialog, which) -> {
+            dialog.dismiss();
+        });
+
+        builder.create().show();
     }
 
     private void refreshItemList() {
@@ -157,13 +155,27 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             Log.e("EinkaufslisteActivity", "refreshItemList: Repository oder Adapter ist null.");
             return;
         }
+        // Vor dem Aktualisieren die aktuell bearbeitete Position im Adapter zurücksetzen
+        if (adapter != null) {
+            adapter.resetEditingPosition();
+        }
+
         List<ShoppingItem> updatedItems = shoppingListRepository.getItemsForListId(currentShoppingListId);
         if (updatedItems != null) {
             adapter.setItems(updatedItems);
         } else {
             Log.w("EinkaufslisteActivity", "refreshItemList: updatedItems ist null.");
-            Toast.makeText(this, "Fehler beim Aktualisieren der Artikelliste.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_loading_lists, Toast.LENGTH_SHORT).show();
             adapter.setItems(new ArrayList<>());
+        }
+        checkEmptyViewItems(updatedItems == null || updatedItems.isEmpty());
+    }
+
+    private void checkEmptyViewItems(boolean isEmpty) {
+        TextView emptyView = findViewById(R.id.empty_view_items);
+        if (emptyView != null) {
+            emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+            recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
         }
     }
 
@@ -189,14 +201,16 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     @Override
     public void onItemCheckboxChanged(ShoppingItem item, boolean isChecked) {
-        // Die Logik (DB-Update) ist im Adapter/Repository.
-        // requestItemResort wird vom Adapter aufgerufen, um die UI zu aktualisieren.
+        // Wird vom Adapter aufgerufen, requestItemResort sollte die Aktualisierung triggern
     }
 
     @Override
     public void onDataSetChanged() {
-        // Kann verwendet werden, um z.B. eine "Empty View" Anzeige zu aktualisieren,
-        // nachdem Items gelöscht wurden.
+        // Wird vom Adapter aufgerufen, wenn sich die Datenmenge ändert (z.B. nach Löschen).
+        // Hier könnten wir auch checkEmptyViewItems aufrufen.
+        if (shoppingItems != null) { // shoppingItems sollte hier bereits vom Adapter aktualisiert sein
+            checkEmptyViewItems(shoppingItems.isEmpty());
+        }
     }
 
     @Override

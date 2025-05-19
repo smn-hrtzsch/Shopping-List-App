@@ -1,6 +1,7 @@
 <!-- englische strings.xml -->
 <resources>
-    <string name="app_name">Shopping List</string> <string name="shopping_list">Shopping list</string>
+    <string name="app_name">Shopping List</string>
+    <string name="shopping_list">Shopping list</string>
     <string name="hello_user">Hello User!</string>
     <string name="buttontolist">buttontolist</string>
     <string name="click_the_button_below_to_view_your_shopping_list">Click the Button below to view your shopping list! :)</string>
@@ -74,4 +75,9 @@
     <string name="clear_entire_list">Clear entire list from items.</string>
     <string name="hint_add_item">Modify item name inline.</string>
 
+    <string name="dialog_clear_list_title">Really clear the list?</string>
+    <string name="dialog_clear_list_message">Choose an option:</string>
+    <string name="dialog_option_remove_checked">Yes, remove checked items</string>
+    <string name="dialog_option_remove_all">Yes, remove all items</string>
+    <string name="dialog_option_cancel">No, cancel</string>
 </resources>

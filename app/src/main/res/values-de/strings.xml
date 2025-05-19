@@ -95,4 +95,10 @@
     <string name="empty_no_items">Diese Liste ist leer. Füge Artikel hinzu!</string>
     <string name="clear_entire_list">Alle Artikel aus der Liste löschen.</string>
     <string name="hint_add_item">Artikelname inline bearbeiten.</string>
+
+    <string name="dialog_clear_list_title">Liste wirklich leeren?</string>
+    <string name="dialog_clear_list_message">Wähle eine Option:</string>
+    <string name="dialog_option_remove_checked">Ja, abgehakte Artikel entfernen</string>
+    <string name="dialog_option_remove_all">Ja, alle Artikel entfernen</string>
+    <string name="dialog_option_cancel">Nein, abbrechen</string>
 </resources>
