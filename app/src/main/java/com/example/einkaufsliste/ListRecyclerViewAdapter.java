@@ -1,3 +1,4 @@
+// ListRecyclerViewAdapter.java
 package com.example.einkaufsliste;
 
 import android.app.AlertDialog;

@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.graphics.Paint;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -215,6 +216,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         snackbar.show();
     }
 
+    public List<ShoppingItem> getCurrentItems() {
+        return new ArrayList<>(this.items); // Gibt eine Kopie der aktuellen Artikelliste zurück
+    }
+
     public class ItemViewHolder extends RecyclerView.ViewHolder {
         CheckBox checkBox;
         TextView textViewName;
@@ -236,15 +241,33 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
         public void bind(final ShoppingItem item, boolean isInEditMode) {
             textViewName.setText(item.getName());
+            // TypedValue wird nur noch für den "done" Fall benötigt, wenn wir textColorSecondary verwenden wollen
+            // TypedValue typedValue = new TypedValue();
 
             if (item.isDone()) {
-                textViewName.setTextColor(ContextCompat.getColor(context, R.color.gray));
+                TypedValue typedValue = new TypedValue(); // Nur hier initialisieren, wenn benötigt
+                context.getTheme().resolveAttribute(android.R.attr.textColorSecondary, typedValue, true);
+                textViewName.setTextColor(typedValue.data);
                 textViewName.setPaintFlags(textViewName.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 buttonEdit.setEnabled(false);
                 buttonEdit.setAlpha(0.5f);
             } else {
-                textViewName.setTextColor(ContextCompat.getColor(context, android.R.color.primary_text_light));
-                textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                // WICHTIG: Stelle die Standard-Textfarbe wieder her, falls sie durch einen vorherigen "done"-Zustand geändert wurde.
+                // Am einfachsten ist es, hier die Farbe explizit auf die Primärfarbe des Themes zu setzen,
+                // oder, noch besser, wenn textAppearanceListItem bereits die korrekte Farbe hat,
+                // müssen wir die Farbe hier NICHT setzen, es sei denn, wir wollen sie von der textAppearance abweichend setzen.
+                // DA wir oben im XML android:textColor entfernt haben, sollte textAppearanceListItem die Farbe setzen.
+                // Wir müssen hier aber sicherstellen, dass, falls das Item VORHER "done" war, die Farbe zurückgesetzt wird.
+
+                // Option A: Explizit auf textColorPrimary setzen (wie dein letzter Versuch)
+                TypedValue typedValue = new TypedValue();
+                context.getTheme().resolveAttribute(android.R.attr.textColorPrimary, typedValue, true);
+                textViewName.setTextColor(typedValue.data);
+
+                // Option B: Farbe aus textAppearanceListItem neu anwenden (komplexer, Option A ist meist ausreichend)
+                // Man könnte auch versuchen, die Farbe, dietextAppearanceListItem setzt, zu speichern und hier wiederzuverwenden.
+
+                textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG)); // Durchstreichen entfernen
                 buttonEdit.setEnabled(true);
                 buttonEdit.setAlpha(1.0f);
             }

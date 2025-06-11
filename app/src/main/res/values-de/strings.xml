@@ -34,6 +34,7 @@
     <string name="error_adding_item">Fehler beim Hinzufügen des Artikels. Bitte versuche es erneut.</string>
     <string name="error_clearing_list">Fehler beim Leeren der Einkaufsliste. Bitte versuche es erneut.</string>
 
+    <string name="item_name_placeholder">Artikelname</string>"
     <string name="item_added">Artikel erfolgreich hinzugefügt.</string>
     <string name="list_added">Einkaufsliste erfolgreich hinzugefügt.</string>
     <string name="list_deleted">Einkaufsliste %1$s wurde erfolgreich gelöscht.</string>
