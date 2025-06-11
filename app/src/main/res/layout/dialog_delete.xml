@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@color/dark_gray">
+    android:background="?attr/colorSurface">
 
     <TextView
         android:id="@+id/dialogTitle"
@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:text="@string/title"
         android:textAppearance="?attr/textAppearanceHeadline6"
-        android:textColor="@color/light_gray"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="25sp" />
 
     <TextView
@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/message"
-        android:textColor="@color/light_gray"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="18sp" />
 
     <LinearLayout
@@ -37,9 +37,9 @@
             android:layout_marginRight="20dp"
             android:layout_marginLeft="15dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/orange"
+            android:backgroundTint="?attr/colorError"
             android:text="@string/delete"
-            android:textColor="@color/light_gray"
+            android:textColor="?attr/colorOnError"
             android:textSize="15sp"
             android:singleLine="true"
             android:ellipsize="end"
@@ -52,9 +52,9 @@
             android:layout_marginLeft="20dp"
             android:layout_marginRight="15dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/teal_700"
+            android:backgroundTint="?attr/colorPrimary"
             android:text="@string/cancel"
-            android:textColor="@color/light_gray"
+            android:textColor="?attr/colorOnPrimary"
             android:textSize="15sp"
             android:singleLine="true"
             android:ellipsize="end"
