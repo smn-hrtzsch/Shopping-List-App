@@ -81,4 +81,5 @@
     <string name="dialog_option_remove_checked">Yes, remove checked items</string>
     <string name="dialog_option_remove_all">Yes, remove all items</string>
     <string name="dialog_option_cancel">No, cancel</string>
+    <string name="no_items_yet">0 items</string>
 </resources>

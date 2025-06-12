@@ -5,8 +5,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
-import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -15,16 +16,14 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,15 +35,13 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private List<ShoppingItem> shoppingItems;
     private ShoppingListRepository shoppingListRepository;
     private long currentShoppingListId = -1L;
-    private FloatingActionButton fabClearList;
     private TextView toolbarTitleTextView;
     private TextView emptyView;
-    private CoordinatorLayout coordinatorLayout;
+    private View activityRootView; // Geändert von CoordinatorLayout
 
-    // Views für die neue Eingabezeile
+    // Views für die Eingabezeile
     private EditText editTextAddItem;
     private ImageButton buttonAddItem;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +52,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         setSupportActionBar(toolbar);
         toolbarTitleTextView = findViewById(R.id.toolbar_title_einkaufsliste);
         emptyView = findViewById(R.id.empty_view_items);
-        coordinatorLayout = findViewById(R.id.einkaufsliste_activity_root);
+        activityRootView = findViewById(R.id.einkaufsliste_activity_root);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -86,7 +83,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         shoppingItems = new ArrayList<>();
         recyclerView = findViewById(R.id.item_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        // Adapter wird jetzt ohne ListId initialisiert, da die Eingabe außerhalb stattfindet
         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this);
         recyclerView.setAdapter(adapter);
 
@@ -94,18 +90,33 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
 
-        fabClearList = findViewById(R.id.fab_clear_list);
-        fabClearList.setOnClickListener(v -> showClearListOptionsDialog());
+        // FAB-Logik wurde entfernt
 
-        // Initialisiere die neue Eingabezeile und ihre Logik
         setupAddItemBar();
-
         refreshItemList();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.einkaufsliste_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_clear_list) {
+            showClearListOptionsDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void setupAddItemBar() {
         editTextAddItem = findViewById(R.id.edit_text_add_item_bar);
         buttonAddItem = findViewById(R.id.button_add_item_bar);
+
+        // Der Indikator-Strich wird im neuen Design nicht mehr benötigt
 
         editTextAddItem.addTextChangedListener(new TextWatcher() {
             @Override
@@ -113,7 +124,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                buttonAddItem.setVisibility(s.toString().trim().isEmpty() ? View.GONE : View.VISIBLE);
+                boolean hasText = !s.toString().trim().isEmpty();
+                buttonAddItem.setEnabled(hasText);
+                buttonAddItem.setAlpha(hasText ? 1.0f : 0.5f);
             }
 
             @Override
@@ -124,9 +137,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             String name = editTextAddItem.getText().toString().trim();
             if (!name.isEmpty()) {
                 int nextPosition = 0;
-                for (ShoppingItem existingItem : shoppingItems) {
-                    if (!existingItem.isDone()) {
-                        nextPosition = Math.max(nextPosition, existingItem.getPosition() + 1);
+                if(shoppingItems != null){
+                    for (ShoppingItem existingItem : shoppingItems) {
+                        if (!existingItem.isDone()) {
+                            nextPosition = Math.max(nextPosition, existingItem.getPosition() + 1);
+                        }
                     }
                 }
 
@@ -134,9 +149,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
 
                 if (newId != -1) {
-                    refreshItemList(); // Lädt die Liste neu, um das neue Item anzuzeigen
+                    refreshItemList();
                     editTextAddItem.setText("");
-                    // Tastatur ausblenden
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.hideSoftInputFromWindow(editTextAddItem.getWindowToken(), 0);
                 } else {
@@ -148,7 +162,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         buttonAddItem.setOnClickListener(addItemAction);
         editTextAddItem.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
-                addItemAction.onClick(v);
+                if (buttonAddItem.isEnabled()) {
+                    addItemAction.onClick(v);
+                }
                 return true;
             }
             return false;
@@ -156,7 +172,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void showClearListOptionsDialog() {
-        // Explizit unseren neuen Dialog-Stil verwenden
         new MaterialAlertDialogBuilder(this, R.style.AppMaterialAlertDialogTheme)
                 .setTitle(R.string.dialog_clear_list_title)
                 .setMessage(R.string.dialog_clear_list_message)
@@ -165,12 +180,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     refreshItemList();
                     Toast.makeText(this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
-                .setNeutralButton(R.string.dialog_option_remove_all, (dialog, which) -> {
+                .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
                     shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
                     refreshItemList();
                     Toast.makeText(this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton(R.string.dialog_option_cancel, (dialog, which) -> dialog.dismiss())
+                .setNeutralButton(R.string.dialog_option_cancel, (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
@@ -223,6 +238,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     @Override
     public View getCoordinatorLayout() {
-        return coordinatorLayout;
+        return activityRootView;
     }
 }

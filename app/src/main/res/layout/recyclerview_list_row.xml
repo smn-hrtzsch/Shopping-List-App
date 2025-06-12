@@ -14,7 +14,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="12dp"
+        android:background="?attr/colorSurfaceSecondary">
 
         <TextView
             android:id="@+id/list_name_text_view"
@@ -89,7 +90,7 @@
             app:layout_constraintTop_toBottomOf="@+id/list_name_text_view"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginTop="4dp"
-            android:text="0 Artikel"/>
+            android:text="@string/no_items_yet"/>
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -102,4 +102,5 @@
     <string name="dialog_option_remove_checked">Ja, abgehakte Artikel entfernen</string>
     <string name="dialog_option_remove_all">Ja, alle Artikel entfernen</string>
     <string name="dialog_option_cancel">Nein, abbrechen</string>
+    <string name="no_items_yet">0 Artikel</string>
 </resources>
