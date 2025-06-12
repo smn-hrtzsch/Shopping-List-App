@@ -1,46 +1,31 @@
-// MyRecyclerViewAdapter.java
 package com.example.einkaufsliste;
-
-import com.example.einkaufsliste.R;
 
 import android.content.Context;
 import android.graphics.Paint;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.TypedValue;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.snackbar.Snackbar;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import android.util.Log;
 
-public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTouchHelperAdapter {
+public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.ItemViewHolder> implements ItemTouchHelperAdapter {
 
-    private List<ShoppingItem> items;
+    private final List<ShoppingItem> items;
     private final Context context;
     private final ShoppingListRepository repository;
-    private final long currentListId;
     private final OnItemInteractionListener interactionListener;
-
-    private static final int VIEW_TYPE_ITEM = 0;
-    private static final int VIEW_TYPE_ADD_ITEM_INLINE = 1;
 
     private int editingItemPosition = -1;
     private ShoppingItem recentlyDeletedItem;
@@ -50,13 +35,13 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         void onItemCheckboxChanged(ShoppingItem item, boolean isChecked);
         void onDataSetChanged();
         void requestItemResort();
+        View getCoordinatorLayout();
     }
 
-    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, long currentListId, OnItemInteractionListener listener) {
+    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, OnItemInteractionListener listener) {
         this.context = context;
         this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
         this.repository = repository;
-        this.currentListId = currentListId;
         this.interactionListener = listener;
         sortItemsLocal();
     }
@@ -71,44 +56,22 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         }
     }
 
-    @Override
-    public int getItemViewType(int position) {
-        if (position == items.size()) {
-            return VIEW_TYPE_ADD_ITEM_INLINE;
-        }
-        return VIEW_TYPE_ITEM;
-    }
-
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        if (viewType == VIEW_TYPE_ITEM) {
-            View view = inflater.inflate(R.layout.recyclerview_row, parent, false);
-            return new ItemViewHolder(view);
-        } else { // VIEW_TYPE_ADD_ITEM_INLINE
-            View view = inflater.inflate(R.layout.recyclerview_add_item_inline_row, parent, false);
-            return new AddItemInlineViewHolder(view);
-        }
+    public ItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerview_row, parent, false);
+        return new ItemViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder.getItemViewType() == VIEW_TYPE_ITEM) {
-            ItemViewHolder itemViewHolder = (ItemViewHolder) holder;
-            if (position < items.size()) {
-                ShoppingItem currentItem = items.get(position);
-                itemViewHolder.bind(currentItem, position == editingItemPosition);
-            }
-        } else if (holder.getItemViewType() == VIEW_TYPE_ADD_ITEM_INLINE) {
-            AddItemInlineViewHolder addItemViewHolder = (AddItemInlineViewHolder) holder;
-            addItemViewHolder.bind();
-        }
+    public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
+        ShoppingItem currentItem = items.get(position);
+        holder.bind(currentItem, position == editingItemPosition);
     }
 
     @Override
     public int getItemCount() {
-        return items.size() + 1;
+        return items.size();
     }
 
     public void setItems(List<ShoppingItem> newItems) {
@@ -165,7 +128,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         items.remove(position);
         notifyItemRemoved(position);
 
-        View rootView = ((EinkaufslisteActivity) context).findViewById(R.id.einkaufsliste_activity_root);
+        View rootView = interactionListener.getCoordinatorLayout();
         if (rootView == null) {
             rootView = ((EinkaufslisteActivity) context).findViewById(android.R.id.content);
         }
@@ -228,17 +191,20 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             textViewName.setText(item.getName());
 
             if (item.isDone()) {
-                TypedValue typedValue = new TypedValue();
-                context.getTheme().resolveAttribute(android.R.attr.textColorSecondary, typedValue, true);
-                textViewName.setTextColor(typedValue.data);
-                textViewName.setPaintFlags(textViewName.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant, "Error");
+                textViewName.setTextColor(color);
+
                 buttonEdit.setEnabled(false);
                 buttonEdit.setAlpha(0.5f);
             } else {
-                textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurface, "Error");
+                textViewName.setTextColor(color);
+
                 buttonEdit.setEnabled(true);
                 buttonEdit.setAlpha(1.0f);
             }
+
+            textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
 
             if (isInEditMode && !item.isDone()) {
                 layoutDisplay.setVisibility(View.GONE);
@@ -283,7 +249,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
                     return;
                 }
                 int currentPos = getAdapterPosition();
-                if (currentPos == RecyclerView.NO_POSITION || currentPos >= items.size()) return;
+                if (currentPos == RecyclerView.NO_POSITION) return;
 
                 if (editingItemPosition != -1 && editingItemPosition != currentPos) {
                     Toast.makeText(context, "Bitte zuerst die andere Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
@@ -293,16 +259,16 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
                 int previousEditingPosition = editingItemPosition;
                 editingItemPosition = currentPos;
 
-                if (previousEditingPosition != -1 && previousEditingPosition < items.size() && previousEditingPosition != editingItemPosition) {
+                if (previousEditingPosition != -1) {
                     notifyItemChanged(previousEditingPosition);
                 }
                 notifyItemChanged(editingItemPosition);
             });
 
-            buttonSave.setOnClickListener(v -> saveItemChanges(item, getAdapterPosition()));
+            buttonSave.setOnClickListener(v -> saveItemChanges(getAdapterPosition()));
             editTextName.setOnEditorActionListener((v, actionId, event) -> {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    saveItemChanges(item, getAdapterPosition());
+                    saveItemChanges(getAdapterPosition());
                     return true;
                 }
                 return false;
@@ -310,7 +276,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
             buttonDelete.setOnClickListener(v -> {
                 int currentPos = getAdapterPosition();
-                if (currentPos != RecyclerView.NO_POSITION && currentPos < items.size()) {
+                if (currentPos != RecyclerView.NO_POSITION) {
                     if (editingItemPosition == currentPos) {
                         Toast.makeText(context, "Bitte Bearbeitung abschließen vor dem Löschen.", Toast.LENGTH_SHORT).show();
                         return;
@@ -320,8 +286,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             });
         }
 
-        private void saveItemChanges(ShoppingItem item, int position) {
+        private void saveItemChanges(int position) {
             if (position == RecyclerView.NO_POSITION || position >= items.size()) return;
+
+            ShoppingItem item = items.get(position);
             String newName = editTextName.getText().toString().trim();
 
             if (newName.isEmpty()) {
@@ -335,69 +303,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             if (interactionListener != null) {
                 interactionListener.requestItemResort();
             }
-        }
-    }
-
-    public class AddItemInlineViewHolder extends RecyclerView.ViewHolder {
-        EditText editTextNewItemNameInline;
-        ImageButton buttonAddNewItemInline;
-
-        public AddItemInlineViewHolder(@NonNull View itemView) {
-            super(itemView);
-            editTextNewItemNameInline = itemView.findViewById(R.id.edit_text_new_item_name_inline_add);
-            buttonAddNewItemInline = itemView.findViewById(R.id.button_add_new_item_inline_add);
-        }
-
-        public void bind() {
-            buttonAddNewItemInline.setVisibility(View.GONE);
-
-            editTextNewItemNameInline.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    buttonAddNewItemInline.setVisibility(s.toString().trim().isEmpty() ? View.GONE : View.VISIBLE);
-                }
-                @Override public void afterTextChanged(Editable s) {}
-            });
-
-            View.OnClickListener addItemAction = v -> {
-                String name = editTextNewItemNameInline.getText().toString().trim();
-                if (!name.isEmpty()) {
-                    int nextPosition = 0;
-                    for (ShoppingItem existingItem : items) {
-                        if (!existingItem.isDone()) {
-                            nextPosition = Math.max(nextPosition, existingItem.getPosition() + 1);
-                        }
-                    }
-
-                    ShoppingItem newItem = new ShoppingItem(name, "1", "", false, currentListId, "", nextPosition);
-                    long newId = repository.addItemToShoppingList(currentListId, newItem);
-                    if (newId != -1) {
-                        newItem.setId(newId);
-                        if (interactionListener != null) {
-                            interactionListener.requestItemResort();
-                        }
-                        editTextNewItemNameInline.setText("");
-                        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                        if (imm != null) {
-                            imm.hideSoftInputFromWindow(editTextNewItemNameInline.getWindowToken(), 0);
-                        }
-                    } else {
-                        Toast.makeText(context, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
-                    }
-                }
-            };
-
-            buttonAddNewItemInline.setOnClickListener(addItemAction);
-            editTextNewItemNameInline.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE ||
-                        (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                    if (!editTextNewItemNameInline.getText().toString().trim().isEmpty()){
-                        addItemAction.onClick(v);
-                        return true;
-                    }
-                }
-                return false;
-            });
         }
     }
 }
