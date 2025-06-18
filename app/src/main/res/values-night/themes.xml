@@ -19,7 +19,10 @@
         <item name="materialAlertDialogTheme">@style/AppMaterialAlertDialogTheme</item>
         <item name="snackbarStyle">@style/AppSnackbarStyle</item>
 
+    </style>
 
+    <style name="MyDialogButton" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">?attr/colorSecondaryVariant</item>
     </style>
 
     <style name="AppMaterialAlertDialogTheme" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
@@ -30,6 +33,9 @@
         <item name="android:background">@color/dark_gray</item>
         <item name="android:textColorPrimary">@color/light_gray</item>
         <item name="android:textColorSecondary">@color/gray</item>
+        <item name="buttonBarPositiveButtonStyle">@style/MyDialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/MyDialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/MyDialogButton</item>
     </style>
 
     <style name="AppSnackbarStyle" parent="Widget.MaterialComponents.Snackbar">

@@ -1,25 +1,30 @@
-// MainActivity.java
+// main/java/com/example/einkaufsliste/MainActivity.java
 package com.example.einkaufsliste;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
-// import android.text.InputType; // Nicht mehr für Dialog benötigt
-// import android.view.LayoutInflater; // Nicht mehr für Dialog benötigt
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton; // Import für ImageButton
-import android.widget.LinearLayout; // Import für LinearLayout
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
-// import androidx.appcompat.app.AlertDialog; // Nicht mehr benötigt
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar; // Import für Toolbar
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,6 +36,10 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements ListRecyclerViewAdapter.OnListInteractionListener {
 
+    // NEU: Konstanten für SharedPreferences zum Speichern der Theme-Einstellung
+    private static final String PREFS_NAME = "theme_prefs";
+    private static final String KEY_THEME = "prefs_theme";
+
     private RecyclerView recyclerView;
     private ListRecyclerViewAdapter adapter;
     private List<ShoppingList> shoppingLists;
@@ -39,10 +48,16 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     private LinearLayout addListInputLayout;
     private EditText editTextNewListName;
     private ImageButton buttonConfirmAddList;
+    private SharedPreferences sharedPreferences;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // NEU: Lädt die gespeicherte Theme-Einstellung, BEVOR die UI erstellt wird
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        int savedTheme = sharedPreferences.getInt(KEY_THEME, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        AppCompatDelegate.setDefaultNightMode(savedTheme);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -92,28 +107,77 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
 
-        loadShoppingLists(); // Zeile 70 in deinem Logcat (kann leicht variieren)
+        loadShoppingLists();
     }
+
+    // NEU: Methode, um das Menü (mit dem Theme-Button) in der Toolbar zu erstellen
+    // Ersetze die existierende Methode in MainActivity.java
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+
+        // Finde das Menü-Item in der Toolbar
+        MenuItem themeItem = menu.findItem(R.id.action_switch_theme);
+
+        // Prüfe den aktuellen Theme-Modus
+        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+            // Wenn es dunkel ist, zeige das umrandete Mond-Icon
+            themeItem.setIcon(R.drawable.ic_moon_outlined);
+        } else {
+            // Wenn es hell ist, zeige das gefüllte Mond-Icon
+            themeItem.setIcon(R.drawable.ic_moon_filled);
+        }
+        return true;
+    }
+
+    // NEU: Methode, die auf Klicks auf Menü-Items reagiert
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        // Prüfen, ob unser Theme-Button geklickt wurde
+        if (item.getItemId() == R.id.action_switch_theme) {
+            toggleTheme(); // Ruft die neue Methode zum Wechseln des Themes auf
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    // NEU: Die Logik zum Wechseln und Speichern des Themes
+    private void toggleTheme() {
+        // Aktuellen Modus auslesen (hell oder dunkel)
+        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+
+        // Neuen Modus festlegen: Wenn aktuell dunkel, dann hell. Sonst dunkel.
+        int newNightMode = (currentNightMode == Configuration.UI_MODE_NIGHT_YES)
+                ? AppCompatDelegate.MODE_NIGHT_NO
+                : AppCompatDelegate.MODE_NIGHT_YES;
+
+        // Neuen Modus in SharedPreferences speichern, damit die App sich die Wahl merkt
+        sharedPreferences.edit().putInt(KEY_THEME, newNightMode).apply();
+
+        // Neuen Modus anwenden (startet die Activity neu, um das Theme zu laden)
+        AppCompatDelegate.setDefaultNightMode(newNightMode);
+    }
+
 
     @Override
     protected void onResume() {
         super.onResume();
         if (addListInputLayout.getVisibility() == View.VISIBLE) {
             addListInputLayout.setVisibility(View.GONE);
-            editTextNewListName.setText(""); // Sicherstellen, dass das Feld leer ist
+            editTextNewListName.setText("");
         }
         loadShoppingLists();
     }
 
-    private void loadShoppingLists() { // Zeile 81 in deinem Logcat
+    private void loadShoppingLists() {
         shoppingLists = shoppingListManager.getAllShoppingLists();
-        adapter.updateLists(shoppingLists); // Ruft intern interactionListener.onListDataSetChanged() auf
-        // checkEmptyView() wird jetzt zuverlässig von onListDataSetChanged aufgerufen
+        adapter.updateLists(shoppingLists);
+        checkEmptyView(); // Aufruf zur Sicherheit hier beibehalten
     }
 
     private void checkEmptyView() {
-        // Stelle sicher, dass shoppingLists initialisiert ist, bevor isEmpty() aufgerufen wird.
-        // shoppingLists wird in onCreate initialisiert und in loadShoppingLists neu zugewiesen.
         if (shoppingLists != null && shoppingLists.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
             if (emptyView != null) emptyView.setVisibility(View.VISIBLE);
@@ -138,7 +202,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         if (!listName.isEmpty()) {
             long newId = shoppingListManager.addShoppingList(listName);
             if (newId != -1) {
-                loadShoppingLists(); // Lade die Listen neu, um die neue Liste und den korrekten Zähler anzuzeigen
+                loadShoppingLists();
                 Toast.makeText(MainActivity.this, "Liste \"" + listName + "\" erstellt", Toast.LENGTH_SHORT).show();
                 addListInputLayout.setVisibility(View.GONE);
                 editTextNewListName.setText("");
@@ -159,9 +223,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     }
 
     @Override
-    public void onListDataSetChanged() { // Zeile 147 in deinem Logcat
-        // NICHT loadShoppingLists() hier aufrufen, um die Rekursion zu vermeiden!
-        // Der Adapter hat seine Daten bereits. Wir müssen nur die Empty-View aktualisieren.
+    public void onListDataSetChanged() {
         checkEmptyView();
         Log.d("MainActivity", "onListDataSetChanged called, only checked empty view.");
     }
@@ -170,14 +232,11 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     public void requestListDeleteConfirmation(final ShoppingList listToDelete) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_delete, null);
 
-        // Verwende androidx.appcompat.app.AlertDialog.Builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(dialogView);
 
-        // Verwende androidx.appcompat.app.AlertDialog
         final AlertDialog dialog = builder.create();
 
-        // Optional: Transparenten Hintergrund für Dialog
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
@@ -187,50 +246,39 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         Button positiveButton = dialogView.findViewById(R.id.positiveButton);
         Button negativeButton = dialogView.findViewById(R.id.negativeButton);
 
-        // Sicherheitscheck: Sind alle Views im Layout vorhanden?
         if (dialogTitle == null || dialogMessage == null || positiveButton == null || negativeButton == null) {
-            Log.e("MainActivity", "Konnte nicht alle Views in dialog_delete.xml finden!");
-            Toast.makeText(this, "Fehler beim Anzeigen des Dialogs (Layout-Problem).", Toast.LENGTH_LONG).show();
-            return; // Verhindert Absturz, falls Views fehlen
+            Log.e("MainActivity", "Could not find all views in dialog_delete.xml!");
+            Toast.makeText(this, "Error showing dialog (Layout-Problem).", Toast.LENGTH_LONG).show();
+            return;
         }
 
-        // Texte setzen (stelle sicher, dass die Strings in strings.xml existieren)
         try {
             dialogTitle.setText(R.string.confirm_delete_list_title);
             dialogMessage.setText(getString(R.string.confirm_delete_list_message, listToDelete.getName()));
             positiveButton.setText(R.string.delete);
             negativeButton.setText(R.string.cancel);
         } catch (android.content.res.Resources.NotFoundException e) {
-            Log.e("MainActivity", "Fehlende String-Ressource für Löschdialog", e);
-            Toast.makeText(this, "Textressource für Dialog fehlt.", Toast.LENGTH_SHORT).show();
-            // Setze Fallback-Texte oder handle den Fehler anders
-            dialogTitle.setText("Liste löschen?"); // Beispiel
-            dialogMessage.setText("Möchtest du die Liste '" + listToDelete.getName() + "' wirklich löschen?"); // Beispiel
-            positiveButton.setText("Löschen"); // Beispiel
-            negativeButton.setText("Abbrechen"); // Beispiel
+            Log.e("MainActivity", "Missing string resource for delete dialog", e);
+            Toast.makeText(this, "Text resource for dialog is missing.", Toast.LENGTH_SHORT).show();
+            dialogTitle.setText("Delete list?");
+            dialogMessage.setText("Do you really want to delete the list '" + listToDelete.getName() + "'?");
+            positiveButton.setText("Delete");
+            negativeButton.setText("Cancel");
         }
 
-        // --- KORRIGIERTER LISTENER FÜR POSITIVEN BUTTON ---
         positiveButton.setOnClickListener(v -> {
             try {
-                // Rufe die void-Methode direkt auf
                 shoppingListManager.deleteShoppingList(listToDelete.getId());
-
-                // Wenn keine Exception auftritt, gehen wir von Erfolg aus
                 Toast.makeText(MainActivity.this, "Liste \"" + listToDelete.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
-                loadShoppingLists(); // Liste neu laden, damit die UI aktualisiert wird
-
+                loadShoppingLists();
             } catch (Exception e) {
-                // Optional, aber empfohlen: Fange mögliche Fehler (z.B. Datenbankfehler) ab
-                Log.e("MainActivity", "Fehler beim Ausführen von deleteShoppingList für ID: " + listToDelete.getId(), e);
-                Toast.makeText(MainActivity.this, "Fehler beim Löschen der Liste.", Toast.LENGTH_SHORT).show();
+                Log.e("MainActivity", "Error executing deleteShoppingList for ID: " + listToDelete.getId(), e);
+                Toast.makeText(MainActivity.this, "Error deleting list.", Toast.LENGTH_SHORT).show();
             } finally {
-                // Schließe den Dialog in jedem Fall (Erfolg oder Fehler)
                 dialog.dismiss();
             }
         });
 
-        // Listener für negativen Button (Abbrechen)
         negativeButton.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
