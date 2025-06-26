@@ -1,7 +1,6 @@
 package com.example.einkaufsliste;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -10,7 +9,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -37,9 +35,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private long currentShoppingListId = -1L;
     private TextView toolbarTitleTextView;
     private TextView emptyView;
-    private View activityRootView; // Geändert von CoordinatorLayout
+    private View activityRootView;
 
-    // Views für die Eingabezeile
     private EditText editTextAddItem;
     private ImageButton buttonAddItem;
 
@@ -90,8 +87,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
 
-        // FAB-Logik wurde entfernt
-
         setupAddItemBar();
         refreshItemList();
     }
@@ -116,8 +111,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         editTextAddItem = findViewById(R.id.edit_text_add_item_bar);
         buttonAddItem = findViewById(R.id.button_add_item_bar);
 
-        // Der Indikator-Strich wird im neuen Design nicht mehr benötigt
-
         editTextAddItem.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -136,6 +129,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         View.OnClickListener addItemAction = v -> {
             String name = editTextAddItem.getText().toString().trim();
             if (!name.isEmpty()) {
+                // Die Position für das neue, nicht erledigte Item bestimmen
                 int nextPosition = 0;
                 if(shoppingItems != null){
                     for (ShoppingItem existingItem : shoppingItems) {
@@ -149,10 +143,18 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
 
                 if (newId != -1) {
-                    refreshItemList();
-                    editTextAddItem.setText("");
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(editTextAddItem.getWindowToken(), 0);
+                    newItem.setId(newId); // Wichtig: Die von der DB generierte ID setzen
+
+                    // ANPASSUNG: Nicht die ganze Liste neu laden, sondern das neue Item hinzufügen
+                    // und den Adapter informieren.
+                    adapter.addItem(newItem);
+                    recyclerView.scrollToPosition(adapter.getItemCount() - 1); // Zum neuen Item scrollen
+                    editTextAddItem.setText(""); // Eingabefeld leeren für die nächste Eingabe
+
+                    // ANPASSUNG: Zeile, die die Tastatur versteckt, wurde entfernt.
+                    // InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    // imm.hideSoftInputFromWindow(editTextAddItem.getWindowToken(), 0);
+
                 } else {
                     Toast.makeText(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
                 }
@@ -177,12 +179,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setMessage(R.string.dialog_clear_list_message)
                 .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
                     shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
-                    refreshItemList();
+                    refreshItemList(); // Hier ist ein voller Refresh ok
                     Toast.makeText(this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
                     shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
-                    refreshItemList();
+                    refreshItemList(); // Hier ist ein voller Refresh ok
                     Toast.makeText(this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
                 .setNeutralButton(R.string.dialog_option_cancel, (dialog, which) -> dialog.dismiss())
@@ -191,18 +193,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void refreshItemList() {
         if (shoppingListRepository == null || adapter == null) return;
-
         adapter.resetEditingPosition();
-
         List<ShoppingItem> updatedItems = shoppingListRepository.getItemsForListId(currentShoppingListId);
-        if (updatedItems != null) {
-            shoppingItems = updatedItems;
-            adapter.setItems(updatedItems);
-        } else {
-            shoppingItems = new ArrayList<>();
-            adapter.setItems(new ArrayList<>());
-            Toast.makeText(this, R.string.error_loading_lists, Toast.LENGTH_SHORT).show();
-        }
+        shoppingItems = (updatedItems != null) ? updatedItems : new ArrayList<>();
+        adapter.setItems(shoppingItems);
         checkEmptyViewItems(shoppingItems.isEmpty());
     }
 
@@ -221,6 +215,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     @Override
     public void onItemCheckboxChanged(ShoppingItem item, boolean isChecked) {
+        // Hier ist ein voller Refresh nötig, da sich die Sortierung ändert
         refreshItemList();
     }
 

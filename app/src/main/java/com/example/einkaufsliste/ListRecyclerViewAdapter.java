@@ -217,19 +217,20 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
     public boolean onItemMove(int fromPosition, int toPosition) {
         editingPosition = -1;
         if (fromPosition < 0 || fromPosition >= localDataSet.size() || toPosition < 0 || toPosition >= localDataSet.size()){
-            return false; // Ungültige Positionen
+            return false;
         }
-        if (fromPosition < toPosition) {
-            for (int i = fromPosition; i < toPosition; i++) {
-                Collections.swap(localDataSet, i, i + 1);
-            }
-        } else {
-            for (int i = fromPosition; i > toPosition; i--) {
-                Collections.swap(localDataSet, i, i - 1);
-            }
-        }
+
+        // Element in der lokalen Liste verschieben
+        ShoppingList movedItem = localDataSet.remove(fromPosition);
+        localDataSet.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
-        // TODO: Persist new order in database for lists (if needed)
+
+        // NEU: Positionen aktualisieren und in der DB speichern
+        for (int i = 0; i < localDataSet.size(); i++) {
+            localDataSet.get(i).setPosition(i);
+        }
+        shoppingListManager.updateListPositions(localDataSet); // Speichert die neue Reihenfolge
+
         return true;
     }
 

@@ -104,15 +104,36 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         items.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
 
+        // Positionen in der lokalen Liste aktualisieren
         for (int i = 0; i < items.size(); i++) {
             items.get(i).setPosition(i);
         }
+        // Die aktualisierten Positionen in der Datenbank speichern
         repository.updateItemPositions(new ArrayList<>(items));
 
-        if (interactionListener != null) {
-            interactionListener.requestItemResort();
-        }
+        // ANPASSUNG: Diese Zeile entfernen, um das sofortige Neuladen zu verhindern.
+        // if (interactionListener != null) {
+        //     interactionListener.requestItemResort();
+        // }
+
         return true;
+    }
+
+    public void addItem(ShoppingItem item) {
+        // Füge das Item an der korrekten Stelle ein (vor den erledigten Items)
+        int insertPosition = 0;
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).isDone()) {
+                break;
+            }
+            insertPosition = i + 1;
+        }
+        items.add(insertPosition, item);
+        notifyItemInserted(insertPosition);
+        // Informiere die Activity, damit die "Leer"-Ansicht ggf. verschwindet
+        if (interactionListener != null) {
+            interactionListener.onDataSetChanged();
+        }
     }
 
     @Override

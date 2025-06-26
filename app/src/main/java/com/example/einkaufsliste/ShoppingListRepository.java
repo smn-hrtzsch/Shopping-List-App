@@ -20,6 +20,10 @@ public class ShoppingListRepository {
         this.context = context;
     }
 
+    public void updateListPositions(List<ShoppingList> lists) {
+        dbHelper.updateListPositions(lists);
+    }
+
     public List<ShoppingItem> getItemsForListId(long listId) { // Parameter zu long geändert
         if (listId == -1L) {
             Log.e("ShoppingListRepository", "Ungültige Listen-ID (-1) beim Abrufen von Items.");

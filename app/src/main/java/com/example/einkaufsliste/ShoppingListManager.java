@@ -11,6 +11,9 @@ public class ShoppingListManager {
         dbHelper = new ShoppingListDatabaseHelper(context);
     }
 
+    public void updateListPositions(List<ShoppingList> lists) {
+        dbHelper.updateListPositions(lists);
+    }
     public List<ShoppingList> getAllShoppingLists() {
         return dbHelper.getAllShoppingLists();
     }

@@ -1,44 +1,45 @@
-// ShoppingListDataBaseHelper.java
 package com.example.einkaufsliste;
 
-import com.example.einkaufsliste.R;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase; // Sehr wichtig!
-import android.database.sqlite.SQLiteOpenHelper; // Sehr wichtig!
-import android.database.sqlite.SQLiteException; // Für Fehlerbehandlung
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// ... Rest deiner ShoppingListDatabaseHelper Klasse
-
 public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "shopping_list.db";
-    // Datenbankversion erhöhen, wenn Schema-Änderungen persistent gemacht werden sollen,
-    // die nicht nur Korrekturen sind. Für die aktuellen Korrekturen ist es nicht zwingend.
-    private static final int DATABASE_VERSION = 2; // Beibehalten von deiner Version
+    private static final int DATABASE_VERSION = 3; // Version 3 wegen neuer 'position'-Spalte
 
+    // Tabellen- und Spaltennamen
     public static final String TABLE_LISTS = "shopping_lists";
     public static final String TABLE_ITEMS = "shopping_items";
     public static final String COLUMN_ID = "_id";
+
+    // Spalten für die Listentabelle
     public static final String COLUMN_LIST_NAME = "name";
-    public static final String COLUMN_LIST_ITEM_COUNT = "item_count"; // Aus deiner DB-Version 2
+    public static final String COLUMN_LIST_ITEM_COUNT = "item_count";
+    public static final String COLUMN_LIST_POSITION = "position"; // Für die Reihenfolge
+
+    // Spalten für die Artikeltabelle
     public static final String COLUMN_ITEM_NAME = "name";
     public static final String COLUMN_ITEM_QUANTITY = "quantity";
     public static final String COLUMN_ITEM_UNIT = "unit";
     public static final String COLUMN_ITEM_IS_DONE = "is_done";
     public static final String COLUMN_ITEM_LIST_ID = "list_id";
     public static final String COLUMN_ITEM_NOTES = "notes";
-    public static final String COLUMN_ITEM_POSITION = "position";
+    public static final String COLUMN_ITEM_POSITION = "position"; // Für die Reihenfolge
 
     private static final String SQL_CREATE_TABLE_LISTS =
             "CREATE TABLE " + TABLE_LISTS + " (" +
                     COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
                     COLUMN_LIST_NAME + " TEXT NOT NULL," +
-                    COLUMN_LIST_ITEM_COUNT + " INTEGER DEFAULT 0);";
+                    COLUMN_LIST_ITEM_COUNT + " INTEGER DEFAULT 0," +
+                    COLUMN_LIST_POSITION + " INTEGER DEFAULT 0);";
 
     private static final String SQL_CREATE_TABLE_ITEMS =
             "CREATE TABLE " + TABLE_ITEMS + " (" +
@@ -47,7 +48,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                     COLUMN_ITEM_QUANTITY + " TEXT," +
                     COLUMN_ITEM_UNIT + " TEXT," +
                     COLUMN_ITEM_IS_DONE + " INTEGER DEFAULT 0," +
-                    COLUMN_ITEM_LIST_ID + " INTEGER," + // Sollte long sein, aber INTEGER in SQLite ist flexibel
+                    COLUMN_ITEM_LIST_ID + " INTEGER," +
                     COLUMN_ITEM_NOTES + " TEXT," +
                     COLUMN_ITEM_POSITION + " INTEGER DEFAULT 0," +
                     "FOREIGN KEY(" + COLUMN_ITEM_LIST_ID + ") REFERENCES " +
@@ -66,45 +67,32 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 2 && newVersion >= 2) { // Nur ausführen, wenn von Version < 2 auf >= 2 upgegradet wird
-            Log.d("DBUpgrade", "Upgrading database from version " + oldVersion + " to " + newVersion);
-            // Add item_count column if it doesn't exist (idempotent check would be better, but for simplicity...)
+        if (oldVersion < 2) {
             try {
                 db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_LIST_ITEM_COUNT + " INTEGER DEFAULT 0;");
-                Log.d("DBUpgrade", COLUMN_LIST_ITEM_COUNT + " column added to " + TABLE_LISTS);
             } catch (SQLiteException e) {
-                Log.w("DBUpgrade", COLUMN_LIST_ITEM_COUNT + " column likely already exists.", e);
-            }
-
-            Log.d("DBUpgrade", "Initializing item counts for existing lists.");
-            Cursor listCursor = db.rawQuery("SELECT " + COLUMN_ID + " FROM " + TABLE_LISTS, null);
-            if (listCursor != null) {
-                while (listCursor.moveToNext()) {
-                    long listId = listCursor.getLong(listCursor.getColumnIndexOrThrow(COLUMN_ID));
-                    Cursor itemCountCursor = null;
-                    try {
-                        itemCountCursor = db.rawQuery("SELECT COUNT(" + COLUMN_ID + ") FROM " + TABLE_ITEMS + " WHERE " + COLUMN_ITEM_LIST_ID + " = ?", new String[]{String.valueOf(listId)});
-                        if (itemCountCursor != null && itemCountCursor.moveToFirst()) {
-                            int count = itemCountCursor.getInt(0);
-                            ContentValues values = new ContentValues();
-                            values.put(COLUMN_LIST_ITEM_COUNT, count);
-                            db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
-                            Log.d("DBUpgrade", "List ID: " + listId + " updated with item count: " + count);
-                        }
-                    } catch (Exception e) {
-                        Log.e("DBUpgrade", "Error updating item count for list ID: " + listId, e);
-                    } finally {
-                        if (itemCountCursor != null && !itemCountCursor.isClosed()) {
-                            itemCountCursor.close();
-                        }
-                    }
-                }
-                listCursor.close();
-            } else {
-                Log.d("DBUpgrade", "No lists found to update item counts.");
+                Log.w("DBUpgrade", "Spalte " + COLUMN_LIST_ITEM_COUNT + " existiert vermutlich bereits.", e);
             }
         }
-        // Weitere Upgrades hier hinzufügen, falls DATABASE_VERSION > 2
+        if (oldVersion < 3) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_LIST_POSITION + " INTEGER DEFAULT 0;");
+                // Initialisiere die Positionen für bestehende Listen, falls nötig
+                Cursor cursor = db.rawQuery("SELECT " + COLUMN_ID + " FROM " + TABLE_LISTS, null);
+                if (cursor != null) {
+                    int i = 0;
+                    while (cursor.moveToNext()) {
+                        long listId = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID));
+                        ContentValues values = new ContentValues();
+                        values.put(COLUMN_LIST_POSITION, i++);
+                        db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
+                    }
+                    cursor.close();
+                }
+            } catch (SQLiteException e) {
+                Log.w("DBUpgrade", "Spalte " + COLUMN_LIST_POSITION + " existiert vermutlich bereits.", e);
+            }
+        }
     }
 
 
@@ -119,7 +107,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_LIST_NAME, name);
-        values.put(COLUMN_LIST_ITEM_COUNT, 0); // Standardmäßig 0 Artikel
+        values.put(COLUMN_LIST_ITEM_COUNT, 0);
         long id = -1;
         try {
             id = db.insertOrThrow(TABLE_LISTS, null, values);
@@ -131,25 +119,24 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return id;
     }
 
-    public ShoppingList getShoppingList(long listId) { // Parameter zu long
+    public ShoppingList getShoppingList(long listId) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
         try {
             cursor = db.query(TABLE_LISTS,
-                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT},
-                    COLUMN_ID + "=?",
-                    new String[]{String.valueOf(listId)}, null, null, null, null);
+                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT, COLUMN_LIST_POSITION},
+                    COLUMN_ID + "=?", new String[]{String.valueOf(listId)}, null, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
                 ShoppingList list = new ShoppingList(
                         cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID)),
                         cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LIST_NAME))
                 );
                 list.setItemCount(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_ITEM_COUNT)));
+                list.setPosition(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_POSITION)));
                 return list;
             }
         } finally {
             if (cursor != null) cursor.close();
-            // db.close(); // Nicht hier schließen, wenn von Repository aufgerufen, das mehrere Operationen machen könnte
         }
         return null;
     }
@@ -159,7 +146,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
         try {
-            cursor = db.query(TABLE_LISTS, null, null, null, null, null, COLUMN_LIST_NAME + " ASC"); // Sortieren nach Name
+            cursor = db.query(TABLE_LISTS, null, null, null, null, null, COLUMN_LIST_POSITION + " ASC");
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     ShoppingList shoppingList = new ShoppingList(
@@ -167,14 +154,32 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                             cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LIST_NAME))
                     );
                     shoppingList.setItemCount(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_ITEM_COUNT)));
+                    shoppingList.setPosition(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_POSITION)));
                     shoppingLists.add(shoppingList);
                 } while (cursor.moveToNext());
             }
         } finally {
             if (cursor != null) cursor.close();
-            // db.close();
         }
         return shoppingLists;
+    }
+
+    public void updateListPositions(List<ShoppingList> lists) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (ShoppingList list : lists) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_LIST_POSITION, list.getPosition());
+                db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(list.getId())});
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error updating list positions", e);
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
     }
 
     public int updateShoppingListName(long listId, String newName) {
@@ -183,8 +188,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LIST_NAME, newName);
         int rows = 0;
         try {
-            rows = db.update(TABLE_LISTS, values, COLUMN_ID + " = ?",
-                    new String[]{String.valueOf(listId)});
+            rows = db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
         } finally {
             db.close();
         }
@@ -194,15 +198,14 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     public void deleteShoppingList(long listId) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {
-            db.delete(TABLE_LISTS, COLUMN_ID + " = ?",
-                    new String[]{String.valueOf(listId)}); // Kaskadierendes Löschen sollte Items entfernen
+            db.delete(TABLE_LISTS, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
         } finally {
             db.close();
         }
     }
 
     // --- Item-Methoden ---
-    public long addItem(ShoppingItem item) { // Nimmt ShoppingItem Objekt
+    public long addItem(ShoppingItem item) {
         SQLiteDatabase db = this.getWritableDatabase();
         long newId = -1;
         db.beginTransaction();
@@ -214,27 +217,11 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             values.put(COLUMN_ITEM_IS_DONE, item.isDone() ? 1 : 0);
             values.put(COLUMN_ITEM_LIST_ID, item.getListId());
             values.put(COLUMN_ITEM_NOTES, item.getNotes());
-
-            // Automatische Positionierung: neue Items ans Ende der nicht-erledigten
-            if (!item.isDone()){
-                Cursor c = db.rawQuery("SELECT MAX(" + COLUMN_ITEM_POSITION + ") FROM " + TABLE_ITEMS +
-                                " WHERE " + COLUMN_ITEM_LIST_ID + " = ? AND " + COLUMN_ITEM_IS_DONE + " = 0",
-                        new String[]{String.valueOf(item.getListId())});
-                int maxPos = -1;
-                if(c.moveToFirst()){
-                    maxPos = c.getInt(0);
-                }
-                c.close();
-                values.put(COLUMN_ITEM_POSITION, maxPos + 1);
-            } else {
-                // Erledigte Items könnten ans Ende aller Items oder Ende der erledigten Items
-                // Fürs Erste: Position wird wie übergeben oder 0, falls nicht gesetzt.
-                values.put(COLUMN_ITEM_POSITION, item.getPosition()); // oder eine Logik für erledigte
-            }
+            values.put(COLUMN_ITEM_POSITION, item.getPosition());
 
             newId = db.insertOrThrow(TABLE_ITEMS, null, values);
             if (newId != -1) {
-                updateListItemCount(db, item.getListId(), 1); // Interner Aufruf, DB bleibt offen
+                updateListItemCount(db, item.getListId(), 1);
             }
             db.setTransactionSuccessful();
         } catch (Exception e) {
@@ -247,12 +234,11 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public ShoppingItem getItem(long itemId) { // Parameter zu long
+    public ShoppingItem getItem(long itemId) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
         try {
-            cursor = db.query(TABLE_ITEMS, null, COLUMN_ID + "=?",
-                    new String[]{String.valueOf(itemId)}, null, null, null);
+            cursor = db.query(TABLE_ITEMS, null, COLUMN_ID + "=?", new String[]{String.valueOf(itemId)}, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
                 return new ShoppingItem(
                         cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID)),
@@ -267,22 +253,18 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             }
         } finally {
             if (cursor != null) cursor.close();
-            // db.close();
         }
         return null;
     }
 
 
-    public List<ShoppingItem> getAllItems(long listId) { // Parameter zu long
+    public List<ShoppingItem> getAllItems(long listId) {
         List<ShoppingItem> items = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
         try {
-            // Sortierung: is_done ASC (unerledigte zuerst), dann position ASC
-            cursor = db.query(TABLE_ITEMS, null,
-                    COLUMN_ITEM_LIST_ID + "=?", new String[]{String.valueOf(listId)},
+            cursor = db.query(TABLE_ITEMS, null, COLUMN_ITEM_LIST_ID + "=?", new String[]{String.valueOf(listId)},
                     null, null, COLUMN_ITEM_IS_DONE + " ASC, " + COLUMN_ITEM_POSITION + " ASC");
-
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     items.add(new ShoppingItem(
@@ -299,7 +281,6 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             }
         } finally {
             if (cursor != null) cursor.close();
-            // db.close();
         }
         return items;
     }
@@ -315,8 +296,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ITEM_POSITION, item.getPosition());
         int rows = 0;
         try {
-            rows = db.update(TABLE_ITEMS, values, COLUMN_ID + " = ?",
-                    new String[]{String.valueOf(item.getId())});
+            rows = db.update(TABLE_ITEMS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(item.getId())});
         } finally {
             db.close();
         }
@@ -342,7 +322,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public void deleteItem(long itemId) { // Parameter zu long
+    public void deleteItem(long itemId) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.beginTransaction();
         try {
@@ -355,7 +335,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
 
             int deletedRows = db.delete(TABLE_ITEMS, COLUMN_ID + " = ?", new String[]{String.valueOf(itemId)});
             if (deletedRows > 0 && listId != -1) {
-                updateListItemCount(db, listId, -deletedRows); // Interne Methode, DB bleibt offen
+                updateListItemCount(db, listId, -deletedRows);
             }
             db.setTransactionSuccessful();
         } finally {
@@ -364,7 +344,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public int deleteCheckedItems(long listId) { // Parameter zu long
+    public int deleteCheckedItems(long listId) {
         SQLiteDatabase db = this.getWritableDatabase();
         int deletedRows = 0;
         db.beginTransaction();
@@ -372,7 +352,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             deletedRows = db.delete(TABLE_ITEMS, COLUMN_ITEM_LIST_ID + " = ? AND " + COLUMN_ITEM_IS_DONE + " = 1",
                     new String[]{String.valueOf(listId)});
             if (deletedRows > 0) {
-                updateListItemCount(db, listId, -deletedRows); // Interne Methode
+                updateListItemCount(db, listId, -deletedRows);
             }
             db.setTransactionSuccessful();
         } finally {
@@ -382,13 +362,12 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return deletedRows;
     }
 
-    public int clearList(long listId) { // Parameter zu long
+    public int clearList(long listId) {
         SQLiteDatabase db = this.getWritableDatabase();
         int deletedRows = 0;
         db.beginTransaction();
         try {
             deletedRows = db.delete(TABLE_ITEMS, COLUMN_ITEM_LIST_ID + " = ?", new String[]{String.valueOf(listId)});
-
             ContentValues values = new ContentValues();
             values.put(COLUMN_LIST_ITEM_COUNT, 0);
             db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
@@ -400,23 +379,8 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return deletedRows;
     }
 
-    // Hilfsmethode, die eine offene DB erwartet (für Transaktionen)
     private void updateListItemCount(SQLiteDatabase db, long listId, int change) {
-        Cursor currentCountCursor = null;
-        try {
-            currentCountCursor = db.query(TABLE_LISTS, new String[]{COLUMN_LIST_ITEM_COUNT}, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)}, null, null, null);
-            int currentCount = 0;
-            if (currentCountCursor != null && currentCountCursor.moveToFirst()) {
-                currentCount = currentCountCursor.getInt(currentCountCursor.getColumnIndexOrThrow(COLUMN_LIST_ITEM_COUNT));
-            }
-
-            int newCount = Math.max(0, currentCount + change); // Sicherstellen, dass der Zähler nicht negativ wird
-
-            ContentValues values = new ContentValues();
-            values.put(COLUMN_LIST_ITEM_COUNT, newCount);
-            db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
-        } finally {
-            if (currentCountCursor != null) currentCountCursor.close();
-        }
+        db.execSQL("UPDATE " + TABLE_LISTS + " SET " + COLUMN_LIST_ITEM_COUNT + " = " +
+                COLUMN_LIST_ITEM_COUNT + " + " + change + " WHERE " + COLUMN_ID + " = " + listId);
     }
 }
