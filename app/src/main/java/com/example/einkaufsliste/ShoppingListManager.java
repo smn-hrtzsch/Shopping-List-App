@@ -26,8 +26,8 @@ public class ShoppingListManager {
         return dbHelper.getShoppingList(listId);
     }
 
-    public long addShoppingList(String name) {
-        return dbHelper.addShoppingList(name);
+    public long addShoppingList(String name, int position) {
+        return dbHelper.addShoppingList(name, position);
     }
 
     public void updateShoppingListName(long listId, String newName) {

@@ -43,8 +43,8 @@ public class ShoppingListRepository {
         return dbHelper.getShoppingList(listId); // getShoppingList statt getShoppingListById
     }
 
-    public long addShoppingList(String listName) {
-        return dbHelper.addShoppingList(listName);
+    public long addShoppingList(String listName, int position) {
+        return dbHelper.addShoppingList(listName, position);
     }
 
     // updateShoppingList war in deinem Code, wird aber nicht direkt von den Activities genutzt,

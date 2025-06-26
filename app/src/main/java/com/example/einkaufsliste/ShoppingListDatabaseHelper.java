@@ -103,11 +103,12 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     }
 
     // --- Listen-Methoden ---
-    public long addShoppingList(String name) {
+    public long addShoppingList(String name, int position) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_LIST_NAME, name);
         values.put(COLUMN_LIST_ITEM_COUNT, 0);
+        values.put(COLUMN_LIST_POSITION, position); // NEU: Position wird gesetzt
         long id = -1;
         try {
             id = db.insertOrThrow(TABLE_LISTS, null, values);
