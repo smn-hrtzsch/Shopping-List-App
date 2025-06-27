@@ -31,11 +31,13 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private ShoppingItem recentlyDeletedItem;
     private int recentlyDeletedItemPosition = -1;
 
+    // ANPASSUNG: Interface wurde um die neue Methode erweitert
     public interface OnItemInteractionListener {
         void onItemCheckboxChanged(ShoppingItem item, boolean isChecked);
         void onDataSetChanged();
         void requestItemResort();
         View getCoordinatorLayout();
+        View getSnackbarAnchorView(); // Diese Zeile war der Schlüssel
     }
 
     public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, OnItemInteractionListener listener) {
@@ -104,23 +106,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         items.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
 
-        // Positionen in der lokalen Liste aktualisieren
         for (int i = 0; i < items.size(); i++) {
             items.get(i).setPosition(i);
         }
-        // Die aktualisierten Positionen in der Datenbank speichern
         repository.updateItemPositions(new ArrayList<>(items));
-
-        // ANPASSUNG: Diese Zeile entfernen, um das sofortige Neuladen zu verhindern.
-        // if (interactionListener != null) {
-        //     interactionListener.requestItemResort();
-        // }
-
         return true;
     }
 
     public void addItem(ShoppingItem item) {
-        // Füge das Item an der korrekten Stelle ein (vor den erledigten Items)
         int insertPosition = 0;
         for (int i = 0; i < items.size(); i++) {
             if (items.get(i).isDone()) {
@@ -130,7 +123,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         }
         items.add(insertPosition, item);
         notifyItemInserted(insertPosition);
-        // Informiere die Activity, damit die "Leer"-Ansicht ggf. verschwindet
         if (interactionListener != null) {
             interactionListener.onDataSetChanged();
         }
@@ -166,22 +158,28 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                             interactionListener.requestItemResort();
                         }
                     }
-                })
-                .addCallback(new Snackbar.Callback() {
-                    @Override
-                    public void onDismissed(Snackbar transientBottomBar, int event) {
-                        if (event != DISMISS_EVENT_ACTION) {
-                            if (recentlyDeletedItem != null) {
-                                repository.deleteItemFromList(recentlyDeletedItem.getId());
-                                if (interactionListener != null) {
-                                    interactionListener.requestItemResort();
-                                }
-                                recentlyDeletedItem = null;
-                                recentlyDeletedItemPosition = -1;
-                            }
-                        }
-                    }
                 });
+
+        View anchor = interactionListener.getSnackbarAnchorView();
+        if (anchor != null) {
+            snackbar.setAnchorView(anchor);
+        }
+
+        snackbar.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                if (event != DISMISS_EVENT_ACTION) {
+                    if (recentlyDeletedItem != null) {
+                        repository.deleteItemFromList(recentlyDeletedItem.getId());
+                        if (interactionListener != null) {
+                            interactionListener.requestItemResort();
+                        }
+                        recentlyDeletedItem = null;
+                        recentlyDeletedItemPosition = -1;
+                    }
+                }
+            }
+        });
         snackbar.show();
     }
 
@@ -214,13 +212,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             if (item.isDone()) {
                 int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant, "Error");
                 textViewName.setTextColor(color);
-
                 buttonEdit.setEnabled(false);
                 buttonEdit.setAlpha(0.5f);
             } else {
                 int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurface, "Error");
                 textViewName.setTextColor(color);
-
                 buttonEdit.setEnabled(true);
                 buttonEdit.setAlpha(1.0f);
             }

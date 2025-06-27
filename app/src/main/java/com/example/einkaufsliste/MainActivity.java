@@ -1,4 +1,3 @@
-// main/java/com/example/einkaufsliste/MainActivity.java
 package com.example.einkaufsliste;
 
 import android.app.AlertDialog;
@@ -7,20 +6,20 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager; // Import für die Tastatursteuerung
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.database.sqlite.SQLiteException;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -49,7 +48,8 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     private EditText editTextNewListName;
     private ImageButton buttonConfirmAddList;
     private SharedPreferences sharedPreferences;
-    private FloatingActionButton fab; // NEU: FAB als Klassenvariable
+    private FloatingActionButton fab;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +69,6 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         shoppingListManager = new ShoppingListManager(this);
         shoppingLists = new ArrayList<>();
 
-        // ... (Datenbank-Initialisierung bleibt gleich) ...
-
         addListInputLayout = findViewById(R.id.add_list_input_layout);
         editTextNewListName = findViewById(R.id.edit_text_new_list_name);
         buttonConfirmAddList = findViewById(R.id.button_confirm_add_list);
@@ -81,7 +79,6 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         adapter = new ListRecyclerViewAdapter(this, shoppingLists, shoppingListManager, this);
         recyclerView.setAdapter(adapter);
 
-        // NEU: FAB initialisieren
         fab = findViewById(R.id.fab_add_list);
         fab.setOnClickListener(view -> toggleAddListInput());
 
@@ -98,16 +95,45 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
 
+        setupCloseEditorOnTouchOutside();
         loadShoppingLists();
     }
 
-    // ... (onCreateOptionsMenu, onOptionsItemSelected, toggleTheme bleiben gleich) ...
+    private void setupCloseEditorOnTouchOutside() {
+        emptyView.setOnClickListener(v -> {
+            if (addListInputLayout.getVisibility() == View.VISIBLE) {
+                toggleAddListInput();
+            }
+        });
+
+        recyclerView.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {
+            @Override
+            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+                // Diese Bedingung stellt sicher, dass der Klick nicht auf den Editor selbst erfolgt
+                if (addListInputLayout.getVisibility() == View.VISIBLE && e.getY() > addListInputLayout.getBottom()) {
+                    toggleAddListInput();
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (addListInputLayout.getVisibility() == View.VISIBLE) {
+            toggleAddListInput();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    // ... (Andere Methoden wie onCreateOptionsMenu etc.) ...
 
     @Override
     protected void onResume() {
         super.onResume();
         if (addListInputLayout.getVisibility() == View.VISIBLE) {
-            // Sicherstellen, dass der Zustand konsistent ist
             addListInputLayout.setVisibility(View.GONE);
             fab.show();
             editTextNewListName.setText("");
@@ -131,52 +157,34 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         }
     }
 
-    // ANPASSUNG: Methode überarbeitet
     private void toggleAddListInput() {
         if (addListInputLayout.getVisibility() == View.GONE) {
-            // Editor wird geöffnet
             addListInputLayout.setVisibility(View.VISIBLE);
-            fab.hide(); // FAB verstecken
-            editTextNewListName.requestFocus(); // Fokus auf das Eingabefeld setzen
-            // Tastatur öffnen
+            fab.hide();
+            editTextNewListName.requestFocus();
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.showSoftInput(editTextNewListName, InputMethodManager.SHOW_IMPLICIT);
         } else {
-            // Editor wird geschlossen
             addListInputLayout.setVisibility(View.GONE);
-            fab.show(); // FAB wieder anzeigen
+            fab.show();
             editTextNewListName.setText("");
-            // Tastatur schließen
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
         }
     }
 
-    // ANPASSUNG: Methode überarbeitet, um die Position zu bestimmen
     private void addNewListFromInput() {
         String listName = editTextNewListName.getText().toString().trim();
         if (!listName.isEmpty()) {
-            // NEU: Position für die neue Liste bestimmen (immer am Ende)
             int nextPosition = 0;
             if (!shoppingLists.isEmpty()) {
-                // Die Position ist die Größe der aktuellen Liste,
-                // da die Zählung bei 0 beginnt (z.B. bei 3 Listen ist die letzte Position 2, die neue wird 3)
                 nextPosition = shoppingLists.size();
             }
-
             long newId = shoppingListManager.addShoppingList(listName, nextPosition);
-
             if (newId != -1) {
-                loadShoppingLists(); // Lädt die Listen neu, inklusive der neuen am Ende
+                loadShoppingLists();
                 Toast.makeText(MainActivity.this, "Liste \"" + listName + "\" erstellt", Toast.LENGTH_SHORT).show();
-
-                // Editor schließen und Tastatur verstecken (wie in toggleAddListInput)
-                addListInputLayout.setVisibility(View.GONE);
-                fab.show();
-                editTextNewListName.setText("");
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
-
+                toggleAddListInput();
             } else {
                 Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
             }
@@ -185,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         }
     }
 
-    // ... (Rest der Klasse bleibt unverändert) ...
+    // ANPASSUNG: Fehlende Interface-Methoden wiederhergestellt
     @Override
     public void onListClicked(ShoppingList list) {
         Intent intent = new Intent(MainActivity.this, EinkaufslisteActivity.class);
@@ -197,16 +205,13 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     @Override
     public void onListDataSetChanged() {
         checkEmptyView();
-        Log.d("MainActivity", "onListDataSetChanged called, only checked empty view.");
     }
 
     @Override
     public void requestListDeleteConfirmation(final ShoppingList listToDelete) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_delete, null);
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(dialogView);
-
         final AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
@@ -218,41 +223,19 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         Button positiveButton = dialogView.findViewById(R.id.positiveButton);
         Button negativeButton = dialogView.findViewById(R.id.negativeButton);
 
-        if (dialogTitle == null || dialogMessage == null || positiveButton == null || negativeButton == null) {
-            Log.e("MainActivity", "Could not find all views in dialog_delete.xml!");
-            Toast.makeText(this, "Error showing dialog (Layout-Problem).", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        try {
-            dialogTitle.setText(R.string.confirm_delete_list_title);
-            dialogMessage.setText(getString(R.string.confirm_delete_list_message, listToDelete.getName()));
-            positiveButton.setText(R.string.delete);
-            negativeButton.setText(R.string.cancel);
-        } catch (android.content.res.Resources.NotFoundException e) {
-            Log.e("MainActivity", "Missing string resource for delete dialog", e);
-            Toast.makeText(this, "Text resource for dialog is missing.", Toast.LENGTH_SHORT).show();
-            dialogTitle.setText("Delete list?");
-            dialogMessage.setText("Do you really want to delete the list '" + listToDelete.getName() + "'?");
-            positiveButton.setText("Delete");
-            negativeButton.setText("Cancel");
-        }
+        dialogTitle.setText(R.string.confirm_delete_list_title);
+        dialogMessage.setText(getString(R.string.confirm_delete_list_message, listToDelete.getName()));
+        positiveButton.setText(R.string.delete);
+        negativeButton.setText(R.string.cancel);
 
         positiveButton.setOnClickListener(v -> {
-            try {
-                shoppingListManager.deleteShoppingList(listToDelete.getId());
-                Toast.makeText(MainActivity.this, "Liste \"" + listToDelete.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
-                loadShoppingLists();
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error executing deleteShoppingList for ID: " + listToDelete.getId(), e);
-                Toast.makeText(MainActivity.this, "Error deleting list.", Toast.LENGTH_SHORT).show();
-            } finally {
-                dialog.dismiss();
-            }
+            shoppingListManager.deleteShoppingList(listToDelete.getId());
+            Toast.makeText(MainActivity.this, "Liste \"" + listToDelete.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
+            loadShoppingLists();
+            dialog.dismiss();
         });
 
         negativeButton.setOnClickListener(v -> dialog.dismiss());
-
         dialog.show();
     }
 }

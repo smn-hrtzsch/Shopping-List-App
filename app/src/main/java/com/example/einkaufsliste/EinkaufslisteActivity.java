@@ -9,6 +9,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -129,7 +130,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         View.OnClickListener addItemAction = v -> {
             String name = editTextAddItem.getText().toString().trim();
             if (!name.isEmpty()) {
-                // Die Position für das neue, nicht erledigte Item bestimmen
                 int nextPosition = 0;
                 if(shoppingItems != null){
                     for (ShoppingItem existingItem : shoppingItems) {
@@ -143,18 +143,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
 
                 if (newId != -1) {
-                    newItem.setId(newId); // Wichtig: Die von der DB generierte ID setzen
-
-                    // ANPASSUNG: Nicht die ganze Liste neu laden, sondern das neue Item hinzufügen
-                    // und den Adapter informieren.
+                    newItem.setId(newId);
                     adapter.addItem(newItem);
-                    recyclerView.scrollToPosition(adapter.getItemCount() - 1); // Zum neuen Item scrollen
-                    editTextAddItem.setText(""); // Eingabefeld leeren für die nächste Eingabe
-
-                    // ANPASSUNG: Zeile, die die Tastatur versteckt, wurde entfernt.
-                    // InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    // imm.hideSoftInputFromWindow(editTextAddItem.getWindowToken(), 0);
-
+                    recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+                    editTextAddItem.setText("");
                 } else {
                     Toast.makeText(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
                 }
@@ -179,12 +171,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setMessage(R.string.dialog_clear_list_message)
                 .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
                     shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
-                    refreshItemList(); // Hier ist ein voller Refresh ok
+                    refreshItemList();
                     Toast.makeText(this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
                     shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
-                    refreshItemList(); // Hier ist ein voller Refresh ok
+                    refreshItemList();
                     Toast.makeText(this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
                 .setNeutralButton(R.string.dialog_option_cancel, (dialog, which) -> dialog.dismiss())
@@ -215,7 +207,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     @Override
     public void onItemCheckboxChanged(ShoppingItem item, boolean isChecked) {
-        // Hier ist ein voller Refresh nötig, da sich die Sortierung ändert
         refreshItemList();
     }
 
@@ -234,5 +225,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     @Override
     public View getCoordinatorLayout() {
         return activityRootView;
+    }
+
+    @Override
+    public View getSnackbarAnchorView() {
+        return findViewById(R.id.add_item_bar_container);
     }
 }
