@@ -128,7 +128,30 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         }
     }
 
-    // ... (Andere Methoden wie onCreateOptionsMenu etc.) ...
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_switch_theme) {
+            int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                sharedPreferences.edit().putInt(KEY_THEME, AppCompatDelegate.MODE_NIGHT_NO).apply();
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                sharedPreferences.edit().putInt(KEY_THEME, AppCompatDelegate.MODE_NIGHT_YES).apply();
+            }
+            recreate();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
 
     @Override
     protected void onResume() {
@@ -193,7 +216,6 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         }
     }
 
-    // ANPASSUNG: Fehlende Interface-Methoden wiederhergestellt
     @Override
     public void onListClicked(ShoppingList list) {
         Intent intent = new Intent(MainActivity.this, EinkaufslisteActivity.class);
