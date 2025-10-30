@@ -1,6 +1,5 @@
 package com.example.einkaufsliste;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -9,7 +8,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -18,10 +16,15 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
@@ -44,6 +47,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_einkaufsliste);
 
         Toolbar toolbar = findViewById(R.id.toolbar_einkaufsliste);
@@ -51,6 +55,21 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         toolbarTitleTextView = findViewById(R.id.toolbar_title_einkaufsliste);
         emptyView = findViewById(R.id.empty_view_items);
         activityRootView = findViewById(R.id.einkaufsliste_activity_root);
+
+        AppBarLayout appBarLayout = findViewById(R.id.appbar);
+        View addItemBarContainer = findViewById(R.id.add_item_bar_container);
+
+        ViewCompat.setOnApplyWindowInsetsListener(activityRootView, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+
+            int bottomInset = Math.max(systemBars.bottom, ime.bottom);
+
+            appBarLayout.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
+            addItemBarContainer.setPadding(systemBars.left, 0, systemBars.right, bottomInset);
+
+            return insets;
+        });
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);

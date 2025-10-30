@@ -12,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -25,6 +26,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -58,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         AppCompatDelegate.setDefaultNightMode(savedTheme);
 
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = findViewById(R.id.toolbar_main);
@@ -65,6 +71,30 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
+
+        View activityRootView = findViewById(R.id.main_activity_root);
+        fab = findViewById(R.id.fab_add_list);
+
+        com.google.android.material.appbar.AppBarLayout appBarLayout = findViewById(R.id.app_bar_layout);
+        ViewCompat.setOnApplyWindowInsetsListener(activityRootView, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+
+            // Apply status bar padding to the app bar
+            appBarLayout.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
+
+            // Determine the bottom inset (keyboard or nav bar)
+            int bottomInset = Math.max(systemBars.bottom, ime.bottom);
+
+            // Apply the bottom inset as padding to the root view.
+            // This will shrink the available space from the bottom up.
+            v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), bottomInset);
+
+            // The FAB is a child and will be affected by the parent's padding.
+            // No need to adjust its margin anymore.
+
+            return insets;
+        });
 
         shoppingListManager = new ShoppingListManager(this);
         shoppingLists = new ArrayList<>();
@@ -79,7 +109,6 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         adapter = new ListRecyclerViewAdapter(this, shoppingLists, shoppingListManager, this);
         recyclerView.setAdapter(adapter);
 
-        fab = findViewById(R.id.fab_add_list);
         fab.setOnClickListener(view -> toggleAddListInput());
 
         buttonConfirmAddList.setOnClickListener(v -> addNewListFromInput());

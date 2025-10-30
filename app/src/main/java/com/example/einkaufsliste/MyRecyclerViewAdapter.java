@@ -28,8 +28,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private final OnItemInteractionListener interactionListener;
 
     private int editingItemPosition = -1;
-    private ShoppingItem recentlyDeletedItem;
-    private int recentlyDeletedItemPosition = -1;
 
     // ANPASSUNG: Interface wurde um die neue Methode erweitert
     public interface OnItemInteractionListener {
@@ -135,8 +133,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             return;
         }
 
-        recentlyDeletedItem = items.get(position);
-        recentlyDeletedItemPosition = position;
+        final ShoppingItem itemToDelete = items.get(position);
+        final int deletedPosition = position;
+
+        // Item sofort aus der Datenbank löschen
+        repository.deleteItemFromList(itemToDelete.getId());
 
         items.remove(position);
         notifyItemRemoved(position);
@@ -147,16 +148,18 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         }
 
         Snackbar snackbar = Snackbar.make(rootView,
-                        "\"" + recentlyDeletedItem.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG)
+                        "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG)
                 .setAction(R.string.undo, view -> {
-                    if (recentlyDeletedItem != null && recentlyDeletedItemPosition != -1) {
-                        items.add(recentlyDeletedItemPosition, recentlyDeletedItem);
-                        notifyItemInserted(recentlyDeletedItemPosition);
-                        recentlyDeletedItem = null;
-                        recentlyDeletedItemPosition = -1;
-                        if (interactionListener != null) {
-                            interactionListener.requestItemResort();
-                        }
+                    // Item in der Datenbank wiederherstellen
+                    long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
+                    itemToDelete.setId(newId);
+
+                    // Item zur Adapter-Liste hinzufügen
+                    items.add(deletedPosition, itemToDelete);
+                    notifyItemInserted(deletedPosition);
+
+                    if (interactionListener != null) {
+                        interactionListener.requestItemResort();
                     }
                 });
 
@@ -165,21 +168,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             snackbar.setAnchorView(anchor);
         }
 
-        snackbar.addCallback(new Snackbar.Callback() {
-            @Override
-            public void onDismissed(Snackbar transientBottomBar, int event) {
-                if (event != DISMISS_EVENT_ACTION) {
-                    if (recentlyDeletedItem != null) {
-                        repository.deleteItemFromList(recentlyDeletedItem.getId());
-                        if (interactionListener != null) {
-                            interactionListener.requestItemResort();
-                        }
-                        recentlyDeletedItem = null;
-                        recentlyDeletedItemPosition = -1;
-                    }
-                }
-            }
-        });
         snackbar.show();
     }
 
@@ -231,6 +219,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 editTextName.setText(item.getName());
                 editTextName.requestFocus();
                 editTextName.setSelection(editTextName.getText().length());
+                editTextName.post(() -> {
+                    android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.showSoftInput(editTextName, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                });
             } else {
                 layoutDisplay.setVisibility(View.VISIBLE);
                 layoutEdit.setVisibility(View.GONE);
@@ -305,6 +297,9 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
         private void saveItemChanges(int position) {
             if (position == RecyclerView.NO_POSITION || position >= items.size()) return;
+
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(editTextName.getWindowToken(), 0);
 
             ShoppingItem item = items.get(position);
             String newName = editTextName.getText().toString().trim();

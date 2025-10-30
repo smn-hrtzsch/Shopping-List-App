@@ -94,6 +94,10 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             viewHolder.editTextListName.setText(list.getName());
             viewHolder.editTextListName.requestFocus();
             viewHolder.editTextListName.setSelection(viewHolder.editTextListName.getText().length());
+            viewHolder.editTextListName.post(() -> {
+                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(viewHolder.editTextListName, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            });
         }
 
 
@@ -143,6 +147,9 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
     private void saveListName(ViewHolder viewHolder) {
         int currentPosition = viewHolder.getAdapterPosition();
         if (currentPosition == RecyclerView.NO_POSITION || currentPosition >= localDataSet.size()) return;
+
+        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(viewHolder.editTextListName.getWindowToken(), 0);
 
         ShoppingList list = localDataSet.get(currentPosition);
         String newName = viewHolder.editTextListName.getText().toString().trim();
