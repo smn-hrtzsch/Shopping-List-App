@@ -1,0 +1,22 @@
+{
+  "app_id": "com.example.einkaufsliste",
+  "name": "Test List",
+  "items": [
+    {
+      "name": "Milk",
+      "quantity": "1",
+      "unit": "l",
+      "done": false,
+      "notes": "",
+      "position": 0
+    },
+    {
+      "name": "Bread",
+      "quantity": "1",
+      "unit": "",
+      "done": true,
+      "notes": "",
+      "position": 1
+    }
+  ]
+}

@@ -123,8 +123,61 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (item.getItemId() == R.id.action_clear_list) {
             showClearListOptionsDialog();
             return true;
+        } else if (item.getItemId() == R.id.action_share_list) {
+            shareShoppingList();
+            return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void shareShoppingList() {
+        ShoppingList shoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
+        if (shoppingList == null) {
+            Toast.makeText(this, R.string.list_not_found, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<ShoppingItem> items = shoppingListRepository.getItemsForListId(currentShoppingListId);
+
+        try {
+            org.json.JSONObject jsonList = new org.json.JSONObject();
+            jsonList.put("app_id", "com.example.einkaufsliste");
+            jsonList.put("name", shoppingList.getName());
+
+            org.json.JSONArray jsonItems = new org.json.JSONArray();
+            for (ShoppingItem item : items) {
+                org.json.JSONObject jsonItem = new org.json.JSONObject();
+                jsonItem.put("name", item.getName());
+                jsonItem.put("quantity", item.getQuantity());
+                jsonItem.put("unit", item.getUnit());
+                jsonItem.put("done", item.isDone());
+                jsonItem.put("notes", item.getNotes());
+                jsonItem.put("position", item.getPosition());
+                jsonItems.put(jsonItem);
+            }
+            jsonList.put("items", jsonItems);
+
+            String jsonString = jsonList.toString(2);
+
+            java.io.File file = new java.io.File(getCacheDir(), "list.json");
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+                fos.write(jsonString.getBytes());
+            }
+
+            android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.example.einkaufsliste.provider", file);
+
+            android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            shareIntent.setType("application/json");
+            shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, fileUri);
+            shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.shopping_list) + ": " + shoppingList.getName());
+            shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_list)));
+
+        } catch (org.json.JSONException | java.io.IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error creating share data.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupAddItemBar() {

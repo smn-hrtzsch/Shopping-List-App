@@ -103,4 +103,7 @@
     <string name="dialog_option_remove_all">Ja, alle Artikel entfernen</string>
     <string name="dialog_option_cancel">Nein, abbrechen</string>
     <string name="no_items_yet">0 Artikel</string>
+    <string name="share_list">Liste teilen</string>
+    <string name="list_imported">Liste \"%1$s\" importiert.</string>
+    <string name="incompatible_file">Inkompatible Datei.</string>
 </resources>

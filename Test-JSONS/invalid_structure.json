@@ -1,0 +1,9 @@
+{
+  "list_name": "Invalid List",
+  "products": [
+    {
+      "product_name": "Tomatoes",
+      "amount": "1kg"
+    }
+  ]
+}

@@ -126,6 +126,84 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
         setupCloseEditorOnTouchOutside();
         loadShoppingLists();
+        handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent == null || intent.getAction() == null) {
+            return;
+        }
+
+        if (intent.getAction().equals(Intent.ACTION_VIEW) && intent.getData() != null) {
+            android.net.Uri dataUri = intent.getData();
+            try {
+                String jsonString = readTextFromUri(dataUri);
+                if (jsonString != null) {
+                    importShoppingList(jsonString);
+                }
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error reading file.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private String readTextFromUri(android.net.Uri uri) throws java.io.IOException {
+        StringBuilder stringBuilder = new StringBuilder();
+        try (java.io.InputStream inputStream = getContentResolver().openInputStream(uri);
+             java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    private void importShoppingList(String jsonString) {
+        try {
+            org.json.JSONObject jsonList = new org.json.JSONObject(jsonString);
+
+            if (!"com.example.einkaufsliste".equals(jsonList.optString("app_id"))) {
+                Toast.makeText(this, "Incompatible file.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String listName = jsonList.getString("name");
+            org.json.JSONArray jsonItems = jsonList.getJSONArray("items");
+
+            int nextPosition = shoppingLists.size();
+            long listId = shoppingListManager.addShoppingList(listName, nextPosition);
+
+            if (listId != -1) {
+                for (int i = 0; i < jsonItems.length(); i++) {
+                    org.json.JSONObject jsonItem = jsonItems.getJSONObject(i);
+                    String itemName = jsonItem.getString("name");
+                    String quantity = jsonItem.optString("quantity", "1");
+                    String unit = jsonItem.optString("unit", "");
+                    boolean isDone = jsonItem.optBoolean("done", false);
+                    String notes = jsonItem.optString("notes", "");
+                    int position = jsonItem.optInt("position", i);
+
+                    ShoppingItem newItem = new ShoppingItem(itemName, quantity, unit, isDone, listId, notes, position);
+                    shoppingListManager.addItemToShoppingList(listId, newItem);
+                }
+                loadShoppingLists();
+                Toast.makeText(this, getString(R.string.list_imported, listName), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
+            }
+        } catch (org.json.JSONException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error parsing shared data.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupCloseEditorOnTouchOutside() {

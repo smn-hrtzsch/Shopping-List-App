@@ -37,4 +37,9 @@ public class ShoppingListManager {
     public void deleteShoppingList(long listId) {
         dbHelper.deleteShoppingList(listId);
     }
+
+    public long addItemToShoppingList(long listId, ShoppingItem item) {
+        item.setListId(listId);
+        return dbHelper.addItem(item);
+    }
 }

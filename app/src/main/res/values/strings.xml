@@ -82,4 +82,7 @@
     <string name="dialog_option_remove_all">Yes, remove all items</string>
     <string name="dialog_option_cancel">No, cancel</string>
     <string name="no_items_yet">0 items</string>
+    <string name="share_list">Share list</string>
+    <string name="list_imported">List \"%1$s\" imported.</string>
+    <string name="incompatible_file">Incompatible file.</string>
 </resources>
