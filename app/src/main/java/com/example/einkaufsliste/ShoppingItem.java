@@ -9,6 +9,11 @@ public class ShoppingItem {
     private long listId;   // Sicherstellen, dass dies long ist
     private String notes;
     private int position; // Für manuelle Sortierung
+    private String firebaseId;
+
+    // Default constructor required for calls to DataSnapshot.getValue(ShoppingItem.class)
+    public ShoppingItem() {
+    }
 
     // Konstruktor für das Erstellen aus der Datenbank
     public ShoppingItem(long id, String name, String quantity, String unit, boolean isDone, long listId, String notes, int position) {
@@ -59,4 +64,7 @@ public class ShoppingItem {
 
     public int getPosition() { return position; }
     public void setPosition(int position) { this.position = position; }
+
+    public String getFirebaseId() { return firebaseId; }
+    public void setFirebaseId(String firebaseId) { this.firebaseId = firebaseId; }
 }

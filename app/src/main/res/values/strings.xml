@@ -7,7 +7,6 @@
     <string name="click_the_button_below_to_view_your_shopping_list">Click the Button below to view your shopping list! :)</string>
     <string name="add_list_item">Add list item</string>
     <string name="jumo_to_list_view">Jump to list view</string>
-    <string name="jump_to_list_view" />
     <string name="banane">Banane</string>
     <string name="switch_to_list_view">Switch to list view</string>
     <string name="enter_list_name">Enter list name</string>
@@ -33,7 +32,7 @@
     <string name="delete_list_title_old">Delete List</string> <string name="delete_list_message_old">Are you sure you want to delete the list \'%1$s?\'</string>
     <string name="clear_list_title_old">Clear List</string> <string name="clear_list_message_old">Do you really want to clear the list \'%1$s?\'</string>
 
-    <string name="item_name_placeholder">Item name</string>"
+    <string name="item_name_placeholder">Item name</string>
     <string name="action_settings">Settings</string>
     <string name="add_list_dialog_title">Create new shopping list</string>
     <string name="add_list_dialog_hint">List name</string>
@@ -85,4 +84,5 @@
     <string name="share_list">Share list</string>
     <string name="list_imported">List \"%1$s\" imported.</string>
     <string name="incompatible_file">Incompatible file.</string>
+    <string name="invite_user">Invite user</string>
 </resources>

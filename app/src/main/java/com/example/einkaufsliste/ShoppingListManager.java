@@ -2,44 +2,43 @@ package com.example.einkaufsliste;
 
 import android.content.Context;
 import java.util.List;
-import android.database.sqlite.SQLiteDatabase;
 
 public class ShoppingListManager {
-    private ShoppingListDatabaseHelper dbHelper;
+    private ShoppingListRepository repository;
+
+    public interface OnListsLoadedListener {
+        void onListsLoaded(List<ShoppingList> shoppingLists);
+    }
 
     public ShoppingListManager(Context context) {
-        dbHelper = new ShoppingListDatabaseHelper(context);
+        repository = new ShoppingListRepository(context);
     }
 
     public void updateListPositions(List<ShoppingList> lists) {
-        dbHelper.updateListPositions(lists);
-    }
-    public List<ShoppingList> getAllShoppingLists() {
-        return dbHelper.getAllShoppingLists();
+        repository.updateListPositions(lists);
     }
 
-    public SQLiteDatabase getWritableDatabase() {
-        return dbHelper.getWritableDatabase();
+    public void getAllShoppingLists(OnListsLoadedListener listener) {
+        repository.getAllShoppingLists(listener::onListsLoaded);
     }
 
     public ShoppingList getShoppingList(long listId) {
-        return dbHelper.getShoppingList(listId);
+        return repository.getShoppingListById(listId);
     }
 
     public long addShoppingList(String name, int position) {
-        return dbHelper.addShoppingList(name, position);
+        return repository.addShoppingList(name, position);
     }
 
-    public void updateShoppingListName(long listId, String newName) {
-        dbHelper.updateShoppingListName(listId, newName);
+    public void updateShoppingList(ShoppingList list) {
+        repository.updateShoppingList(list);
     }
 
-    public void deleteShoppingList(long listId) {
-        dbHelper.deleteShoppingList(listId);
+    public void deleteShoppingList(ShoppingList list) {
+        repository.deleteShoppingList(list);
     }
 
     public long addItemToShoppingList(long listId, ShoppingItem item) {
-        item.setListId(listId);
-        return dbHelper.addItem(item);
+        return repository.addItemToShoppingList(listId, item);
     }
 }

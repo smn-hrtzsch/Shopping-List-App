@@ -196,6 +196,19 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return rows;
     }
 
+    public int updateShoppingList(ShoppingList list) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_LIST_NAME, list.getName());
+        int rows = 0;
+        try {
+            rows = db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(list.getId())});
+        } finally {
+            db.close();
+        }
+        return rows;
+    }
+
     public void deleteShoppingList(long listId) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {

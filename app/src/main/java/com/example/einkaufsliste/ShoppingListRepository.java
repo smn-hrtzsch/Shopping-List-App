@@ -1,100 +1,238 @@
-// ShoppingListRepository.java
 package com.example.einkaufsliste;
 
-// import android.content.ContentValues; // Nicht mehr direkt hier gebraucht
 import android.content.Context;
-// import android.database.Cursor; // Nicht mehr direkt hier gebraucht
-// import android.database.sqlite.SQLiteDatabase; // Nicht mehr direkt hier gebraucht
 import android.util.Log;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
 import java.util.ArrayList;
-// import java.util.Collections; // Nicht mehr direkt hier gebraucht
 import java.util.List;
 
 public class ShoppingListRepository {
     private ShoppingListDatabaseHelper dbHelper;
-    private Context context; // context kann nützlich sein, wird aber aktuell nicht direkt verwendet
+    private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
+    private Context context;
+
+    public interface OnListsLoadedListener {
+        void onListsLoaded(List<ShoppingList> shoppingLists);
+    }
+
+    public interface OnItemsLoadedListener {
+        void onItemsLoaded(List<ShoppingItem> shoppingItems);
+    }
 
     public ShoppingListRepository(Context context) {
         this.dbHelper = new ShoppingListDatabaseHelper(context);
+        this.db = FirebaseFirestore.getInstance();
+        this.mAuth = FirebaseAuth.getInstance();
         this.context = context;
+    }
+
+    public void getAllShoppingLists(OnListsLoadedListener listener) {
+        // 1. Get local lists
+        List<ShoppingList> localLists = dbHelper.getAllShoppingLists();
+
+        // 2. Get shared lists from Firestore
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            listener.onListsLoaded(localLists);
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        db.collection("shopping_lists")
+                .whereArrayContains("members", userId)
+                .addSnapshotListener((value, e) -> {
+                    if (e != null) {
+                        Log.w("Firestore", "Listen for failed.", e);
+                        listener.onListsLoaded(localLists); // Return local lists on error
+                        return;
+                    }
+
+                    List<ShoppingList> sharedLists = new ArrayList<>();
+                    if (value == null || value.isEmpty()) {
+                        listener.onListsLoaded(localLists);
+                        return;
+                    }
+
+                    int listCount = value.size();
+                    java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
+
+                    for (QueryDocumentSnapshot doc : value) {
+                        String id = doc.getId();
+                        String name = doc.getString("name");
+                        String ownerId = doc.getString("ownerId");
+                        List<String> members = (List<String>) doc.get("members");
+
+                        ShoppingList list = new ShoppingList(name);
+                        list.setFirebaseId(id);
+                        list.setOwnerId(ownerId);
+                        list.setMembers(members);
+
+                        db.collection("shopping_lists").document(id).collection("items").get()
+                                .addOnSuccessListener(items -> {
+                                    list.setItemCount(items.size());
+                                    sharedLists.add(list);
+                                    if (counter.incrementAndGet() == listCount) {
+                                        List<ShoppingList> allLists = new ArrayList<>(localLists);
+                                        allLists.addAll(sharedLists);
+                                        listener.onListsLoaded(allLists);
+                                    }
+                                })
+                                .addOnFailureListener(failure -> {
+                                    list.setItemCount(0); // Set count to 0 on failure
+                                    sharedLists.add(list);
+                                    if (counter.incrementAndGet() == listCount) {
+                                        List<ShoppingList> allLists = new ArrayList<>(localLists);
+                                        allLists.addAll(sharedLists);
+                                        listener.onListsLoaded(allLists);
+                                    }
+                                });
+                    }
+                });
+    }
+
+    public void getItemsForListId(long listId, OnItemsLoadedListener listener) {
+        if (listId == -1L) {
+            Log.e("ShoppingListRepository", "Ungültige Listen-ID (-1) beim Abrufen von Items.");
+            listener.onItemsLoaded(new ArrayList<>());
+            return;
+        }
+        listener.onItemsLoaded(dbHelper.getAllItems(listId));
+    }
+
+    public void getItemsForListId(String firebaseListId, OnItemsLoadedListener listener) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items")
+                .orderBy("position")
+                .addSnapshotListener((value, e) -> {
+                    if (e != null) {
+                        Log.w("Firestore", "Listen for items failed.", e);
+                        listener.onItemsLoaded(new ArrayList<>());
+                        return;
+                    }
+
+                    List<ShoppingItem> items = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : value) {
+                        ShoppingItem item = doc.toObject(ShoppingItem.class);
+                        item.setFirebaseId(doc.getId());
+                        items.add(item);
+                    }
+                    listener.onItemsLoaded(items);
+                });
     }
 
     public void updateListPositions(List<ShoppingList> lists) {
         dbHelper.updateListPositions(lists);
     }
 
-    public List<ShoppingItem> getItemsForListId(long listId) { // Parameter zu long geändert
-        if (listId == -1L) {
-            Log.e("ShoppingListRepository", "Ungültige Listen-ID (-1) beim Abrufen von Items.");
-            return new ArrayList<>();
-        }
-        // Die Sortierung sollte idealerweise in der DB-Abfrage erfolgen oder hier konsistent angewendet werden
-        // dbHelper.getAllItems(listId) sortiert bereits nach Position und dann isDone
-        return dbHelper.getAllItems(listId); // getAllItems statt getItemsForList
-    }
-
-    public List<ShoppingList> getAllShoppingLists() {
-        return dbHelper.getAllShoppingLists();
-    }
-
-    // Parameter zu long geändert für Konsistenz
     public ShoppingList getShoppingListById(long listId) {
-        return dbHelper.getShoppingList(listId); // getShoppingList statt getShoppingListById
+        return dbHelper.getShoppingList(listId);
     }
 
     public long addShoppingList(String listName, int position) {
         return dbHelper.addShoppingList(listName, position);
     }
 
-    // updateShoppingList war in deinem Code, wird aber nicht direkt von den Activities genutzt,
-    // stattdessen updateShoppingListName aus ShoppingListManager.
-    // Falls du eine komplette Listenobjekt-Aktualisierung brauchst, kann diese Methode bleiben.
-    // Fürs Erste kommentiere ich sie aus, da sie nicht verwendet wird und dbHelper.updateShoppingList fehlt.
-    /*
-    public void updateShoppingList(ShoppingList shoppingList) {
-        // dbHelper.updateShoppingList(shoppingList); // Diese Methode fehlt im DBHelper
+    public void deleteShoppingList(ShoppingList list) {
+        if (list.getFirebaseId() != null) {
+            deleteShoppingList(list.getFirebaseId());
+        } else {
+            dbHelper.deleteShoppingList(list.getId());
+        }
     }
-    */
 
-    public void deleteShoppingList(long listId) { // Parameter zu long
+    public void deleteShoppingList(long listId) {
         dbHelper.deleteShoppingList(listId);
     }
 
-    // Nimmt jetzt long listId und das ShoppingItem Objekt
-    public long addItemToShoppingList(long listId, ShoppingItem item) {
-        item.setListId(listId); // Sicherstellen, dass die ListId im Item gesetzt ist
-        // Position muss hier ggf. noch bestimmt werden (z.B. Anzahl der aktuellen Items)
-        // oder der DBHelper kümmert sich darum.
-        // Fürs Erste übergeben wir das Item direkt.
-        return dbHelper.addItem(item); // addItem statt der alten Variante
+    public void deleteShoppingList(String firebaseListId) {
+        db.collection("shopping_lists").document(firebaseListId).delete();
     }
 
-    public void updateItemInList(ShoppingItem item) {
-        dbHelper.updateItem(item);
+    public long addItemToShoppingList(long listId, ShoppingItem item) {
+        item.setListId(listId);
+        return dbHelper.addItem(item);
+    }
+
+    public void addItemToShoppingList(String firebaseListId, ShoppingItem item) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items").add(item);
+    }
+
+    public void updateItemInList(ShoppingItem item, String firebaseListId) {
+        if (firebaseListId != null && item.getFirebaseId() != null) {
+            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item);
+        } else {
+            dbHelper.updateItem(item);
+        }
     }
 
     public void updateItemPositions(List<ShoppingItem> items) {
-        dbHelper.updateItemPositionsBatch(items); // Neue Batch-Methode im DBHelper
+        dbHelper.updateItemPositionsBatch(items);
     }
 
-    public void deleteItemFromList(long itemId) { // Parameter zu long
+    public void updateShoppingList(ShoppingList list) {
+        if (list.getFirebaseId() != null) {
+            db.collection("shopping_lists").document(list.getFirebaseId())
+                    .update("name", list.getName());
+        } else {
+            dbHelper.updateShoppingList(list);
+        }
+    }
+
+    public void deleteItemFromList(long itemId) {
         dbHelper.deleteItem(itemId);
     }
 
-    public void toggleItemChecked(long itemId, boolean isChecked) { // Parameter zu long
-        ShoppingItem item = dbHelper.getItem(itemId); // getItem statt getItemById
+    public void deleteItemFromList(String firebaseListId, String firebaseItemId) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).delete();
+    }
+
+    public void toggleItemChecked(long itemId, boolean isChecked) {
+        ShoppingItem item = dbHelper.getItem(itemId);
         if (item != null) {
             item.setDone(isChecked);
             dbHelper.updateItem(item);
         }
     }
 
-    public void clearCheckedItemsFromList(long listId) { // Parameter zu long
-        dbHelper.deleteCheckedItems(listId); // deleteCheckedItems statt deleteCheckedItemsFromList
+    public void toggleItemChecked(String firebaseListId, String firebaseItemId, boolean isChecked) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).update("done", isChecked);
     }
 
-    public void clearAllItemsFromList(long listId) { // Parameter zu long
-        dbHelper.clearList(listId); // clearList statt deleteAllItemsFromList
+    public void clearCheckedItemsFromList(long listId) {
+        dbHelper.deleteCheckedItems(listId);
+    }
+
+    public void clearCheckedItemsFromList(String firebaseListId) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items")
+                .whereEqualTo("done", true)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        doc.getReference().delete();
+                    }
+                });
+    }
+
+    public void clearAllItemsFromList(long listId) {
+        dbHelper.clearList(listId);
+    }
+
+    public void clearAllItemsFromList(String firebaseListId) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        doc.getReference().delete();
+                    }
+                });
+    }
+
+    public void addMemberToList(String firebaseListId, String userId) {
+        db.collection("shopping_lists").document(firebaseListId).update("members", com.google.firebase.firestore.FieldValue.arrayUnion(userId));
     }
 }

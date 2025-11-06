@@ -35,9 +35,15 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements ListRecyclerViewAdapter.OnListInteractionListener {
 
@@ -54,6 +60,8 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     private ImageButton buttonConfirmAddList;
     private SharedPreferences sharedPreferences;
     private FloatingActionButton fab;
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
 
 
     @Override
@@ -63,6 +71,26 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         AppCompatDelegate.setDefaultNightMode(savedTheme);
 
         super.onCreate(savedInstanceState);
+
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            mAuth.signInAnonymously()
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            // Sign in success, update UI with the signed-in user's information
+                            Log.d("Auth", "signInAnonymously:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            // You can use the user's ID for your backend logic
+                        } else {
+                            // If sign in fails, display a message to the user.f
+                            Log.w("Auth", "signInAnonymously:failure", task.getException());
+                            Toast.makeText(MainActivity.this, "Authentication failed.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
@@ -109,16 +137,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         adapter = new ListRecyclerViewAdapter(this, shoppingLists, shoppingListManager, this);
         recyclerView.setAdapter(adapter);
 
-        fab.setOnClickListener(view -> toggleAddListInput());
-
-        buttonConfirmAddList.setOnClickListener(v -> addNewListFromInput());
-        editTextNewListName.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                addNewListFromInput();
-                return true;
-            }
-            return false;
-        });
+        fab.setOnClickListener(view -> showAddListDialog());
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
@@ -127,6 +146,113 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         setupCloseEditorOnTouchOutside();
         loadShoppingLists();
         handleIntent(getIntent());
+
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (addListInputLayout.getVisibility() == View.VISIBLE) {
+                    toggleAddListInput(false); // Assume local if closed without saving
+                } else {
+                    if (isEnabled()) {
+                        setEnabled(false);
+                        getOnBackPressedDispatcher().onBackPressed();
+                    }
+                }
+            }
+        });
+    }
+
+    private void showAddListDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.add_list_dialog_title)
+                .setItems(new CharSequence[]{"Lokale Liste", "Geteilte Liste"}, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Lokale Liste
+                            toggleAddListInput(false);
+                            break;
+                        case 1: // Geteilte Liste
+                            toggleAddListInput(true);
+                            break;
+                    }
+                });
+        builder.create().show();
+    }
+
+    private void toggleAddListInput(boolean isShared) {
+        if (addListInputLayout.getVisibility() == View.GONE) {
+            addListInputLayout.setVisibility(View.VISIBLE);
+            fab.hide();
+            editTextNewListName.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(editTextNewListName, InputMethodManager.SHOW_IMPLICIT);
+            buttonConfirmAddList.setOnClickListener(v -> addNewList(isShared));
+            editTextNewListName.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    addNewList(isShared);
+                    return true;
+                }
+                return false;
+            });
+        } else {
+            addListInputLayout.setVisibility(View.GONE);
+            fab.show();
+            editTextNewListName.setText("");
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
+        }
+    }
+
+    private void addNewList(boolean isShared) {
+        String listName = editTextNewListName.getText().toString().trim();
+        if (listName.isEmpty()) {
+            Toast.makeText(MainActivity.this, R.string.invalid_list_name, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (isShared) {
+            createSharedListInFirestore(listName);
+        } else {
+            int nextPosition = shoppingLists.size();
+            long newId = shoppingListManager.addShoppingList(listName, nextPosition);
+            if (newId != -1) {
+                loadShoppingLists();
+                Toast.makeText(MainActivity.this, "Lokale Liste \"" + listName + "\" erstellt", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
+            }
+        }
+        // Hide keyboard and input field
+        addListInputLayout.setVisibility(View.GONE);
+        fab.show();
+        editTextNewListName.setText("");
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
+    }
+
+    private void createSharedListInFirestore(String listName) {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "Authentication required.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        Map<String, Object> shoppingList = new HashMap<>();
+        shoppingList.put("name", listName);
+        shoppingList.put("ownerId", userId);
+        shoppingList.put("members", Arrays.asList(userId));
+
+        db.collection("shopping_lists")
+                .add(shoppingList)
+                .addOnSuccessListener(documentReference -> {
+                    Log.d("Firestore", "DocumentSnapshot added with ID: " + documentReference.getId());
+                    Toast.makeText(MainActivity.this, "Geteilte Liste \"" + listName + "\" erstellt", Toast.LENGTH_SHORT).show();
+                    loadShoppingLists(); // Reload lists to show the new shared list
+                })
+                .addOnFailureListener(e -> {
+                    Log.w("Firestore", "Error adding document", e);
+                    Toast.makeText(MainActivity.this, "Error creating shared list.", Toast.LENGTH_SHORT).show();
+                });
     }
 
     @Override
@@ -209,7 +335,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     private void setupCloseEditorOnTouchOutside() {
         emptyView.setOnClickListener(v -> {
             if (addListInputLayout.getVisibility() == View.VISIBLE) {
-                toggleAddListInput();
+                toggleAddListInput(false); // Assume local if closed without saving
             }
         });
 
@@ -218,7 +344,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
                 // Diese Bedingung stellt sicher, dass der Klick nicht auf den Editor selbst erfolgt
                 if (addListInputLayout.getVisibility() == View.VISIBLE && e.getY() > addListInputLayout.getBottom()) {
-                    toggleAddListInput();
+                    toggleAddListInput(false); // Assume local if closed without saving
                     return true;
                 }
                 return false;
@@ -226,14 +352,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         });
     }
 
-    @Override
-    public void onBackPressed() {
-        if (addListInputLayout.getVisibility() == View.VISIBLE) {
-            toggleAddListInput();
-        } else {
-            super.onBackPressed();
-        }
-    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -272,9 +391,11 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     }
 
     private void loadShoppingLists() {
-        shoppingLists = shoppingListManager.getAllShoppingLists();
-        adapter.updateLists(shoppingLists);
-        checkEmptyView();
+        shoppingListManager.getAllShoppingLists(loadedLists -> {
+            this.shoppingLists = loadedLists;
+            adapter.updateLists(shoppingLists);
+            checkEmptyView();
+        });
     }
 
     private void checkEmptyView() {
@@ -287,47 +408,14 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         }
     }
 
-    private void toggleAddListInput() {
-        if (addListInputLayout.getVisibility() == View.GONE) {
-            addListInputLayout.setVisibility(View.VISIBLE);
-            fab.hide();
-            editTextNewListName.requestFocus();
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(editTextNewListName, InputMethodManager.SHOW_IMPLICIT);
-        } else {
-            addListInputLayout.setVisibility(View.GONE);
-            fab.show();
-            editTextNewListName.setText("");
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
-        }
-    }
-
-    private void addNewListFromInput() {
-        String listName = editTextNewListName.getText().toString().trim();
-        if (!listName.isEmpty()) {
-            int nextPosition = 0;
-            if (!shoppingLists.isEmpty()) {
-                nextPosition = shoppingLists.size();
-            }
-            long newId = shoppingListManager.addShoppingList(listName, nextPosition);
-            if (newId != -1) {
-                loadShoppingLists();
-                Toast.makeText(MainActivity.this, "Liste \"" + listName + "\" erstellt", Toast.LENGTH_SHORT).show();
-                toggleAddListInput();
-            } else {
-                Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Toast.makeText(MainActivity.this, R.string.invalid_list_name, Toast.LENGTH_SHORT).show();
-        }
-    }
-
     @Override
     public void onListClicked(ShoppingList list) {
         Intent intent = new Intent(MainActivity.this, EinkaufslisteActivity.class);
         intent.putExtra("LIST_ID", list.getId());
         intent.putExtra("LIST_NAME", list.getName());
+        if (list.getFirebaseId() != null) {
+            intent.putExtra("FIREBASE_LIST_ID", list.getFirebaseId());
+        }
         startActivity(intent);
     }
 
@@ -358,7 +446,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         negativeButton.setText(R.string.cancel);
 
         positiveButton.setOnClickListener(v -> {
-            shoppingListManager.deleteShoppingList(listToDelete.getId());
+            shoppingListManager.deleteShoppingList(listToDelete);
             Toast.makeText(MainActivity.this, "Liste \"" + listToDelete.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
             loadShoppingLists();
             dialog.dismiss();

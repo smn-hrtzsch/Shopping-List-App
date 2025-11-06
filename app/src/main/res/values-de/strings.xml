@@ -7,7 +7,6 @@
     <string name="click_the_button_below_to_view_your_shopping_list">Klicke auf den Button unten, um deine Einkaufsliste anzusehen! :)</string>
     <string name="add_list_item">Artikel zur Liste hinzufügen</string>
     <string name="jumo_to_list_view">Zur Listenansicht springen</string>
-    <string name="jump_to_list_view">Zur Listenansicht</string>
     <string name="banane">Banane</string>
     <string name="switch_to_list_view">Zur Listenansicht wechseln</string>
     <string name="enter_list_name">Listenname eingeben</string>
@@ -34,7 +33,7 @@
     <string name="error_adding_item">Fehler beim Hinzufügen des Artikels. Bitte versuche es erneut.</string>
     <string name="error_clearing_list">Fehler beim Leeren der Einkaufsliste. Bitte versuche es erneut.</string>
 
-    <string name="item_name_placeholder">Artikelname</string>"
+    <string name="item_name_placeholder">Artikelname</string>
     <string name="item_added">Artikel erfolgreich hinzugefügt.</string>
     <string name="list_added">Einkaufsliste erfolgreich hinzugefügt.</string>
     <string name="list_deleted">Einkaufsliste %1$s wurde erfolgreich gelöscht.</string>
@@ -106,4 +105,5 @@
     <string name="share_list">Liste teilen</string>
     <string name="list_imported">Liste \"%1$s\" importiert.</string>
     <string name="incompatible_file">Inkompatible Datei.</string>
+    <string name="invite_user">Benutzer einladen</string>
 </resources>
