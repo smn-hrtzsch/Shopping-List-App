@@ -392,7 +392,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
     private void loadShoppingLists() {
         shoppingListManager.getAllShoppingLists(loadedLists -> {
-            this.shoppingLists = loadedLists;
+            this.shoppingLists = shoppingListManager.sortListsBasedOnSavedOrder(loadedLists);
             adapter.updateLists(shoppingLists);
             checkEmptyView();
         });

@@ -235,4 +235,8 @@ public class ShoppingListRepository {
     public void addMemberToList(String firebaseListId, String userId) {
         db.collection("shopping_lists").document(firebaseListId).update("members", com.google.firebase.firestore.FieldValue.arrayUnion(userId));
     }
+
+    public void updateListTimestamp(String firebaseListId) {
+        db.collection("shopping_lists").document(firebaseListId).update("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp());
+    }
 }

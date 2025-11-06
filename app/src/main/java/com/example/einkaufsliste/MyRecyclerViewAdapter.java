@@ -139,6 +139,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
         if (firebaseListId != null) {
             repository.deleteItemFromList(firebaseListId, itemToDelete.getFirebaseId());
+            repository.updateListTimestamp(firebaseListId);
         } else {
             repository.deleteItemFromList(itemToDelete.getId());
         }
@@ -156,6 +157,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 .setAction(R.string.undo, view -> {
                     if (firebaseListId != null) {
                         repository.addItemToShoppingList(firebaseListId, itemToDelete);
+                        repository.updateListTimestamp(firebaseListId);
                     } else {
                         long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
                         itemToDelete.setId(newId);
@@ -320,6 +322,9 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             }
             item.setName(newName);
             repository.updateItemInList(item, firebaseListId);
+            if (firebaseListId != null) {
+                repository.updateListTimestamp(firebaseListId);
+            }
             editingItemPosition = -1;
             notifyItemChanged(position);
             if (interactionListener != null) {

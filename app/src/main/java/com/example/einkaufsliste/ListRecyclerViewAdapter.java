@@ -66,7 +66,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         viewHolder.textViewListName.setText(list.getName());
 
         if (list.getFirebaseId() != null) {
-            viewHolder.cloudIcon.setVisibility(View.VISIBLE);
+            viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
         } else {
             viewHolder.cloudIcon.setVisibility(View.GONE);
         }
@@ -243,6 +243,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             localDataSet.get(i).setPosition(i);
         }
         shoppingListManager.updateListPositions(localDataSet); // Speichert die neue Reihenfolge
+        shoppingListManager.saveListOrder(localDataSet);
 
         return true;
     }

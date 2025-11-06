@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -85,6 +86,13 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         String listName = getIntent().getStringExtra("LIST_NAME");
         if (toolbarTitleTextView != null) {
             toolbarTitleTextView.setText(listName);
+        }
+
+        if (firebaseListId != null) {
+            ImageView toolbarCloudIcon = findViewById(R.id.toolbar_cloud_icon);
+            if (toolbarCloudIcon != null) {
+                toolbarCloudIcon.setVisibility(View.VISIBLE);
+            }
         }
 
         shoppingItems = new ArrayList<>();
@@ -235,6 +243,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 ShoppingItem newItem = new ShoppingItem(name, "1", "", false, currentShoppingListId, "", nextPosition);
                 if (firebaseListId != null) {
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem);
+                    shoppingListRepository.updateListTimestamp(firebaseListId);
                 } else {
                     long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
                     if (newId != -1) {
@@ -268,6 +277,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
                     if (firebaseListId != null) {
                         shoppingListRepository.clearCheckedItemsFromList(firebaseListId);
+                        shoppingListRepository.updateListTimestamp(firebaseListId);
                     } else {
                         shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
                     }
@@ -277,6 +287,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
                     if (firebaseListId != null) {
                         shoppingListRepository.clearAllItemsFromList(firebaseListId);
+                        shoppingListRepository.updateListTimestamp(firebaseListId);
                     } else {
                         shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
                     }
@@ -323,6 +334,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     public void onItemCheckboxChanged(ShoppingItem item, boolean isChecked) {
         if (firebaseListId != null) {
             shoppingListRepository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked);
+            shoppingListRepository.updateListTimestamp(firebaseListId);
         } else {
             shoppingListRepository.toggleItemChecked(item.getId(), isChecked);
         }
