@@ -59,7 +59,8 @@ jobs:
           else
              # Fallback logic for manual/dev builds:
              # Read current version from project to get base Major.Minor
-             currentVersionName=$(grep 'versionName' app/build.gradle.kts | grep -oE '"[^"]+"' | sed 's/"//g')
+             # We take the last quoted string on the line to avoid capturing "versionName" property keys
+             currentVersionName=$(grep 'versionName' app/build.gradle.kts | grep -oE '"[^"]+"' | tail -n 1 | sed 's/"//g')
              if [ -z "$currentVersionName" ]; then currentVersionName="1.0"; fi
              
              # Parse Major.Minor (assuming X.Y format)
