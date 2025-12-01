@@ -54,7 +54,7 @@ jobs:
           code_pattern = r"(versionCode\s*=\s*project\.findProperty\(\"versionCode\"\)\?\.toString\(\)\?\.toInt\(\)\s*\?:\s*)(\d+)"
           
           # versionName = project.findProperty("versionName") as String? ?: "2.0"
-          name_pattern = r"(versionName\s*=\s*project\.findProperty\(\"versionName\"\)\s*as\s*String\?\s*\?:\s*")([^"]+)(")"
+          name_pattern = r"(versionName\s*=\s*project\.findProperty\(\"versionName\"\)\s*as\s*String\?\s*\?:\s*\")([^\"]+)(\")"
 
           def bump_version(version, type):
               parts = [int(x) for x in version.split(".")]
