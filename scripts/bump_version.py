@@ -21,15 +21,17 @@ def main():
         sys.exit(1)
 
     # 1. Update Version Name
-    # Regex: versionName = project.findProperty("versionName") as String? ?: "2.0"
-    # Escaped for standard string: \\ becomes \ in regex
-    name_pattern = 'versionName\\s*=\\s*project\\.findProperty("versionName")\\s*as\\s*String\\?\\s*\\?:\\s*"([^"]+)"'
+    # Simplified Regex: matches 'versionName = project.findProperty("versionName") ... ?: "2.0"'
+    # We use non-greedy match .*? to skip the casting logic
+    name_pattern = 'versionName\s*=\s*project\.findProperty\("versionName"\).*?:\s*"([^"]+)"'
     
     match_name = re.search(name_pattern, content)
     if not match_name:
         print("Error: Could not find version name pattern in build.gradle.kts.")
-        print("File snippet around expected area:")
-        print(content[:500] + "...") 
+        # Try to print the specific line if possible, to see what's wrong
+        for line in content.splitlines():
+            if "versionName" in line and "project.findProperty" in line:
+                print(f"Found similar line: {line.strip()}")
         sys.exit(1)
 
     full_match_name = match_name.group(0)
@@ -55,20 +57,13 @@ def main():
     print(f"New Version: {new_version}")
     
     # Replace just the version part in the found string
-    # We reconstruct the string: key + new_value + quote
-    # But since we matched the whole group including quotes in the regex, we need to be careful.
-    # The pattern '... "([^"]+)"' captures the version inside quotes in group 1.
-    # So full match is:  ... "2.0"
-    # We can replace ' "2.0"' with ' "2.0.1"'
-    
-    # Let's just replace the specific substring found in the file
-    # To avoid replacing other occurrences of "2.0", we use the full matched string context
+    # We use replace on the full matched string to be safe
     new_line_name = full_match_name.replace(f'"{current_version}"', f'"{new_version}"')
     content = content.replace(full_match_name, new_line_name)
 
     # 2. Update Version Code
-    # Regex: versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 2
-    code_pattern = 'versionCode\\s*=\\s*project\\.findProperty("versionCode")\\?\\.toString(\\)?\\.toInt(\\)?\\s*\\?:\\s*(\\d+)'
+    # Simplified Regex: matches 'versionCode = project.findProperty("versionCode") ... ?: 2'
+    code_pattern = 'versionCode\s*=\s*project\.findProperty\("versionCode"\).*?:\s*(\d+)'
     
     match_code = re.search(code_pattern, content)
     if match_code:
@@ -77,8 +72,21 @@ def main():
         new_code = current_code + 1
         print(f"Bumping versionCode from {current_code} to {new_code}")
         
-        new_line_code = full_match_code.replace(str(current_code), str(new_code))
-        content = content.replace(full_match_code, new_line_code)
+        # Be careful with integer replacement (e.g. replacing '2' in '20')
+        # Since we match the end of the line structure " ?: 2", it should be unique enough
+        # We reconstruct the string from the regex groups if we wanted to be super safe, 
+        # but replace on the full match is usually fine if the match is specific enough.
+        # However, to be safer:
+        # full_match_code ends with the number. 
+        # Let's split by the number and reassemble.
+        
+        # Find the last occurrence of the number in the match
+        idx = full_match_code.rfind(str(current_code))
+        if idx != -1:
+            new_line_code = full_match_code[:idx] + str(new_code) + full_match_code[idx+len(str(current_code)):]
+            content = content.replace(full_match_code, new_line_code)
+        else:
+             print("Warning: Could not safely replace version code.")
     else:
         print("Warning: Could not find version code pattern. Skipping code bump.")
 
