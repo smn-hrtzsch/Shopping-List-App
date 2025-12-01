@@ -49,63 +49,63 @@ jobs:
           with open(file_path, "r") as f:
               content = f.read()
 
-          # Regex patterns to match the specific lines we modified
-          # versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 2
-          code_pattern = r"(versionCode\s*=\s*project\.findProperty\(\"versionCode\"\)\?\.toString\(\)\?\.toInt\(\)\s*\?:\s*)(\d+)"
+          # 1. Update Version Name
+          # Pattern to find the version string: ... ?: "2.0"
+          name_pattern = r'(versionName\s*=\s*project\.findProperty\("versionName"\)\s*as\s*String\?\s*\?:\s*")([^"]+)(")'
           
-          # versionName = project.findProperty("versionName") as String? ?: "2.0"
-          name_pattern = r"(versionName\s*=\s*project\.findProperty\(\"versionName\"\)\s*as\s*String\?\s*\?:\s*\")([^\"]+)(\")"
-
-          def bump_version(version, type):
-              parts = [int(x) for x in version.split(".")]
-              if len(parts) < 3:
-                  parts.extend([0] * (3 - len(parts))) # Ensure at least x.y.z
-              
-              if type == "major":
-                  parts[0] += 1
-                  parts[1] = 0
-                  parts[2] = 0
-              elif type == "minor":
-                  parts[1] += 1
-                  parts[2] = 0
-              else: # patch
-                  parts[2] += 1
-              
-              # Return as x.y.z or x.y depending on original format?
-              # Usually standard is x.y.z for releases.
-              return ".".join(map(str, parts))
-
-          # Update Version Code
-          def replace_code(match):
-              old_code = int(match.group(2))
-              new_code = old_code + 1
-              print(f"Bumping versionCode from {old_code} to {new_code}")
-              return f"{match.group(1)}{new_code}"
-
-          new_content = re.sub(code_pattern, replace_code, content)
-
-          # Update Version Name
-          new_version_str = ""
-          def replace_name(match):
-              nonlocal new_version_str
-              old_ver = match.group(2)
-              new_ver = bump_version(old_ver, release_type)
-              new_version_str = new_ver
-              print(f"Bumping versionName from {old_ver} to {new_ver}")
-              return f"{match.group(1)}{new_ver}{match.group(3)}"
-
-          new_content = re.sub(name_pattern, replace_name, new_content)
-
-          if not new_version_str:
-              print("Error: Could not find or update version name pattern.")
+          match_name = re.search(name_pattern, content)
+          if not match_name:
+              print("Error: Could not find version name pattern.")
               sys.exit(1)
 
-          with open(file_path, "w") as f:
-              f.write(new_content)
+          full_match_name = match_name.group(0)
+          current_version = match_name.group(2)
+          
+          print(f"Current Version: {current_version}")
 
-          # Set output for next steps
+          parts = [int(x) for x in current_version.split(".")]
+          if len(parts) < 3:
+              parts.extend([0] * (3 - len(parts)))
+          
+          if release_type == "major":
+              parts[0] += 1
+              parts[1] = 0
+              parts[2] = 0
+          elif release_type == "minor":
+              parts[1] += 1
+              parts[2] = 0
+          else: # patch
+              parts[2] += 1
+          
+          new_version = ".".join(map(str, parts))
+          print(f"New Version: {new_version}")
+          
+          # Replace just the version part in the found string
+          new_line_name = match_name.group(1) + new_version + match_name.group(3)
+          content = content.replace(full_match_name, new_line_name)
+
+          # 2. Update Version Code
+          # Pattern to find the code: ... ?: 2
+          code_pattern = r'(versionCode\s*=\s*project\.findProperty\("versionCode"\)\?\.toString\(\)\?\.toInt\(\)\s*\?:\s*)(\d+)'
+          
+          match_code = re.search(code_pattern, content)
+          if match_code:
+              full_match_code = match_code.group(0)
+              current_code = int(match_code.group(2))
+              new_code = current_code + 1
+              print(f"Bumping versionCode from {current_code} to {new_code}")
+              
+              new_line_code = match_code.group(1) + str(new_code)
+              content = content.replace(full_match_code, new_line_code)
+          else:
+              print("Warning: Could not find version code pattern. Skipping code bump.")
+
+          with open(file_path, "w") as f:
+              f.write(content)
+
+          # Set output
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"new_version={new_version_str}\n")
+              f.write(f"new_version={new_version}\n")
           '
 
       - name: Commit Version Bump & Tag
