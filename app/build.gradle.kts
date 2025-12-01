@@ -1,6 +1,17 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
+}
+
+// --- TEIL 1: Properties laden ---
+// Wir erstellen ein Properties-Objekt und laden die Datei local.properties
+val keystorePropertiesFile = rootProject.file("local.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -17,8 +28,29 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // --- TEIL 2: Signing Config definieren ---
+    signingConfigs {
+        // Wir erstellen eine Konfiguration namens "release"
+        create("release") {
+            // Wir lesen die Werte sicher aus den Properties
+            // Hinweis: Das "as String" ist in Kotlin notwendig
+            keyAlias = keystoreProperties["key.alias"] as String? ?: "debug"
+            keyPassword = keystoreProperties["key.password"] as String? ?: "android"
+            storeFile = if (keystoreProperties["store.file"] != null) {
+                file(keystoreProperties["store.file"] as String)
+            } else {
+                null
+            }
+            storePassword = keystoreProperties["store.password"] as String? ?: "android"
+        }
+    }
+
     buildTypes {
         release {
+            // --- TEIL 3: Signing Config anwenden ---
+            // Hier sagen wir dem Release-Build, dass er die Config von oben nutzen soll
+            signingConfig = signingConfigs.getByName("release")
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -33,7 +65,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
