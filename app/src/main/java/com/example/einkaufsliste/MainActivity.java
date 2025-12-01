@@ -35,6 +35,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -62,6 +63,22 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     private FloatingActionButton fab;
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+    private UserRepository userRepository;
+    private String pendingListName;
+
+    private final androidx.activity.result.ActivityResultLauncher<Intent> profileActivityLauncher =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    // Profile created successfully, retry creating shared list
+                    if (pendingListName != null && !pendingListName.isEmpty()) {
+                        createSharedListInFirestore(pendingListName);
+                        pendingListName = null; // Reset
+                    }
+                } else {
+                    // User cancelled or failed, reset pending list name
+                    pendingListName = null;
+                }
+            });
 
 
     @Override
@@ -74,6 +91,8 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        userRepository = new UserRepository(this);
+
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
             mAuth.signInAnonymously()
@@ -98,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_account_circle_24);
         }
 
         View activityRootView = findViewById(R.id.main_activity_root);
@@ -164,18 +185,28 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
     private void showAddListDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.add_list_dialog_title)
-                .setItems(new CharSequence[]{"Lokale Liste", "Geteilte Liste"}, (dialog, which) -> {
-                    switch (which) {
-                        case 0: // Lokale Liste
-                            toggleAddListInput(false);
-                            break;
-                        case 1: // Geteilte Liste
-                            toggleAddListInput(true);
-                            break;
-                    }
-                });
-        builder.create().show();
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_create_list_type, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        View cardPrivate = dialogView.findViewById(R.id.card_private_list);
+        View cardShared = dialogView.findViewById(R.id.card_shared_list);
+
+        cardPrivate.setOnClickListener(v -> {
+            toggleAddListInput(false);
+            dialog.dismiss();
+        });
+
+        cardShared.setOnClickListener(v -> {
+            toggleAddListInput(true);
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     private void toggleAddListInput(boolean isShared) {
@@ -216,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             long newId = shoppingListManager.addShoppingList(listName, nextPosition);
             if (newId != -1) {
                 loadShoppingLists();
-                Toast.makeText(MainActivity.this, "Lokale Liste \"" + listName + "\" erstellt", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, getString(R.string.local_list_created, listName), Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
             }
@@ -232,27 +263,80 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     private void createSharedListInFirestore(String listName) {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
-            Toast.makeText(this, "Authentication required.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.auth_required, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String userId = currentUser.getUid();
-        Map<String, Object> shoppingList = new HashMap<>();
-        shoppingList.put("name", listName);
-        shoppingList.put("ownerId", userId);
-        shoppingList.put("members", Arrays.asList(userId));
+        // Check if user has a username profile
+        userRepository.getCurrentUsername(username -> {
+            if (username == null) {
+                // No profile yet
+                pendingListName = listName; // Save for later
+                showCustomDialog(
+                        getString(R.string.profile_required_title),
+                        getString(R.string.profile_required_message),
+                        getString(R.string.create_profile_button),
+                        getString(R.string.button_cancel),
+                        () -> {
+                            Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                            profileActivityLauncher.launch(intent);
+                        },
+                        () -> pendingListName = null
+                );
+            } else {
+                // User has a profile, proceed
+                String userId = currentUser.getUid();
+                Map<String, Object> shoppingList = new HashMap<>();
+                shoppingList.put("name", listName);
+                shoppingList.put("ownerId", userId);
+                shoppingList.put("members", Arrays.asList(userId));
 
-        db.collection("shopping_lists")
-                .add(shoppingList)
-                .addOnSuccessListener(documentReference -> {
-                    Log.d("Firestore", "DocumentSnapshot added with ID: " + documentReference.getId());
-                    Toast.makeText(MainActivity.this, "Geteilte Liste \"" + listName + "\" erstellt", Toast.LENGTH_SHORT).show();
-                    loadShoppingLists(); // Reload lists to show the new shared list
-                })
-                .addOnFailureListener(e -> {
-                    Log.w("Firestore", "Error adding document", e);
-                    Toast.makeText(MainActivity.this, "Error creating shared list.", Toast.LENGTH_SHORT).show();
-                });
+                db.collection("shopping_lists")
+                        .add(shoppingList)
+                        .addOnSuccessListener(documentReference -> {
+                            Log.d("Firestore", "DocumentSnapshot added with ID: " + documentReference.getId());
+                            Toast.makeText(MainActivity.this, getString(R.string.shared_list_created, listName), Toast.LENGTH_SHORT).show();
+                            loadShoppingLists(); // Reload lists to show the new shared list
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.w("Firestore", "Error adding document", e);
+                            Toast.makeText(MainActivity.this, R.string.error_create_shared_list, Toast.LENGTH_SHORT).show();
+                        });
+            }
+        });
+    }
+    
+    private void showCustomDialog(String title, String message, String positiveButtonText, String negativeButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
+        textTitle.setText(title);
+        textMessage.setText(message);
+        btnPositive.setText(positiveButtonText);
+        btnNegative.setText(negativeButtonText);
+
+        btnPositive.setOnClickListener(v -> {
+            if (onPositiveAction != null) onPositiveAction.run();
+            dialog.dismiss();
+        });
+
+        btnNegative.setOnClickListener(v -> {
+            if (onNegativeAction != null) onNegativeAction.run();
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     @Override
@@ -358,12 +442,24 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu, menu);
+        
+        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        MenuItem themeItem = menu.findItem(R.id.action_switch_theme);
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+            themeItem.setIcon(R.drawable.ic_moon_filled);
+        } else {
+            themeItem.setIcon(R.drawable.ic_moon_outlined);
+        }
+        
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_switch_theme) {
+        if (item.getItemId() == android.R.id.home) {
+            startActivity(new Intent(this, ProfileActivity.class));
+            return true;
+        } else if (item.getItemId() == R.id.action_switch_theme) {
             int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
             if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);

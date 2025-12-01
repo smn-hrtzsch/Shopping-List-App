@@ -232,8 +232,30 @@ public class ShoppingListRepository {
                 });
     }
 
-    public void addMemberToList(String firebaseListId, String userId) {
-        db.collection("shopping_lists").document(firebaseListId).update("members", com.google.firebase.firestore.FieldValue.arrayUnion(userId));
+    public interface OnMemberAddListener {
+        void onMemberAdded();
+        void onMemberAlreadyExists();
+        void onError(String message);
+    }
+
+    public void addMemberToList(String firebaseListId, String userId, OnMemberAddListener listener) {
+        db.collection("shopping_lists").document(firebaseListId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        List<String> members = (List<String>) documentSnapshot.get("members");
+                        if (members != null && members.contains(userId)) {
+                            listener.onMemberAlreadyExists();
+                        } else {
+                            db.collection("shopping_lists").document(firebaseListId)
+                                    .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(userId))
+                                    .addOnSuccessListener(aVoid -> listener.onMemberAdded())
+                                    .addOnFailureListener(e -> listener.onError(e.getMessage()));
+                        }
+                    } else {
+                        listener.onError("Liste nicht gefunden.");
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
 
     public void updateListTimestamp(String firebaseListId) {

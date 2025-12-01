@@ -139,20 +139,59 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void showInviteUserDialog() {
-        final EditText input = new EditText(this);
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Invite User")
-                .setMessage("Enter the User ID of the user you want to invite.")
-                .setView(input)
-                .setPositiveButton("Invite", (dialog, which) -> {
-                    String userId = input.getText().toString();
-                    if (!userId.isEmpty()) {
-                        shoppingListRepository.addMemberToList(firebaseListId, userId);
-                        Toast.makeText(this, "User invited.", Toast.LENGTH_SHORT).show();
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_invite_user, null);
+        builder.setView(dialogView);
+        android.app.AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        com.google.android.material.textfield.TextInputEditText editText = dialogView.findViewById(R.id.edit_text_invite_username);
+        View btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        View btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
+        btnPositive.setOnClickListener(v -> {
+            String username = editText.getText().toString().trim();
+            if (!username.isEmpty()) {
+                // 1. Search for UID by username
+                UserRepository userRepository = new UserRepository(this);
+                userRepository.findUidByUsername(username, new UserRepository.OnUserSearchListener() {
+                    @Override
+                    public void onUserFound(String uid) {
+                        // 2. Add UID to list
+                        shoppingListRepository.addMemberToList(firebaseListId, uid, new ShoppingListRepository.OnMemberAddListener() {
+                            @Override
+                            public void onMemberAdded() {
+                                Toast.makeText(EinkaufslisteActivity.this, getString(R.string.user_invited, username), Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                            }
+
+                            @Override
+                            public void onMemberAlreadyExists() {
+                                Toast.makeText(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show();
+                                // Don't dismiss dialog so user can correct input if needed
+                            }
+
+                            @Override
+                            public void onError(String message) {
+                                Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
+                            }
+                        });
                     }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
+
+        btnNegative.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     private void shareShoppingList() {

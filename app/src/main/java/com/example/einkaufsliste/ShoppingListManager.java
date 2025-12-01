@@ -57,7 +57,12 @@ public class ShoppingListManager {
             Integer pos2 = orderMap.get(id2);
             if (pos1 == null) pos1 = Integer.MAX_VALUE;
             if (pos2 == null) pos2 = Integer.MAX_VALUE;
-            return pos1.compareTo(pos2);
+            int comp = pos1.compareTo(pos2);
+            if (comp != 0) {
+                return comp;
+            }
+            // Fallback: Sort by name (case-insensitive) to have a stable order for unsorted lists
+            return l1.getName().compareToIgnoreCase(l2.getName());
         });
 
         return lists;

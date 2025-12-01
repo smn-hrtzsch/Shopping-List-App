@@ -106,4 +106,45 @@
     <string name="list_imported">Liste \"%1$s\" importiert.</string>
     <string name="incompatible_file">Inkompatible Datei.</string>
     <string name="invite_user">Benutzer einladen</string>
+
+    <!-- Profile & User Management -->
+    <string name="profile_title">Benutzerprofil</string>
+    <string name="profile_info">Damit andere dich zu ihren Listen hinzufügen können, wähle bitte einen eindeutigen Nutzernamen.</string>
+    <string name="profile_username_hint">Nutzernamen wählen</string>
+    <string name="label_username">Benutzername</string>
+    <string name="profile_warning_anonymous">Achtung: Dein Konto ist aktuell an dieses Gerät gebunden (Anonym).\nUm deine Listen dauerhaft zu sichern, solltest du dein Konto verknüpfen.</string>
+    <string name="profile_delete_account">Cloud-Konto &amp; Daten löschen</string>
+    <string name="profile_saved">Profil gespeichert!</string>
+    <string name="profile_error_username_taken">Benutzername ist leider schon vergeben.</string>
+    <string name="profile_error_check_failed">Fehler beim Prüfen des Namens.</string>
+    <string name="profile_error_empty">Bitte Namen eingeben</string>
+    <string name="profile_error_short">Mindestens 3 Zeichen</string>
+    <string name="profile_error_whitespace">Keine Leerzeichen erlaubt.</string>
+    
+    <string name="dialog_delete_account_title">Account löschen?</string>
+    <string name="dialog_delete_account_message">Du verlierst den Zugriff auf alle geteilten Listen.\n\nWICHTIG: Alle geteilten Listen, deren EIGENTÜMER du bist, werden unwiderruflich gelöscht (auch für andere Mitglieder).</string>
+    <string name="account_deleted">Account gelöscht.</string>
+    <string name="error_delete_account">Fehler: %s</string>
+
+    <!-- Sharing & Invites -->
+    <string name="auth_required">Anmeldung erforderlich.</string>
+    <string name="profile_required_title">Profil erforderlich</string>
+    <string name="profile_required_message">Um Listen zu teilen, musst du dir einen Nutzernamen geben, damit andere dich finden können.</string>
+    <string name="create_profile_button">Profil anlegen</string>
+    
+    <string name="invite_user_message">Gib den Benutzernamen der Person ein, die du einladen möchtest.</string>
+    <string name="invite_button">Einladen</string>
+    <string name="user_invited">Nutzer \'%s\' eingeladen.</string>
+    <string name="user_not_found">Nutzer \'%s\' nicht gefunden.</string>
+    
+    <string name="shared_list_created">Geteilte Liste \"%s\" erstellt</string>
+    <string name="local_list_created">Private Liste \"%s\" erstellt</string>
+    <string name="list_type_private">Private Liste</string>
+    <string name="list_type_shared">Geteilte Liste</string>
+    <string name="list_type_private_desc">Nur auf diesem Gerät gespeichert.</string>
+    <string name="list_type_shared_desc">Online synchronisiert und teilbar.</string>
+    <string name="error_create_shared_list">Fehler beim Erstellen der geteilten Liste.</string>
+    <string name="error_username_cooldown">Du kannst deinen Namen nur einmal pro Woche ändern.</string>
+    <string name="error_check_date">Fehler beim Prüfen des Datums.</string>
+    <string name="error_member_already_exists">Dieser Nutzer ist bereits Mitglied der Liste.</string>
 </resources>

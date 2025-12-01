@@ -85,4 +85,45 @@
     <string name="list_imported">List \"%1$s\" imported.</string>
     <string name="incompatible_file">Incompatible file.</string>
     <string name="invite_user">Invite user</string>
+
+    <!-- Profile & User Management -->
+    <string name="profile_title">User Profile</string>
+    <string name="profile_info">To allow others to add you to their lists, please choose a unique username.</string>
+    <string name="profile_username_hint">Choose username</string>
+    <string name="label_username">Username</string>
+    <string name="profile_warning_anonymous">Attention: Your account is currently tied to this device (Anonymous).\nTo strictly secure your lists, you should link your account.</string>
+    <string name="profile_delete_account">Delete Cloud Account &amp; Data</string>
+    <string name="profile_saved">Profile saved!</string>
+    <string name="profile_error_username_taken">Username is unfortunately already taken.</string>
+    <string name="profile_error_check_failed">Error checking name.</string>
+    <string name="profile_error_empty">Please enter a name</string>
+    <string name="profile_error_short">At least 3 characters</string>
+    <string name="profile_error_whitespace">No spaces allowed.</string>
+
+    <string name="dialog_delete_account_title">Delete account?</string>
+    <string name="dialog_delete_account_message">You will lose access to all shared lists.\n\nIMPORTANT: All shared lists OWNED by you will be irrevocably deleted (also for other members).</string>
+    <string name="account_deleted">Account deleted.</string>
+    <string name="error_delete_account">Error: %s</string>
+
+    <!-- Sharing & Invites -->
+    <string name="auth_required">Authentication required.</string>
+    <string name="profile_required_title">Profile required</string>
+    <string name="profile_required_message">To share lists, you must create a username so others can find you.</string>
+    <string name="create_profile_button">Create Profile</string>
+
+    <string name="invite_user_message">Enter the username of the person you want to invite.</string>
+    <string name="invite_button">Invite</string>
+    <string name="user_invited">User \'%s\' invited.</string>
+    <string name="user_not_found">User \'%s\' not found.</string>
+
+    <string name="shared_list_created">Shared list \"%s\" created</string>
+    <string name="local_list_created">Private list \"%s\" created</string>
+    <string name="list_type_private">Private List</string>
+    <string name="list_type_shared">Shared List</string>
+    <string name="list_type_private_desc">Stored only on this device.</string>
+    <string name="list_type_shared_desc">Synced online and shareable.</string>
+    <string name="error_create_shared_list">Error creating shared list.</string>
+    <string name="error_username_cooldown">You can only change your username once a week.</string>
+    <string name="error_check_date">Error checking date.</string>
+    <string name="error_member_already_exists">This user is already a member of the list.</string>
 </resources>
