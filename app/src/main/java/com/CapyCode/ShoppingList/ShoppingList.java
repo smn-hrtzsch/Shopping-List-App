@@ -1,4 +1,4 @@
-package com.example.einkaufsliste;
+package com.CapyCode.ShoppingList;
 
 import java.util.ArrayList;
 import java.util.List;

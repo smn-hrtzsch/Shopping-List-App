@@ -1,4 +1,4 @@
-package com.example.einkaufsliste;
+package com.CapyCode.ShoppingList;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -381,7 +381,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         try {
             org.json.JSONObject jsonList = new org.json.JSONObject(jsonString);
 
-            if (!"com.example.einkaufsliste".equals(jsonList.optString("app_id"))) {
+            if (!"com.CapyCode.ShoppingList".equals(jsonList.optString("app_id"))) {
                 Toast.makeText(this, "Incompatible file.", Toast.LENGTH_SHORT).show();
                 return;
             }

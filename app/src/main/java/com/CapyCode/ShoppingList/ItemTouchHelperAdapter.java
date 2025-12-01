@@ -1,4 +1,4 @@
-package com.example.einkaufsliste;
+package com.CapyCode.ShoppingList;
 
 public interface ItemTouchHelperAdapter {
     boolean onItemMove(int fromPosition, int toPosition);

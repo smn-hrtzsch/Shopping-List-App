@@ -45,7 +45,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.example.einkaufsliste.provider"
+            android:authorities="com.CapyCode.ShoppingList.provider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

@@ -1,4 +1,4 @@
-package com.example.einkaufsliste;
+package com.CapyCode.ShoppingList;
 
 public class ShoppingItem {
     private long id;

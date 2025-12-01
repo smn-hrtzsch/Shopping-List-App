@@ -1,4 +1,4 @@
-package com.example.einkaufsliste;
+package com.CapyCode.ShoppingList;
 
 import android.os.Bundle;
 import android.text.Editable;
@@ -208,7 +208,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         shoppingListRepository.getItemsForListId(currentShoppingListId, items -> {
             try {
                 org.json.JSONObject jsonList = new org.json.JSONObject();
-                jsonList.put("app_id", "com.example.einkaufsliste");
+                jsonList.put("app_id", "com.CapyCode.ShoppingList");
                 jsonList.put("name", shoppingList.getName());
 
                 org.json.JSONArray jsonItems = new org.json.JSONArray();
@@ -231,7 +231,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     fos.write(jsonString.getBytes());
                 }
 
-                android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.example.einkaufsliste.provider", file);
+                android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.CapyCode.ShoppingList.provider", file);
 
                 android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
                 shareIntent.setType("application/json");

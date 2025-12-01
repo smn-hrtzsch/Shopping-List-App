@@ -15,11 +15,11 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.einkaufsliste"
+    namespace = "com.CapyCode.ShoppingList"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.einkaufsliste"
+        applicationId = "com.CapyCode.ShoppingList"
         minSdk = 24
         targetSdk = 36
         versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 2

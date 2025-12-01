@@ -1,5 +1,5 @@
 // ListRecyclerViewAdapter.java
-package com.example.einkaufsliste;
+package com.CapyCode.ShoppingList;
 
 import android.app.AlertDialog;
 import android.content.Context;
