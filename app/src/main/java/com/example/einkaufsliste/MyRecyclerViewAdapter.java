@@ -26,23 +26,24 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private final Context context;
     private final ShoppingListRepository repository;
     private final OnItemInteractionListener interactionListener;
+    private final String firebaseListId;
 
     private int editingItemPosition = -1;
 
-    // ANPASSUNG: Interface wurde um die neue Methode erweitert
     public interface OnItemInteractionListener {
         void onItemCheckboxChanged(ShoppingItem item, boolean isChecked);
         void onDataSetChanged();
         void requestItemResort();
         View getCoordinatorLayout();
-        View getSnackbarAnchorView(); // Diese Zeile war der Schlüssel
+        View getSnackbarAnchorView();
     }
 
-    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, OnItemInteractionListener listener) {
+    public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, OnItemInteractionListener listener, String firebaseListId) {
         this.context = context;
         this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
         this.repository = repository;
         this.interactionListener = listener;
+        this.firebaseListId = firebaseListId;
         sortItemsLocal();
     }
 
@@ -136,8 +137,12 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         final ShoppingItem itemToDelete = items.get(position);
         final int deletedPosition = position;
 
-        // Item sofort aus der Datenbank löschen
-        repository.deleteItemFromList(itemToDelete.getId());
+        if (firebaseListId != null) {
+            repository.deleteItemFromList(firebaseListId, itemToDelete.getFirebaseId());
+            repository.updateListTimestamp(firebaseListId);
+        } else {
+            repository.deleteItemFromList(itemToDelete.getId());
+        }
 
         items.remove(position);
         notifyItemRemoved(position);
@@ -150,11 +155,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         Snackbar snackbar = Snackbar.make(rootView,
                         "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG)
                 .setAction(R.string.undo, view -> {
-                    // Item in der Datenbank wiederherstellen
-                    long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
-                    itemToDelete.setId(newId);
+                    if (firebaseListId != null) {
+                        repository.addItemToShoppingList(firebaseListId, itemToDelete);
+                        repository.updateListTimestamp(firebaseListId);
+                    } else {
+                        long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
+                        itemToDelete.setId(newId);
+                    }
 
-                    // Item zur Adapter-Liste hinzufügen
                     items.add(deletedPosition, itemToDelete);
                     notifyItemInserted(deletedPosition);
 
@@ -233,19 +241,23 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             checkBox.setOnCheckedChangeListener(null);
             checkBox.setChecked(item.isDone());
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (editingItemPosition != -1 && editingItemPosition != getAdapterPosition()) {
+                if (editingItemPosition != -1 && editingItemPosition != getBindingAdapterPosition()) {
                     Toast.makeText(context, "Bitte zuerst die andere Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
-                if (editingItemPosition != -1 && editingItemPosition == getAdapterPosition()) {
+                if (editingItemPosition != -1 && editingItemPosition == getBindingAdapterPosition()) {
                     Toast.makeText(context, "Bitte Bearbeitung abschließen, um Status zu ändern.", Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
 
                 item.setDone(isChecked);
-                repository.updateItemInList(item);
+                if (firebaseListId != null) {
+                    repository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked);
+                } else {
+                    repository.updateItemInList(item, firebaseListId);
+                }
                 if (interactionListener != null) {
                     interactionListener.onItemCheckboxChanged(item, isChecked);
                     interactionListener.requestItemResort();
@@ -257,7 +269,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     Toast.makeText(context, "Erledigte Artikel können nicht bearbeitet werden.", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                int currentPos = getAdapterPosition();
+                int currentPos = getBindingAdapterPosition();
                 if (currentPos == RecyclerView.NO_POSITION) return;
 
                 if (editingItemPosition != -1 && editingItemPosition != currentPos) {
@@ -274,17 +286,17 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 notifyItemChanged(editingItemPosition);
             });
 
-            buttonSave.setOnClickListener(v -> saveItemChanges(getAdapterPosition()));
+            buttonSave.setOnClickListener(v -> saveItemChanges(getBindingAdapterPosition()));
             editTextName.setOnEditorActionListener((v, actionId, event) -> {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    saveItemChanges(getAdapterPosition());
+                    saveItemChanges(getBindingAdapterPosition());
                     return true;
                 }
                 return false;
             });
 
             buttonDelete.setOnClickListener(v -> {
-                int currentPos = getAdapterPosition();
+                int currentPos = getBindingAdapterPosition();
                 if (currentPos != RecyclerView.NO_POSITION) {
                     if (editingItemPosition == currentPos) {
                         Toast.makeText(context, "Bitte Bearbeitung abschließen vor dem Löschen.", Toast.LENGTH_SHORT).show();
@@ -309,7 +321,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 return;
             }
             item.setName(newName);
-            repository.updateItemInList(item);
+            repository.updateItemInList(item, firebaseListId);
+            if (firebaseListId != null) {
+                repository.updateListTimestamp(firebaseListId);
+            }
             editingItemPosition = -1;
             notifyItemChanged(position);
             if (interactionListener != null) {

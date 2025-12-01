@@ -16,4 +16,17 @@
     <color name="red2">#C62828</color>
     <color name="orange2">#E57373</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Adaptive Colors for Profile -->
+    <color name="text_primary_adaptive">@color/dark_gray</color>
+    <color name="text_secondary_adaptive">@color/gray</color>
+    <color name="icon_tint_adaptive">@color/dark_gray</color>
+    <color name="cursor_color_adaptive">@color/black</color>
+
+    <!-- New Adaptive Colors -->
+    <color name="button_background_adaptive">#CCCCCC</color>
+    <color name="input_stroke_adaptive">@color/dark_gray</color>
+    <color name="input_stroke_inactive_adaptive">@color/gray</color>
+    <color name="input_stroke_focused_adaptive">@color/dark_gray</color>
+    <color name="dialog_action_text_adaptive">@color/dark_gray</color>
 </resources>

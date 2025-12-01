@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,6 +38,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private List<ShoppingItem> shoppingItems;
     private ShoppingListRepository shoppingListRepository;
     private long currentShoppingListId = -1L;
+    private String firebaseListId;
     private TextView toolbarTitleTextView;
     private TextView emptyView;
     private View activityRootView;
@@ -79,28 +81,24 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
         shoppingListRepository = new ShoppingListRepository(this);
         currentShoppingListId = getIntent().getLongExtra("LIST_ID", -1L);
+        firebaseListId = getIntent().getStringExtra("FIREBASE_LIST_ID");
 
-        if (currentShoppingListId == -1L) {
-            Toast.makeText(this, R.string.list_not_found, Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-
-        ShoppingList currentShoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
-        if (currentShoppingList == null) {
-            Toast.makeText(this, getString(R.string.list_not_found) + " (ID: " + currentShoppingListId + ")", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-
+        String listName = getIntent().getStringExtra("LIST_NAME");
         if (toolbarTitleTextView != null) {
-            toolbarTitleTextView.setText(currentShoppingList.getName());
+            toolbarTitleTextView.setText(listName);
+        }
+
+        if (firebaseListId != null) {
+            ImageView toolbarCloudIcon = findViewById(R.id.toolbar_cloud_icon);
+            if (toolbarCloudIcon != null) {
+                toolbarCloudIcon.setVisibility(View.VISIBLE);
+            }
         }
 
         shoppingItems = new ArrayList<>();
         recyclerView = findViewById(R.id.item_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this);
+        adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
         recyclerView.setAdapter(adapter);
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
@@ -115,69 +113,139 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.einkaufsliste_menu, menu);
+        if (firebaseListId != null) {
+            menu.findItem(R.id.action_share_list).setVisible(false);
+            menu.findItem(R.id.action_invite_user).setVisible(true);
+        } else {
+            menu.findItem(R.id.action_invite_user).setVisible(false);
+        }
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_clear_list) {
+        int itemId = item.getItemId();
+        if (itemId == R.id.action_clear_list) {
             showClearListOptionsDialog();
             return true;
-        } else if (item.getItemId() == R.id.action_share_list) {
+        } else if (itemId == R.id.action_share_list) {
             shareShoppingList();
+            return true;
+        } else if (itemId == R.id.action_invite_user) {
+            showInviteUserDialog();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
+    private void showInviteUserDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_invite_user, null);
+        builder.setView(dialogView);
+        android.app.AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        com.google.android.material.textfield.TextInputEditText editText = dialogView.findViewById(R.id.edit_text_invite_username);
+        View btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        View btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
+        btnPositive.setOnClickListener(v -> {
+            String username = editText.getText().toString().trim();
+            if (!username.isEmpty()) {
+                // 1. Search for UID by username
+                UserRepository userRepository = new UserRepository(this);
+                userRepository.findUidByUsername(username, new UserRepository.OnUserSearchListener() {
+                    @Override
+                    public void onUserFound(String uid) {
+                        // 2. Add UID to list
+                        shoppingListRepository.addMemberToList(firebaseListId, uid, new ShoppingListRepository.OnMemberAddListener() {
+                            @Override
+                            public void onMemberAdded() {
+                                Toast.makeText(EinkaufslisteActivity.this, getString(R.string.user_invited, username), Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                            }
+
+                            @Override
+                            public void onMemberAlreadyExists() {
+                                Toast.makeText(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show();
+                                // Don't dismiss dialog so user can correct input if needed
+                            }
+
+                            @Override
+                            public void onError(String message) {
+                                Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
+
+        btnNegative.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
     private void shareShoppingList() {
+        if (firebaseListId != null) {
+            Toast.makeText(this, "Cannot share a shared list.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         ShoppingList shoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
         if (shoppingList == null) {
             Toast.makeText(this, R.string.list_not_found, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        List<ShoppingItem> items = shoppingListRepository.getItemsForListId(currentShoppingListId);
+        shoppingListRepository.getItemsForListId(currentShoppingListId, items -> {
+            try {
+                org.json.JSONObject jsonList = new org.json.JSONObject();
+                jsonList.put("app_id", "com.example.einkaufsliste");
+                jsonList.put("name", shoppingList.getName());
 
-        try {
-            org.json.JSONObject jsonList = new org.json.JSONObject();
-            jsonList.put("app_id", "com.example.einkaufsliste");
-            jsonList.put("name", shoppingList.getName());
+                org.json.JSONArray jsonItems = new org.json.JSONArray();
+                for (ShoppingItem item : items) {
+                    org.json.JSONObject jsonItem = new org.json.JSONObject();
+                    jsonItem.put("name", item.getName());
+                    jsonItem.put("quantity", item.getQuantity());
+                    jsonItem.put("unit", item.getUnit());
+                    jsonItem.put("done", item.isDone());
+                    jsonItem.put("notes", item.getNotes());
+                    jsonItem.put("position", item.getPosition());
+                    jsonItems.put(jsonItem);
+                }
+                jsonList.put("items", jsonItems);
 
-            org.json.JSONArray jsonItems = new org.json.JSONArray();
-            for (ShoppingItem item : items) {
-                org.json.JSONObject jsonItem = new org.json.JSONObject();
-                jsonItem.put("name", item.getName());
-                jsonItem.put("quantity", item.getQuantity());
-                jsonItem.put("unit", item.getUnit());
-                jsonItem.put("done", item.isDone());
-                jsonItem.put("notes", item.getNotes());
-                jsonItem.put("position", item.getPosition());
-                jsonItems.put(jsonItem);
+                String jsonString = jsonList.toString(2);
+
+                java.io.File file = new java.io.File(getCacheDir(), "list.json");
+                try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+                    fos.write(jsonString.getBytes());
+                }
+
+                android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.example.einkaufsliste.provider", file);
+
+                android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+                shareIntent.setType("application/json");
+                shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, fileUri);
+                shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.shopping_list) + ": " + shoppingList.getName());
+                shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_list)));
+
+            } catch (org.json.JSONException | java.io.IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error creating share data.", Toast.LENGTH_SHORT).show();
             }
-            jsonList.put("items", jsonItems);
-
-            String jsonString = jsonList.toString(2);
-
-            java.io.File file = new java.io.File(getCacheDir(), "list.json");
-            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
-                fos.write(jsonString.getBytes());
-            }
-
-            android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.example.einkaufsliste.provider", file);
-
-            android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
-            shareIntent.setType("application/json");
-            shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, fileUri);
-            shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.shopping_list) + ": " + shoppingList.getName());
-            shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_list)));
-
-        } catch (org.json.JSONException | java.io.IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error creating share data.", Toast.LENGTH_SHORT).show();
-        }
+        });
     }
 
     private void setupAddItemBar() {
@@ -212,16 +280,20 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 }
 
                 ShoppingItem newItem = new ShoppingItem(name, "1", "", false, currentShoppingListId, "", nextPosition);
-                long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
-
-                if (newId != -1) {
-                    newItem.setId(newId);
-                    adapter.addItem(newItem);
-                    recyclerView.scrollToPosition(adapter.getItemCount() - 1);
-                    editTextAddItem.setText("");
+                if (firebaseListId != null) {
+                    shoppingListRepository.addItemToShoppingList(firebaseListId, newItem);
+                    shoppingListRepository.updateListTimestamp(firebaseListId);
                 } else {
-                    Toast.makeText(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
+                    long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
+                    if (newId != -1) {
+                        newItem.setId(newId);
+                        adapter.addItem(newItem);
+                        recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+                    } else {
+                        Toast.makeText(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
+                    }
                 }
+                editTextAddItem.setText("");
             }
         };
 
@@ -242,12 +314,22 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setTitle(R.string.dialog_clear_list_title)
                 .setMessage(R.string.dialog_clear_list_message)
                 .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
-                    shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
+                    if (firebaseListId != null) {
+                        shoppingListRepository.clearCheckedItemsFromList(firebaseListId);
+                        shoppingListRepository.updateListTimestamp(firebaseListId);
+                    } else {
+                        shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
+                    }
                     refreshItemList();
                     Toast.makeText(this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
-                    shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
+                    if (firebaseListId != null) {
+                        shoppingListRepository.clearAllItemsFromList(firebaseListId);
+                        shoppingListRepository.updateListTimestamp(firebaseListId);
+                    } else {
+                        shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
+                    }
                     refreshItemList();
                     Toast.makeText(this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show();
                 })
@@ -258,10 +340,20 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private void refreshItemList() {
         if (shoppingListRepository == null || adapter == null) return;
         adapter.resetEditingPosition();
-        List<ShoppingItem> updatedItems = shoppingListRepository.getItemsForListId(currentShoppingListId);
-        shoppingItems = (updatedItems != null) ? updatedItems : new ArrayList<>();
-        adapter.setItems(shoppingItems);
-        checkEmptyViewItems(shoppingItems.isEmpty());
+
+        if (firebaseListId != null) {
+            shoppingListRepository.getItemsForListId(firebaseListId, loadedItems -> {
+                this.shoppingItems = loadedItems;
+                adapter.setItems(shoppingItems);
+                checkEmptyViewItems(shoppingItems.isEmpty());
+            });
+        } else {
+            shoppingListRepository.getItemsForListId(currentShoppingListId, loadedItems -> {
+                this.shoppingItems = loadedItems;
+                adapter.setItems(shoppingItems);
+                checkEmptyViewItems(shoppingItems.isEmpty());
+            });
+        }
     }
 
     private void checkEmptyViewItems(boolean isEmpty) {
@@ -273,12 +365,18 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     @Override
     public boolean onSupportNavigateUp() {
-        onBackPressed();
+        getOnBackPressedDispatcher().onBackPressed();
         return true;
     }
 
     @Override
     public void onItemCheckboxChanged(ShoppingItem item, boolean isChecked) {
+        if (firebaseListId != null) {
+            shoppingListRepository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked);
+            shoppingListRepository.updateListTimestamp(firebaseListId);
+        } else {
+            shoppingListRepository.toggleItemChecked(item.getId(), isChecked);
+        }
         refreshItemList();
     }
 

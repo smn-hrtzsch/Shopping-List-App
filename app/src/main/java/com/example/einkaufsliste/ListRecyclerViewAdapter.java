@@ -3,14 +3,14 @@ package com.example.einkaufsliste;
 
 import android.app.AlertDialog;
 import android.content.Context;
-// import android.content.Intent;
-import android.util.Log; // Import für Log hinzugefügt
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,8 +54,8 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, final int position) {
-        // Verwende getAdapterPosition() innerhalb von Listenern, da 'position' veraltet sein kann
-        int adapterPosition = viewHolder.getAdapterPosition();
+        // Verwende getBindingAdapterPosition() innerhalb von Listenern, da 'position' veraltet sein kann
+        int adapterPosition = viewHolder.getBindingAdapterPosition();
         if (adapterPosition == RecyclerView.NO_POSITION || adapterPosition >= localDataSet.size()) {
             Log.w("AdapterBind", "Invalid position in onBindViewHolder: " + adapterPosition);
             return; // Position ist ungültig, nichts binden
@@ -65,6 +65,12 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
         viewHolder.textViewListName.setText(list.getName());
 
+        if (list.getFirebaseId() != null) {
+            viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+        } else {
+            viewHolder.cloudIcon.setVisibility(View.GONE);
+        }
+
         String itemCountText = String.format(Locale.getDefault(), "%d %s",
                 list.getItemCount(),
                 list.getItemCount() == 1 ? context.getString(R.string.item_count_suffix_singular) : context.getString(R.string.item_count_suffix_plural));
@@ -72,7 +78,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
 
         viewHolder.itemView.setOnClickListener(v -> {
-            int currentPos = viewHolder.getAdapterPosition();
+            int currentPos = viewHolder.getBindingAdapterPosition();
             if (currentPos == RecyclerView.NO_POSITION) return;
             if (editingPosition != -1 && editingPosition == currentPos){
                 Toast.makeText(context, "Bitte Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
@@ -102,7 +108,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
 
         viewHolder.buttonEditListName.setOnClickListener(v -> {
-            int currentPos = viewHolder.getAdapterPosition();
+            int currentPos = viewHolder.getBindingAdapterPosition();
             if (currentPos != RecyclerView.NO_POSITION) {
                 int previousEditingPosition = editingPosition;
                 editingPosition = currentPos;
@@ -125,7 +131,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
 
         viewHolder.buttonDeleteList.setOnClickListener(v -> {
-            int currentPos = viewHolder.getAdapterPosition(); // Immer getAdapterPosition() in Listenern verwenden
+            int currentPos = viewHolder.getBindingAdapterPosition(); // Immer getBindingAdapterPosition() in Listenern verwenden
             if (currentPos == RecyclerView.NO_POSITION) return; // Position ungültig
 
             // Verhindern, dass gelöscht wird, während gerade editiert wird
@@ -145,7 +151,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
     }
 
     private void saveListName(ViewHolder viewHolder) {
-        int currentPosition = viewHolder.getAdapterPosition();
+        int currentPosition = viewHolder.getBindingAdapterPosition();
         if (currentPosition == RecyclerView.NO_POSITION || currentPosition >= localDataSet.size()) return;
 
         android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -155,8 +161,8 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         String newName = viewHolder.editTextListName.getText().toString().trim();
 
         if (!newName.isEmpty() && !newName.equals(list.getName())) {
-            shoppingListManager.updateShoppingListName(list.getId(), newName);
             list.setName(newName); // Update local data set directy
+            shoppingListManager.updateShoppingList(list); // NEU: Diese Methode verwenden
             Toast.makeText(context, "Liste umbenannt in \"" + newName + "\"", Toast.LENGTH_SHORT).show();
             // Keine Notwendigkeit für onListDataSetChanged, da nur ein Item betroffen ist
         }
@@ -170,7 +176,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
                 .setTitle(R.string.confirm_delete_list_title)
                 .setMessage(String.format(context.getString(R.string.confirm_delete_list_message), list.getName()))
                 .setPositiveButton(R.string.button_delete, (dialog, which) -> {
-                    shoppingListManager.deleteShoppingList(list.getId());
+                    shoppingListManager.deleteShoppingList(list);
                     // Entferne das Element sicher aus der Liste und benachrichtige den Adapter
                     if (position != RecyclerView.NO_POSITION && position < localDataSet.size() && localDataSet.get(position).getId() == list.getId()) {
                         localDataSet.remove(position);
@@ -237,6 +243,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             localDataSet.get(i).setPosition(i);
         }
         shoppingListManager.updateListPositions(localDataSet); // Speichert die neue Reihenfolge
+        shoppingListManager.saveListOrder(localDataSet);
 
         return true;
     }
@@ -254,6 +261,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         final ImageButton buttonSaveListName;
         final ImageButton buttonDeleteList;
         final TextView textViewListItemCount;
+        final ImageView cloudIcon;
 
 
         public ViewHolder(View view) {
@@ -264,6 +272,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             buttonSaveListName = view.findViewById(R.id.button_save_list_name_inline);
             buttonDeleteList = view.findViewById(R.id.button_delete_list_inline);
             textViewListItemCount = view.findViewById(R.id.list_item_count_text_view);
+            cloudIcon = view.findViewById(R.id.cloud_icon);
         }
         // Getter sind nicht unbedingt nötig, wenn die Views final sind
     }

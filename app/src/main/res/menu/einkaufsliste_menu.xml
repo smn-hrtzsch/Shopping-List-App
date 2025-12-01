@@ -15,4 +15,12 @@
         android:icon="@drawable/ic_delete_24"
         app:showAsAction="ifRoom"
         app:iconTint="?attr/colorOnSurface" />
+
+    <item
+        android:id="@+id/action_invite_user"
+        android:title="@string/invite_user"
+        android:icon="@drawable/ic_person_add_24"
+        app:showAsAction="ifRoom"
+        app:iconTint="?attr/colorOnSurface"
+        android:visible="false" />
 </menu>

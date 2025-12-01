@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Hilfsfunktion: Prüft, ob der Nutzer eingeloggt ist
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Hilfsfunktion: Prüft, ob die UID des Nutzers im 'members'-Feld des Dokuments steht
+    function isMemberOfList(rsc) {
+      return isAuthenticated() && (request.auth.uid in rsc.data.members);
+    }
+
+    // --- Users Collection (Profile) ---
+    match /users/{userId} {
+      // Jeder eingeloggte Nutzer darf Profile lesen (um Usernamen zu suchen)
+      allow read: if isAuthenticated();
+      
+      // Schreiben darf man nur das eigene Profil (Dokument-ID == UID)
+      allow create, update, delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // --- Shopping Lists Collection ---
+    match /shopping_lists/{listId} {
+      // 1. Lesen (Read/List): Nur erlauben, wenn man im 'members'-Array steht
+      allow read: if isMemberOfList(resource);
+
+      // 2. Erstellen (Create): Nur erlauben, wenn man eingeloggt ist UND sich selbst als Member/Owner einträgt
+      allow create: if isAuthenticated()
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.auth.uid in request.resource.data.members;
+
+      // 3. Aktualisieren (Update): Nur für Mitglieder
+      allow update: if isMemberOfList(resource);
+
+      // 4. Löschen (Delete): Nur für Mitglieder
+      allow delete: if isMemberOfList(resource);
+
+      // --- Unter-Sammlung "items" ---
+      match /items/{itemId} {
+        // Zugriff nur für Mitglieder der übergeordneten Liste
+        allow read, write: if isAuthenticated()
+                           && request.auth.uid in get(/databases/$(database)/documents/shopping_lists/$(listId)).data.members;
+      }
+    }
+  }
+}
