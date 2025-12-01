@@ -58,7 +58,7 @@ public class SimpleItemTouchHelperCallback extends ItemTouchHelper.Callback {
         if (viewHolder.getItemViewType() != target.getItemViewType()) {
             return false;
         }
-        return mAdapter.onItemMove(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+        return mAdapter.onItemMove(viewHolder.getBindingAdapterPosition(), target.getBindingAdapterPosition());
     }
 
     @Override
@@ -67,7 +67,7 @@ public class SimpleItemTouchHelperCallback extends ItemTouchHelper.Callback {
         // und wenn Swipe für diesen Typ aktiviert ist (was durch getMovementFlags schon geregelt sein sollte)
         if (viewHolder instanceof MyRecyclerViewAdapter.ItemViewHolder || viewHolder instanceof ListRecyclerViewAdapter.ViewHolder) {
             if (mSwipeEnabled && viewHolder instanceof MyRecyclerViewAdapter.ItemViewHolder) { // Explizit nur für MyRecycler Items, wenn Swipe an ist
-                mAdapter.onItemDismiss(viewHolder.getAdapterPosition());
+                mAdapter.onItemDismiss(viewHolder.getBindingAdapterPosition());
             } else if (viewHolder instanceof ListRecyclerViewAdapter.ViewHolder) {
                 // Wenn du Swipe-to-Dismiss für Listen auch willst, hier die Logik oder den Aufruf
                 // mAdapter.onItemDismiss(viewHolder.getAdapterPosition());

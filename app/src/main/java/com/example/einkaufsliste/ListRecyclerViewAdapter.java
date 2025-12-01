@@ -54,8 +54,8 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, final int position) {
-        // Verwende getAdapterPosition() innerhalb von Listenern, da 'position' veraltet sein kann
-        int adapterPosition = viewHolder.getAdapterPosition();
+        // Verwende getBindingAdapterPosition() innerhalb von Listenern, da 'position' veraltet sein kann
+        int adapterPosition = viewHolder.getBindingAdapterPosition();
         if (adapterPosition == RecyclerView.NO_POSITION || adapterPosition >= localDataSet.size()) {
             Log.w("AdapterBind", "Invalid position in onBindViewHolder: " + adapterPosition);
             return; // Position ist ungültig, nichts binden
@@ -78,7 +78,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
 
         viewHolder.itemView.setOnClickListener(v -> {
-            int currentPos = viewHolder.getAdapterPosition();
+            int currentPos = viewHolder.getBindingAdapterPosition();
             if (currentPos == RecyclerView.NO_POSITION) return;
             if (editingPosition != -1 && editingPosition == currentPos){
                 Toast.makeText(context, "Bitte Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
@@ -108,7 +108,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
 
         viewHolder.buttonEditListName.setOnClickListener(v -> {
-            int currentPos = viewHolder.getAdapterPosition();
+            int currentPos = viewHolder.getBindingAdapterPosition();
             if (currentPos != RecyclerView.NO_POSITION) {
                 int previousEditingPosition = editingPosition;
                 editingPosition = currentPos;
@@ -131,7 +131,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
 
         viewHolder.buttonDeleteList.setOnClickListener(v -> {
-            int currentPos = viewHolder.getAdapterPosition(); // Immer getAdapterPosition() in Listenern verwenden
+            int currentPos = viewHolder.getBindingAdapterPosition(); // Immer getBindingAdapterPosition() in Listenern verwenden
             if (currentPos == RecyclerView.NO_POSITION) return; // Position ungültig
 
             // Verhindern, dass gelöscht wird, während gerade editiert wird
@@ -151,7 +151,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
     }
 
     private void saveListName(ViewHolder viewHolder) {
-        int currentPosition = viewHolder.getAdapterPosition();
+        int currentPosition = viewHolder.getBindingAdapterPosition();
         if (currentPosition == RecyclerView.NO_POSITION || currentPosition >= localDataSet.size()) return;
 
         android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);

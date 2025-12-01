@@ -365,7 +365,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     @Override
     public boolean onSupportNavigateUp() {
-        onBackPressed();
+        getOnBackPressedDispatcher().onBackPressed();
         return true;
     }
 

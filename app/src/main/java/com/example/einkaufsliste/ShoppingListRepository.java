@@ -66,6 +66,7 @@ public class ShoppingListRepository {
                         String id = doc.getId();
                         String name = doc.getString("name");
                         String ownerId = doc.getString("ownerId");
+                        @SuppressWarnings("unchecked")
                         List<String> members = (List<String>) doc.get("members");
 
                         ShoppingList list = new ShoppingList(name);
@@ -242,6 +243,7 @@ public class ShoppingListRepository {
         db.collection("shopping_lists").document(firebaseListId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
+                        @SuppressWarnings("unchecked")
                         List<String> members = (List<String>) documentSnapshot.get("members");
                         if (members != null && members.contains(userId)) {
                             listener.onMemberAlreadyExists();
