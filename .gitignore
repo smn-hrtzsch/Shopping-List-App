@@ -46,3 +46,8 @@ Thumbs.db
 *.tmp
 
 .vscode/**
+
+# Firebase Functions
+functions/node_modules/
+functions/firebase-debug.log
+functions/lib/
