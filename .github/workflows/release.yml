@@ -1,0 +1,151 @@
+name: Manual Release Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Type of release"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_title:
+        description: "Release Title (optional)"
+        required: false
+        type: string
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.bump_version.outputs.new_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Bump Version
+        id: bump_version
+        run: |
+          python3 -c '
+          import re
+          import os
+          import sys
+
+          file_path = "app/build.gradle.kts"
+          release_type = "${{ inputs.release_type }}"
+
+          with open(file_path, "r") as f:
+              content = f.read()
+
+          # Regex patterns to match the specific lines we modified
+          # versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 2
+          code_pattern = r"(versionCode\s*=\s*project\.findProperty\(\"versionCode\"\)\?\.toString\(\)\?\.toInt\(\)\s*\?:\s*)(\d+)"
+          
+          # versionName = project.findProperty("versionName") as String? ?: "2.0"
+          name_pattern = r"(versionName\s*=\s*project\.findProperty\(\"versionName\"\)\s*as\s*String\?\s*\?:\s*")([^"]+)(")"
+
+          def bump_version(version, type):
+              parts = [int(x) for x in version.split(".")]
+              if len(parts) < 3:
+                  parts.extend([0] * (3 - len(parts))) # Ensure at least x.y.z
+              
+              if type == "major":
+                  parts[0] += 1
+                  parts[1] = 0
+                  parts[2] = 0
+              elif type == "minor":
+                  parts[1] += 1
+                  parts[2] = 0
+              else: # patch
+                  parts[2] += 1
+              
+              # Return as x.y.z or x.y depending on original format?
+              # Usually standard is x.y.z for releases.
+              return ".".join(map(str, parts))
+
+          # Update Version Code
+          def replace_code(match):
+              old_code = int(match.group(2))
+              new_code = old_code + 1
+              print(f"Bumping versionCode from {old_code} to {new_code}")
+              return f"{match.group(1)}{new_code}"
+
+          new_content = re.sub(code_pattern, replace_code, content)
+
+          # Update Version Name
+          new_version_str = ""
+          def replace_name(match):
+              nonlocal new_version_str
+              old_ver = match.group(2)
+              new_ver = bump_version(old_ver, release_type)
+              new_version_str = new_ver
+              print(f"Bumping versionName from {old_ver} to {new_ver}")
+              return f"{match.group(1)}{new_ver}{match.group(3)}"
+
+          new_content = re.sub(name_pattern, replace_name, new_content)
+
+          if not new_version_str:
+              print("Error: Could not find or update version name pattern.")
+              sys.exit(1)
+
+          with open(file_path, "w") as f:
+              f.write(new_content)
+
+          # Set output for next steps
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"new_version={new_version_str}\n")
+          '
+
+      - name: Commit Version Bump & Tag
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add app/build.gradle.kts
+          git commit -m "Bump version to ${{ steps.bump_version.outputs.new_version }}"
+          git tag "v${{ steps.bump_version.outputs.new_version }}"
+          git push origin main
+          git push origin "v${{ steps.bump_version.outputs.new_version }}"
+
+  call-build-android:
+    needs: bump-version
+    uses: ./.github/workflows/build-android.yml
+    with:
+      version: ${{ needs.bump-version.outputs.new_version }}
+    secrets: inherit
+    permissions:
+      contents: read
+
+  publish-release:
+    needs:
+      [bump-version, call-build-android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: release-assets
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.bump-version.outputs.new_version }}
+          name: ${{ inputs.release_title != '' && inputs.release_title || format('Release v{0}', needs.bump-version.outputs.new_version) }}
+          files: release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

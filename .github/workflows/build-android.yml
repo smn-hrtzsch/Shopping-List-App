@@ -1,0 +1,123 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Decode Keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
+
+      - name: Create local.properties
+        env:
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          echo "key.alias=$ANDROID_KEYSTORE_ALIAS" > local.properties
+          echo "key.password=$ANDROID_KEYSTORE_PASSWORD" >> local.properties
+          echo "store.password=$ANDROID_KEYSTORE_PASSWORD" >> local.properties
+          echo "store.file=release.keystore" >> local.properties
+
+      - name: Calculate version
+        id: version
+        run: |
+          inputVersion="${{ inputs.version }}"
+
+          if [ -n "$inputVersion" ]; then
+             # Use provided version from Release workflow
+             fullVersion="$inputVersion"
+             # For versionCode, we ideally want to match what's in build.gradle.kts,
+             # but if this is called from Release, the file is already updated.
+             # So we can just read it from the file or let Gradle use the file's value 
+             # if we don't pass -PversionCode.
+             # HOWEVER, to be safe and explicit, we'll try to extract it.
+             versionCode=$(grep 'versionCode' app/build.gradle.kts | grep -oE '[0-9]+' | head -1)
+             filenameVersion="$fullVersion"
+          else
+             # Fallback logic for manual/dev builds:
+             # Read current version from project to get base Major.Minor
+             currentVersionName=$(grep 'versionName' app/build.gradle.kts | grep -oE '"[^"]+"' | sed 's/"//g')
+             if [ -z "$currentVersionName" ]; then currentVersionName="1.0"; fi
+             
+             # Parse Major.Minor (assuming X.Y format)
+             IFS='.' read -r vMajor vMinor vPatch <<< "$currentVersionName"
+             
+             # Calculate a build number based on date (like in the example)
+             # Convert to German Time (CET/CEST) for consistency
+             export TZ="Europe/Berlin"
+             year=$(date +%Y)
+             dayOfYear=$(date +%j)
+             # Example calculation: ((2025 - 2000) * 400) + 123 = 10123
+             versionBuild=$(( ((year - 2000) * 400) + dayOfYear ))
+             versionRevision=$(date +%H%M)
+             
+             # Construct a valid version name for Android
+             # Note: Android versionNames are strings, so this is fine.
+             fullVersion="$currentVersionName.$versionBuild.$versionRevision"
+             
+             # For dev builds, we override versionCode to something high or dynamic
+             versionCode=$versionBuild
+             
+             # Readable filename for test builds
+             dateStr=$(date +%Y-%m-%d_%H-%M)
+             filenameVersion="$currentVersionName-dev-$dateStr"
+          fi
+
+          echo "fullVersion=$fullVersion" >> "$GITHUB_OUTPUT"
+          echo "versionCode=$versionCode" >> "$GITHUB_OUTPUT"
+          echo "filenameVersion=$filenameVersion" >> "$GITHUB_OUTPUT"
+
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          # If version input was provided (Release), we assume build.gradle.kts is already updated.
+          # If not (Dev), we inject the calculated versions.          
+          if [ -n "${{ inputs.version }}" ]; then
+            ./gradlew assembleRelease
+          else
+            ./gradlew assembleRelease \
+              -PversionCode=${{ steps.version.outputs.versionCode }} \
+              -PversionName="${{ steps.version.outputs.fullVersion }}"
+          fi
+
+      - name: Find and Rename APK
+        id: apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          
+          # Rename to standard format
+          NEW_NAME="ShoppingList-android-${{ steps.version.outputs.filenameVersion }}.apk"
+          NEW_PATH="$(dirname "$APK_PATH")/$NEW_NAME"
+          mv "$APK_PATH" "$NEW_PATH"
+          
+          echo "Renamed APK to: $NEW_PATH"
+          echo "apkPath=$NEW_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ${{ steps.apk.outputs.apkPath }}
