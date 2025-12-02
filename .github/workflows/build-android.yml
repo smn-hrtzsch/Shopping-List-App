@@ -29,7 +29,16 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
+          # Dekodieren
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
+          
+          # DEBUG: Zeige Dateigröße an (darf nicht 0 sein!)
+          ls -l app/release.keystore
+          
+          # DEBUG: Prüfe, ob Keytool den Keystore lesen kann (zeigt Aliasse an)
+          # Wir nutzen 'true' am Ende, damit der Build bei falschem Passwort hier nicht abbricht, 
+          # sondern wir den Output sehen.
+          keytool -list -keystore app/release.keystore -storepass ${{ secrets.ANDROID_KEYSTORE_PASSWORD }} || true
 
       - name: Decode Google Services JSON
         env:
@@ -100,10 +109,9 @@ jobs:
       - name: Build with Gradle
         run: |
           chmod +x gradlew
-          # If version input was provided (Release), we assume build.gradle.kts is already updated.
-          # If not (Dev), we inject the calculated versions.          
+          # Wenn eine Version übergeben wurde (Release), erzwingen wir diese Version!
           if [ -n "${{ inputs.version }}" ]; then
-            ./gradlew assembleRelease
+            ./gradlew assembleRelease -PversionName="${{ inputs.version }}"
           else
             ./gradlew assembleRelease \
               -PversionCode=${{ steps.version.outputs.versionCode }} \
