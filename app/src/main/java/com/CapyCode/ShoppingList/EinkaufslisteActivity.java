@@ -45,6 +45,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private EditText editTextAddItem;
     private ImageButton buttonAddItem;
+    private com.google.firebase.firestore.ListenerRegistration listSnapshotListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +94,18 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             if (toolbarCloudIcon != null) {
                 toolbarCloudIcon.setVisibility(View.VISIBLE);
             }
+            
+            // Listen for list deletion
+            listSnapshotListener = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("shopping_lists")
+                    .document(firebaseListId)
+                    .addSnapshotListener((documentSnapshot, e) -> {
+                        if (e != null) return;
+                        if (documentSnapshot != null && !documentSnapshot.exists()) {
+                            Toast.makeText(this, "Diese Liste wurde vom Eigentümer gelöscht.", Toast.LENGTH_LONG).show();
+                            finish();
+                        }
+                    });
         }
 
         shoppingItems = new ArrayList<>();
@@ -107,6 +120,14 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
         setupAddItemBar();
         refreshItemList();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (listSnapshotListener != null) {
+            listSnapshotListener.remove();
+        }
     }
 
     @Override
