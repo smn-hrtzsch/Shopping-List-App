@@ -171,17 +171,58 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
             @Override
             public void onLoaded(List<Map<String, String>> membersWithNames) {
-                StringBuilder message = new StringBuilder();
-                for (Map<String, String> member : membersWithNames) {
-                    message.append("• ").append(member.get("username"))
-                           .append(" (").append(member.get("role")).append(")\n");
+                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(EinkaufslisteActivity.this);
+                View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
+                builder.setView(dialogView);
+                android.app.AlertDialog dialog = builder.create();
+
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
                 }
 
-                new MaterialAlertDialogBuilder(EinkaufslisteActivity.this)
-                        .setTitle(R.string.dialog_members_title)
-                        .setMessage(message.toString().trim())
-                        .setPositiveButton(R.string.ok, null)
-                        .show();
+                android.widget.LinearLayout container = dialogView.findViewById(R.id.container_members_list);
+                View buttonAdd = dialogView.findViewById(R.id.button_add_member);
+                View buttonClose = dialogView.findViewById(R.id.button_close_dialog);
+
+                for (Map<String, String> member : membersWithNames) {
+                    // Create row layout programmatically
+                    android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
+                    row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+                    row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                    row.setPadding(0, 16, 0, 16);
+
+                    ImageView icon = new ImageView(EinkaufslisteActivity.this);
+                    icon.setImageResource(R.drawable.ic_account_circle_24);
+                    icon.setColorFilter(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface));
+                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(48, 48);
+                    iconParams.setMargins(0, 0, 32, 0);
+                    row.addView(icon, iconParams);
+
+                    TextView text = new TextView(EinkaufslisteActivity.this);
+                    String role = member.get("role");
+                    String username = member.get("username");
+                    
+                    // Simple formatting: "Name (Rolle)"
+                    // Bolt for Name, Normal for Role
+                    android.text.SpannableString content = new android.text.SpannableString(username + " (" + role + ")");
+                    content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);
+                    
+                    text.setText(content);
+                    text.setTextColor(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface));
+                    text.setTextSize(16);
+                    row.addView(text);
+
+                    container.addView(row);
+                }
+
+                buttonAdd.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    showInviteUserDialog();
+                });
+
+                buttonClose.setOnClickListener(v -> dialog.dismiss());
+
+                dialog.show();
             }
 
             @Override
