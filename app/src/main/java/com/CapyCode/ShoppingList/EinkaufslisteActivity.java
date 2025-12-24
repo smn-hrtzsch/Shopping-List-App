@@ -46,6 +46,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private EditText editTextAddItem;
     private ImageButton buttonAddItem;
     private com.google.firebase.firestore.ListenerRegistration listSnapshotListener;
+    private com.google.firebase.firestore.ListenerRegistration itemsSnapshotListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,6 +128,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         super.onDestroy();
         if (listSnapshotListener != null) {
             listSnapshotListener.remove();
+        }
+        if (itemsSnapshotListener != null) {
+            itemsSnapshotListener.remove();
         }
     }
 
@@ -362,8 +366,14 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (shoppingListRepository == null || adapter == null) return;
         adapter.resetEditingPosition();
 
+        // Clean up previous listener if exists
+        if (itemsSnapshotListener != null) {
+            itemsSnapshotListener.remove();
+            itemsSnapshotListener = null;
+        }
+
         if (firebaseListId != null) {
-            shoppingListRepository.getItemsForListId(firebaseListId, loadedItems -> {
+            itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, loadedItems -> {
                 this.shoppingItems = loadedItems;
                 adapter.setItems(shoppingItems);
                 checkEmptyViewItems(shoppingItems.isEmpty());

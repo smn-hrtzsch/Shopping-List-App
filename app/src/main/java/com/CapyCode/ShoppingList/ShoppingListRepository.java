@@ -117,8 +117,8 @@ public class ShoppingListRepository {
         listener.onItemsLoaded(dbHelper.getAllItems(listId));
     }
 
-    public void getItemsForListId(String firebaseListId, OnItemsLoadedListener listener) {
-        db.collection("shopping_lists").document(firebaseListId).collection("items")
+    public com.google.firebase.firestore.ListenerRegistration getItemsForListId(String firebaseListId, OnItemsLoadedListener listener) {
+        return db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .orderBy("position")
                 .addSnapshotListener((value, e) -> {
                     if (e != null) {
@@ -128,10 +128,12 @@ public class ShoppingListRepository {
                     }
 
                     List<ShoppingItem> items = new ArrayList<>();
-                    for (QueryDocumentSnapshot doc : value) {
-                        ShoppingItem item = doc.toObject(ShoppingItem.class);
-                        item.setFirebaseId(doc.getId());
-                        items.add(item);
+                    if (value != null) {
+                        for (QueryDocumentSnapshot doc : value) {
+                            ShoppingItem item = doc.toObject(ShoppingItem.class);
+                            item.setFirebaseId(doc.getId());
+                            items.add(item);
+                        }
                     }
                     listener.onItemsLoaded(items);
                 });
