@@ -177,7 +177,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                            .append(" (").append(member.get("role")).append(")\n");
                 }
 
-                new MaterialAlertDialogBuilder(EinkaufslisteActivity.this, R.style.AppMaterialAlertDialogTheme)
+                new MaterialAlertDialogBuilder(EinkaufslisteActivity.this)
                         .setTitle(R.string.dialog_members_title)
                         .setMessage(message.toString().trim())
                         .setPositiveButton(R.string.ok, null)
@@ -363,7 +363,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void showClearListOptionsDialog() {
-        new MaterialAlertDialogBuilder(this, R.style.AppMaterialAlertDialogTheme)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.dialog_clear_list_title)
                 .setMessage(R.string.dialog_clear_list_message)
                 .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {

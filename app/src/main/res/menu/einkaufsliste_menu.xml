@@ -13,14 +13,14 @@
         android:id="@+id/action_clear_list"
         android:title="@string/clear_entire_list"
         android:icon="@drawable/ic_delete_24"
-        app:showAsAction="ifRoom"
+        app:showAsAction="always"
         app:iconTint="?attr/colorOnSurface" />
 
     <item
         android:id="@+id/action_view_members"
         android:title="@string/dialog_members_title"
         android:icon="@drawable/ic_members_group"
-        app:showAsAction="ifRoom"
+        app:showAsAction="always"
         app:iconTint="?attr/colorOnSurface"
         android:visible="false" />
 </menu>
