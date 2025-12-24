@@ -27,6 +27,7 @@ public class UserRepository {
 
     public interface OnUsernameLoadedListener {
         void onLoaded(String username);
+        void onError(String error);
     }
 
     public UserRepository(Context context) {
@@ -45,7 +46,7 @@ public class UserRepository {
 
     public void getCurrentUsername(OnUsernameLoadedListener listener) {
         if (!isAuthenticated()) {
-            listener.onLoaded(null);
+            listener.onError("Nicht eingeloggt (Auth == null).");
             return;
         }
 
@@ -54,14 +55,18 @@ public class UserRepository {
                     if (documentSnapshot.exists()) {
                         listener.onLoaded(documentSnapshot.getString("username"));
                     } else {
+                        // Dokument existiert nicht -> Kein Fehler, sondern einfach noch kein Profil
                         listener.onLoaded(null);
                     }
                 })
-                .addOnFailureListener(e -> listener.onLoaded(null));
+                .addOnFailureListener(e -> listener.onError("Ladefehler: " + e.getMessage()));
     }
 
     public void checkUsernameChangeAllowed(OnProfileActionListener listener) {
-        if (!isAuthenticated()) return;
+        if (!isAuthenticated()) {
+            listener.onError(context.getString(R.string.auth_required));
+            return;
+        }
 
         // Bypass check in Debug Mode
         if (BuildConfig.DEBUG) {
@@ -88,7 +93,10 @@ public class UserRepository {
     }
 
     public void setUsername(String username, OnProfileActionListener listener) {
-        if (!isAuthenticated()) return;
+        if (!isAuthenticated()) {
+            listener.onError(context.getString(R.string.auth_required));
+            return;
+        }
 
         // 1. Check if username is taken by someone else
         db.collection("users")
@@ -109,7 +117,8 @@ public class UserRepository {
                             updateProfile(username, listener);
                         }
                     } else {
-                        listener.onError(context.getString(R.string.profile_error_check_failed));
+                        String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                        listener.onError(context.getString(R.string.profile_error_check_failed) + ": " + errorMsg);
                     }
                 });
     }

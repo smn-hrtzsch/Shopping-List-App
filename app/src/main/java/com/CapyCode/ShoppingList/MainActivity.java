@@ -100,13 +100,13 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d("Auth", "signInAnonymously:success");
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            // You can use the user's ID for your backend logic
+                            // FirebaseUser user = mAuth.getCurrentUser();
                         } else {
-                            // If sign in fails, display a message to the user.f
+                            // If sign in fails, display a message to the user.
                             Log.w("Auth", "signInAnonymously:failure", task.getException());
-                            Toast.makeText(MainActivity.this, "Authentication failed.",
-                                    Toast.LENGTH_SHORT).show();
+                            String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                            Toast.makeText(MainActivity.this, "Authentication failed: " + errorMsg,
+                                    Toast.LENGTH_LONG).show();
                         }
                     });
         }
@@ -260,49 +260,72 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
     }
 
-    private void createSharedListInFirestore(String listName) {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) {
-            Toast.makeText(this, R.string.auth_required, Toast.LENGTH_SHORT).show();
-            return;
+    private void ensureAuthenticated(Runnable onSuccess) {
+        if (mAuth.getCurrentUser() != null) {
+            onSuccess.run();
+        } else {
+            mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
+                if (task.isSuccessful()) {
+                    Log.d("Auth", "signInAnonymously:success (retry)");
+                    onSuccess.run();
+                } else {
+                    Log.w("Auth", "signInAnonymously:failure (retry)", task.getException());
+                    String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                    Toast.makeText(MainActivity.this, "Authentication failed: " + errorMsg, Toast.LENGTH_LONG).show();
+                }
+            });
         }
+    }
 
-        // Check if user has a username profile
-        userRepository.getCurrentUsername(username -> {
-            if (username == null) {
-                // No profile yet
-                pendingListName = listName; // Save for later
-                showCustomDialog(
-                        getString(R.string.profile_required_title),
-                        getString(R.string.profile_required_message),
-                        getString(R.string.create_profile_button),
-                        getString(R.string.button_cancel),
-                        () -> {
-                            Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
-                            profileActivityLauncher.launch(intent);
-                        },
-                        () -> pendingListName = null
-                );
-            } else {
-                // User has a profile, proceed
-                String userId = currentUser.getUid();
-                Map<String, Object> shoppingList = new HashMap<>();
-                shoppingList.put("name", listName);
-                shoppingList.put("ownerId", userId);
-                shoppingList.put("members", Arrays.asList(userId));
+    private void createSharedListInFirestore(String listName) {
+        ensureAuthenticated(() -> {
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            // Check if user has a username profile
+            userRepository.getCurrentUsername(new UserRepository.OnUsernameLoadedListener() {
+                @Override
+                public void onLoaded(String username) {
+                    if (username == null) {
+                        // No profile yet
+                        pendingListName = listName; // Save for later
+                        showCustomDialog(
+                                getString(R.string.profile_required_title),
+                                getString(R.string.profile_required_message),
+                                getString(R.string.create_profile_button),
+                                getString(R.string.button_cancel),
+                                () -> {
+                                    Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                                    profileActivityLauncher.launch(intent);
+                                },
+                                () -> pendingListName = null
+                        );
+                    } else {
+                        // User has a profile, proceed
+                        String userId = currentUser.getUid();
+                        Map<String, Object> shoppingList = new HashMap<>();
+                        shoppingList.put("name", listName);
+                        shoppingList.put("ownerId", userId);
+                        shoppingList.put("members", Arrays.asList(userId));
 
-                db.collection("shopping_lists")
-                        .add(shoppingList)
-                        .addOnSuccessListener(documentReference -> {
-                            Log.d("Firestore", "DocumentSnapshot added with ID: " + documentReference.getId());
-                            Toast.makeText(MainActivity.this, getString(R.string.shared_list_created, listName), Toast.LENGTH_SHORT).show();
-                            loadShoppingLists(); // Reload lists to show the new shared list
-                        })
-                        .addOnFailureListener(e -> {
-                            Log.w("Firestore", "Error adding document", e);
-                            Toast.makeText(MainActivity.this, R.string.error_create_shared_list, Toast.LENGTH_SHORT).show();
-                        });
-            }
+                        db.collection("shopping_lists")
+                                .add(shoppingList)
+                                .addOnSuccessListener(documentReference -> {
+                                    Log.d("Firestore", "DocumentSnapshot added with ID: " + documentReference.getId());
+                                    Toast.makeText(MainActivity.this, getString(R.string.shared_list_created, listName), Toast.LENGTH_SHORT).show();
+                                    loadShoppingLists(); // Reload lists to show the new shared list
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.w("Firestore", "Error adding document", e);
+                                    Toast.makeText(MainActivity.this, R.string.error_create_shared_list, Toast.LENGTH_SHORT).show();
+                                });
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    Toast.makeText(MainActivity.this, "Fehler beim Profil-Check: " + error, Toast.LENGTH_SHORT).show();
+                    pendingListName = null;
+                }
+            });
         });
     }
     

@@ -2,7 +2,7 @@
 
 ## Fixes
 
-- [ ] Ladezeit der MainActivity optimieren, lokale Kopie der Clouda Datenbank verwenden
+- [x] Ladezeit der MainActivity optimieren, lokale Kopie der Clouda Datenbank verwenden
 
 ## Accounts
 

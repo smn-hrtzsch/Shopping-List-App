@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "shopping_list.db";
-    private static final int DATABASE_VERSION = 3; // Version 3 wegen neuer 'position'-Spalte
+    private static final int DATABASE_VERSION = 4; // Version 4: Cloud caching
 
     // Tabellen- und Spaltennamen
     public static final String TABLE_LISTS = "shopping_lists";
@@ -24,6 +24,8 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_LIST_NAME = "name";
     public static final String COLUMN_LIST_ITEM_COUNT = "item_count";
     public static final String COLUMN_LIST_POSITION = "position"; // Für die Reihenfolge
+    public static final String COLUMN_FIREBASE_ID = "firebase_id"; // Für Cloud-Listen
+    public static final String COLUMN_OWNER_ID = "owner_id"; // Für Cloud-Listen
 
     // Spalten für die Artikeltabelle
     public static final String COLUMN_ITEM_NAME = "name";
@@ -39,7 +41,9 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                     COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
                     COLUMN_LIST_NAME + " TEXT NOT NULL," +
                     COLUMN_LIST_ITEM_COUNT + " INTEGER DEFAULT 0," +
-                    COLUMN_LIST_POSITION + " INTEGER DEFAULT 0);";
+                    COLUMN_LIST_POSITION + " INTEGER DEFAULT 0," +
+                    COLUMN_FIREBASE_ID + " TEXT," +
+                    COLUMN_OWNER_ID + " TEXT);";
 
     private static final String SQL_CREATE_TABLE_ITEMS =
             "CREATE TABLE " + TABLE_ITEMS + " (" +
@@ -93,6 +97,14 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                 Log.w("DBUpgrade", "Spalte " + COLUMN_LIST_POSITION + " existiert vermutlich bereits.", e);
             }
         }
+        if (oldVersion < 4) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_FIREBASE_ID + " TEXT;");
+                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_OWNER_ID + " TEXT;");
+            } catch (SQLiteException e) {
+                Log.w("DBUpgrade", "Spalten für Cloud-Listen existieren vermutlich bereits.", e);
+            }
+        }
     }
 
 
@@ -125,7 +137,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = null;
         try {
             cursor = db.query(TABLE_LISTS,
-                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT, COLUMN_LIST_POSITION},
+                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT, COLUMN_LIST_POSITION, COLUMN_FIREBASE_ID, COLUMN_OWNER_ID},
                     COLUMN_ID + "=?", new String[]{String.valueOf(listId)}, null, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
                 ShoppingList list = new ShoppingList(
@@ -134,6 +146,8 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                 );
                 list.setItemCount(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_ITEM_COUNT)));
                 list.setPosition(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_POSITION)));
+                list.setFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FIREBASE_ID)));
+                list.setOwnerId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_ID)));
                 return list;
             }
         } finally {
@@ -156,6 +170,8 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                     );
                     shoppingList.setItemCount(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_ITEM_COUNT)));
                     shoppingList.setPosition(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_POSITION)));
+                    shoppingList.setFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FIREBASE_ID)));
+                    shoppingList.setOwnerId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_ID)));
                     shoppingLists.add(shoppingList);
                 } while (cursor.moveToNext());
             }
@@ -163,6 +179,66 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             if (cursor != null) cursor.close();
         }
         return shoppingLists;
+    }
+
+    public void upsertCloudList(ShoppingList list) {
+        if (list.getFirebaseId() == null) return;
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_LIST_NAME, list.getName());
+            values.put(COLUMN_LIST_ITEM_COUNT, list.getItemCount());
+            values.put(COLUMN_FIREBASE_ID, list.getFirebaseId());
+            values.put(COLUMN_OWNER_ID, list.getOwnerId());
+            // Position wird nicht überschrieben, um lokale Sortierung zu erhalten,
+            // es sei denn, wir wollen Server-Position übernehmen (nicht implementiert).
+
+            // Check if exists
+            Cursor cursor = db.query(TABLE_LISTS, new String[]{COLUMN_ID}, COLUMN_FIREBASE_ID + "=?", new String[]{list.getFirebaseId()}, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                // Update
+                long id = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID));
+                db.update(TABLE_LISTS, values, COLUMN_ID + "=?", new String[]{String.valueOf(id)});
+            } else {
+                // Insert
+                // Position ans Ende setzen
+                values.put(COLUMN_LIST_POSITION, 9999); // Wird später sortiert
+                db.insert(TABLE_LISTS, null, values);
+            }
+            if (cursor != null) cursor.close();
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error upserting cloud list", e);
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
+    public void deleteObsoleteCloudLists(List<String> activeFirebaseIds) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            // Hole alle lokalen Listen mit Firebase ID
+            Cursor cursor = db.query(TABLE_LISTS, new String[]{COLUMN_FIREBASE_ID}, COLUMN_FIREBASE_ID + " IS NOT NULL", null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    String fId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FIREBASE_ID));
+                    if (!activeFirebaseIds.contains(fId)) {
+                        db.delete(TABLE_LISTS, COLUMN_FIREBASE_ID + "=?", new String[]{fId});
+                    }
+                } while (cursor.moveToNext());
+            }
+            if (cursor != null) cursor.close();
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error deleting obsolete cloud lists", e);
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
     }
 
     public void updateListPositions(List<ShoppingList> lists) {

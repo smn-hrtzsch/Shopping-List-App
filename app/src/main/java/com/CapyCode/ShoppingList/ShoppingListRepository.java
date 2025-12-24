@@ -33,13 +33,12 @@ public class ShoppingListRepository {
     }
 
     public void getAllShoppingLists(OnListsLoadedListener listener) {
-        // 1. Get local lists
-        List<ShoppingList> localLists = dbHelper.getAllShoppingLists();
+        // 1. Immediately return all local lists (including cached cloud lists)
+        listener.onListsLoaded(dbHelper.getAllShoppingLists());
 
         // 2. Get shared lists from Firestore
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
-            listener.onListsLoaded(localLists);
             return;
         }
 
@@ -49,18 +48,20 @@ public class ShoppingListRepository {
                 .addSnapshotListener((value, e) -> {
                     if (e != null) {
                         Log.w("Firestore", "Listen for failed.", e);
-                        listener.onListsLoaded(localLists); // Return local lists on error
+                        // On error, we just keep showing what we have from local DB
                         return;
                     }
 
-                    List<ShoppingList> sharedLists = new ArrayList<>();
                     if (value == null || value.isEmpty()) {
-                        listener.onListsLoaded(localLists);
+                        // No shared lists found on server, clear any locally cached cloud lists
+                        dbHelper.deleteObsoleteCloudLists(new ArrayList<>());
+                        listener.onListsLoaded(dbHelper.getAllShoppingLists());
                         return;
                     }
 
                     int listCount = value.size();
                     java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
+                    List<String> activeFirebaseIds = new ArrayList<>();
 
                     for (QueryDocumentSnapshot doc : value) {
                         String id = doc.getId();
@@ -73,24 +74,34 @@ public class ShoppingListRepository {
                         list.setFirebaseId(id);
                         list.setOwnerId(ownerId);
                         list.setMembers(members);
+                        
+                        activeFirebaseIds.add(id);
 
+                        // Fetch item count for each list
                         db.collection("shopping_lists").document(id).collection("items").get()
                                 .addOnSuccessListener(items -> {
                                     list.setItemCount(items.size());
-                                    sharedLists.add(list);
+                                    // Update local cache for this list
+                                    dbHelper.upsertCloudList(list);
+                                    
                                     if (counter.incrementAndGet() == listCount) {
-                                        List<ShoppingList> allLists = new ArrayList<>(localLists);
-                                        allLists.addAll(sharedLists);
-                                        listener.onListsLoaded(allLists);
+                                        // All lists processed
+                                        // Remove lists that are no longer in the cloud result
+                                        dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
+                                        // Return updated full list from DB
+                                        listener.onListsLoaded(dbHelper.getAllShoppingLists());
                                     }
                                 })
                                 .addOnFailureListener(failure -> {
-                                    list.setItemCount(0); // Set count to 0 on failure
-                                    sharedLists.add(list);
+                                    Log.w("Firestore", "Error fetching items for count", failure);
+                                    // Even if counting fails, we upsert the list (count might be 0 or old)
+                                    // Optionally we could try to read old count from DB, but for now 0 is safe fallback
+                                    list.setItemCount(0); 
+                                    dbHelper.upsertCloudList(list);
+                                    
                                     if (counter.incrementAndGet() == listCount) {
-                                        List<ShoppingList> allLists = new ArrayList<>(localLists);
-                                        allLists.addAll(sharedLists);
-                                        listener.onListsLoaded(allLists);
+                                        dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
+                                        listener.onListsLoaded(dbHelper.getAllShoppingLists());
                                     }
                                 });
                     }

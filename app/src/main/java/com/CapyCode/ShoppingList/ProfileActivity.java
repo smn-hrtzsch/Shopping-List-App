@@ -36,12 +36,15 @@ public class ProfileActivity extends AppCompatActivity {
     private ProgressBar progressBarLoading;
     private UserRepository userRepository;
     private boolean isInitialProfileCreation = false;
+    private com.google.firebase.auth.FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_profile);
+
+        mAuth = com.google.firebase.auth.FirebaseAuth.getInstance();
 
         View root = findViewById(R.id.profile_root);
         
@@ -106,23 +109,55 @@ public class ProfileActivity extends AppCompatActivity {
         progressBarLoading.setVisibility(View.VISIBLE);
         containerContent.setVisibility(View.GONE);
 
-        userRepository.getCurrentUsername(username -> {
-            progressBarLoading.setVisibility(View.GONE);
-            containerContent.setVisibility(View.VISIBLE);
-            
-            if (username != null) {
-                // User has a profile -> Show View Mode
-                isInitialProfileCreation = false;
-                textViewCurrentUsername.setText(username);
-                editTextUsername.setText(username); 
-                showViewMode();
-            } else {
-                // No profile -> Show Edit Mode
+        Runnable fetchProfile = () -> userRepository.getCurrentUsername(new UserRepository.OnUsernameLoadedListener() {
+            @Override
+            public void onLoaded(String username) {
+                progressBarLoading.setVisibility(View.GONE);
+                containerContent.setVisibility(View.VISIBLE);
+
+                if (username != null) {
+                    // User has a profile -> Show View Mode
+                    isInitialProfileCreation = false;
+                    textViewCurrentUsername.setText(username);
+                    editTextUsername.setText(username);
+                    showViewMode();
+                } else {
+                    // No profile -> Show Edit Mode
+                    isInitialProfileCreation = true;
+                    showEditMode();
+                }
+                invalidateOptionsMenu(); // Refresh menu visibility
+            }
+
+            @Override
+            public void onError(String error) {
+                progressBarLoading.setVisibility(View.GONE);
+                containerContent.setVisibility(View.VISIBLE);
+                Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
+
+                // Fallback: Edit Mode erlauben, damit man es nochmal probieren kann
                 isInitialProfileCreation = true;
                 showEditMode();
             }
-            invalidateOptionsMenu(); // Refresh menu visibility
         });
+
+        if (mAuth.getCurrentUser() == null) {
+            mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
+                if (task.isSuccessful()) {
+                    fetchProfile.run();
+                } else {
+                    progressBarLoading.setVisibility(View.GONE);
+                    containerContent.setVisibility(View.VISIBLE);
+                    String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                    Toast.makeText(ProfileActivity.this, "Authentication failed: " + errorMsg, Toast.LENGTH_LONG).show();
+                    
+                    isInitialProfileCreation = true;
+                    showEditMode();
+                }
+            });
+        } else {
+            fetchProfile.run();
+        }
     }
 
     private void showViewMode() {
@@ -184,12 +219,13 @@ public class ProfileActivity extends AppCompatActivity {
         }
 
         buttonSave.setEnabled(false);
-        userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
+
+        Runnable saveAction = () -> userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
                 Toast.makeText(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
                 buttonSave.setEnabled(true);
-                
+
                 if (isInitialProfileCreation) {
                     setResult(RESULT_OK);
                     finish();
@@ -205,6 +241,20 @@ public class ProfileActivity extends AppCompatActivity {
                 buttonSave.setEnabled(true);
             }
         });
+
+        if (mAuth.getCurrentUser() == null) {
+            mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
+                if (task.isSuccessful()) {
+                    saveAction.run();
+                } else {
+                    String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                    Toast.makeText(ProfileActivity.this, "Authentication failed: " + errorMsg, Toast.LENGTH_LONG).show();
+                    buttonSave.setEnabled(true);
+                }
+            });
+        } else {
+            saveAction.run();
+        }
     }
 
     private void confirmDeleteAccount() {
