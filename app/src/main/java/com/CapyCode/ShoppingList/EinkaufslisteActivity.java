@@ -184,6 +184,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 View buttonAdd = dialogView.findViewById(R.id.button_add_member);
                 View buttonClose = dialogView.findViewById(R.id.button_close_dialog);
 
+                String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+
                 for (Map<String, String> member : membersWithNames) {
                     // Create row layout programmatically
                     android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
@@ -193,9 +195,15 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
                     ImageView icon = new ImageView(EinkaufslisteActivity.this);
                     icon.setImageResource(R.drawable.ic_account_circle_24);
-                    // Use theme color for icon
-                    int color = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
-                    icon.setColorFilter(color);
+                    
+                    String uid = member.get("uid");
+                    boolean isMe = uid != null && uid.equals(currentUid);
+                    
+                    // Use theme color for icon, but highlight color if it's the current user
+                    int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
+                    int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
+                    
+                    icon.setColorFilter(isMe ? highlightColor : textColor);
                     
                     android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); // Bigger icon
                     iconParams.setMargins(0, 0, 32, 0);
@@ -204,6 +212,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     TextView text = new TextView(EinkaufslisteActivity.this);
                     String role = member.get("role");
                     String username = member.get("username");
+                    if (isMe) username += " (Du)";
                     
                     android.text.SpannableString content = new android.text.SpannableString(username + "\n" + role);
                     content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);
@@ -213,7 +222,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     ), username.length() + 1, content.length(), 0);
                     
                     text.setText(content);
-                    text.setTextColor(color);
+                    text.setTextColor(isMe ? highlightColor : textColor);
                     text.setTextSize(16);
                     row.addView(text);
 

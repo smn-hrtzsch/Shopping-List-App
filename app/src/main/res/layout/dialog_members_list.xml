@@ -36,8 +36,8 @@
             app:iconGravity="textStart"
             app:iconPadding="0dp"
             android:padding="0dp"
-            app:strokeColor="?attr/colorPrimary"
-            app:iconTint="?attr/colorPrimary"/>
+            app:strokeColor="@color/dialog_action_text_adaptive"
+            app:iconTint="@color/dialog_action_text_adaptive"/>
 
     </LinearLayout>
 
