@@ -171,10 +171,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
             @Override
             public void onLoaded(List<Map<String, String>> membersWithNames) {
-                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(EinkaufslisteActivity.this);
+                MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(EinkaufslisteActivity.this);
                 View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
                 builder.setView(dialogView);
-                android.app.AlertDialog dialog = builder.create();
+                androidx.appcompat.app.AlertDialog dialog = builder.create();
 
                 if (dialog.getWindow() != null) {
                     dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
@@ -189,12 +189,15 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
                     row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
                     row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-                    row.setPadding(0, 16, 0, 16);
+                    row.setPadding(0, 24, 0, 24); // More padding
 
                     ImageView icon = new ImageView(EinkaufslisteActivity.this);
                     icon.setImageResource(R.drawable.ic_account_circle_24);
-                    icon.setColorFilter(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface));
-                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(48, 48);
+                    // Use theme color for icon
+                    int color = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
+                    icon.setColorFilter(color);
+                    
+                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); // Bigger icon
                     iconParams.setMargins(0, 0, 32, 0);
                     row.addView(icon, iconParams);
 
@@ -202,13 +205,15 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     String role = member.get("role");
                     String username = member.get("username");
                     
-                    // Simple formatting: "Name (Rolle)"
-                    // Bolt for Name, Normal for Role
-                    android.text.SpannableString content = new android.text.SpannableString(username + " (" + role + ")");
+                    android.text.SpannableString content = new android.text.SpannableString(username + "\n" + role);
                     content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);
+                    content.setSpan(new android.text.style.RelativeSizeSpan(0.85f), username.length() + 1, content.length(), 0);
+                    content.setSpan(new android.text.style.ForegroundColorSpan(
+                        com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurfaceVariant)
+                    ), username.length() + 1, content.length(), 0);
                     
                     text.setText(content);
-                    text.setTextColor(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface));
+                    text.setTextColor(color);
                     text.setTextSize(16);
                     row.addView(text);
 
@@ -233,10 +238,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void showInviteUserDialog() {
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_invite_user, null);
         builder.setView(dialogView);
-        android.app.AlertDialog dialog = builder.create();
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
@@ -265,7 +270,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                             @Override
                             public void onMemberAlreadyExists() {
                                 Toast.makeText(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show();
-                                // Don't dismiss dialog so user can correct input if needed
                             }
 
                             @Override

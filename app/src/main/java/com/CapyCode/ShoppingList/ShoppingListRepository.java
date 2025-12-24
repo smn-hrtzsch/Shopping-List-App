@@ -305,24 +305,41 @@ public class ShoppingListRepository {
                     return;
                 }
                 List<String> memberIds = (List<String>) doc.get("members");
-                if (memberIds == null || memberIds.isEmpty()) {
+                List<String> pendingIds = (List<String>) doc.get("pending_members");
+                
+                List<String> allIds = new ArrayList<>();
+                if (memberIds != null) allIds.addAll(memberIds);
+                if (pendingIds != null) allIds.addAll(pendingIds);
+
+                if (allIds.isEmpty()) {
                     listener.onLoaded(new ArrayList<>());
                     return;
                 }
+
                 List<Map<String, String>> result = new ArrayList<>();
                 java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
-                for (String uid : memberIds) {
+                
+                for (String uid : allIds) {
                     db.collection("users").document(uid).get()
                         .addOnSuccessListener(userDoc -> {
                             Map<String, String> memberInfo = new HashMap<>();
                             memberInfo.put("uid", uid);
                             memberInfo.put("username", userDoc.exists() ? userDoc.getString("username") : "Unbekannt");
-                            memberInfo.put("role", uid.equals(doc.getString("ownerId")) ? "Besitzer" : "Mitglied");
+                            
+                            String role = "Mitglied";
+                            if (uid.equals(doc.getString("ownerId"))) role = "Besitzer";
+                            else if (pendingIds != null && pendingIds.contains(uid)) role = "Eingeladen";
+                            
+                            memberInfo.put("role", role);
                             result.add(memberInfo);
-                            if (counter.incrementAndGet() == memberIds.size()) listener.onLoaded(result);
+                            if (counter.incrementAndGet() == allIds.size()) {
+                                listener.onLoaded(result);
+                            }
                         })
                         .addOnFailureListener(e -> {
-                            if (counter.incrementAndGet() == memberIds.size()) listener.onLoaded(result);
+                            if (counter.incrementAndGet() == allIds.size()) {
+                                listener.onLoaded(result);
+                            }
                         });
                 }
             });
