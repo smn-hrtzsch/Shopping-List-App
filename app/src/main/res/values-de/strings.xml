@@ -111,7 +111,14 @@
     <string name="profile_title">Benutzerprofil</string>
     <string name="profile_info">Damit andere dich zu ihren Listen hinzufügen können, wähle bitte einen eindeutigen Nutzernamen.</string>
     <string name="profile_username_hint">Nutzernamen wählen</string>
+    <string name="invite_username_hint">Nutzernamen eingeben</string>
     <string name="label_username">Benutzername</string>
+    <string name="button_join">Beitreten</string>
+    <string name="button_decline">Ablehnen</string>
+    <string name="button_leave">Liste verlassen</string>
+    <string name="member_role_owner">Besitzer</string>
+    <string name="member_role_member">Mitglied</string>
+    <string name="dialog_members_title">Mitglieder der Liste</string>
     <string name="profile_warning_anonymous">Achtung: Dein Konto ist aktuell an dieses Gerät gebunden (Anonym).\nUm deine Listen dauerhaft zu sichern, solltest du dein Konto verknüpfen.</string>
     <string name="profile_delete_account">Cloud-Konto &amp; Daten löschen</string>
     <string name="profile_saved">Profil gespeichert!</string>

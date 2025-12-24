@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private UserRepository userRepository;
+    private ShoppingListRepository shoppingListRepository;
     private String pendingListName;
 
     private final androidx.activity.result.ActivityResultLauncher<Intent> profileActivityLauncher =
@@ -92,6 +93,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         userRepository = new UserRepository(this);
+        shoppingListRepository = new ShoppingListRepository(this);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
@@ -541,6 +543,65 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     @Override
     public void onListDataSetChanged() {
         checkEmptyView();
+    }
+
+    @Override
+    public void onJoinClicked(ShoppingList list) {
+        if (list.getFirebaseId() == null) return;
+        shoppingListRepository.acceptInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(MainActivity.this, "Einladung angenommen", Toast.LENGTH_SHORT).show();
+                loadShoppingLists();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    @Override
+    public void onDeclineClicked(ShoppingList list) {
+        if (list.getFirebaseId() == null) return;
+        shoppingListRepository.declineInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(MainActivity.this, "Einladung abgelehnt", Toast.LENGTH_SHORT).show();
+                loadShoppingLists();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    @Override
+    public void onLeaveClicked(ShoppingList list) {
+        if (list.getFirebaseId() == null) return;
+        
+        new AlertDialog.Builder(this)
+                .setTitle("Liste verlassen?")
+                .setMessage("Möchtest du die Liste \"" + list.getName() + "\" wirklich verlassen?")
+                .setPositiveButton("Verlassen", (dialog, which) -> {
+                    shoppingListRepository.leaveList(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(MainActivity.this, "Liste verlassen", Toast.LENGTH_SHORT).show();
+                            loadShoppingLists();
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Abbrechen", null)
+                .show();
     }
 
     @Override

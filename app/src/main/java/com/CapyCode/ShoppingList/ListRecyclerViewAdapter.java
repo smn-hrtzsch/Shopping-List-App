@@ -34,12 +34,15 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         void onListClicked(ShoppingList list);
         void onListDataSetChanged();
         void requestListDeleteConfirmation(ShoppingList list);
+        void onJoinClicked(ShoppingList list);
+        void onDeclineClicked(ShoppingList list);
+        void onLeaveClicked(ShoppingList list);
     }
 
 
     public ListRecyclerViewAdapter(Context context, List<ShoppingList> dataSet, ShoppingListManager manager, OnListInteractionListener listener) {
         this.context = context;
-        localDataSet = dataSet; // ACHTUNG: Direkte Zuweisung. Änderungen an dataSet außen beeinflussen den Adapter. Besser Kopie?
+        localDataSet = dataSet; 
         shoppingListManager = manager;
         this.interactionListener = listener;
     }
@@ -54,14 +57,15 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, final int position) {
-        // Verwende getBindingAdapterPosition() innerhalb von Listenern, da 'position' veraltet sein kann
         int adapterPosition = viewHolder.getBindingAdapterPosition();
         if (adapterPosition == RecyclerView.NO_POSITION || adapterPosition >= localDataSet.size()) {
-            Log.w("AdapterBind", "Invalid position in onBindViewHolder: " + adapterPosition);
-            return; // Position ist ungültig, nichts binden
+            return;
         }
         ShoppingList list = localDataSet.get(adapterPosition);
         boolean isEditing = adapterPosition == editingPosition;
+        String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        boolean isPending = list.isCurrentUserPending(currentUid);
+        boolean isOwner = list.isOwner(currentUid);
 
         viewHolder.textViewListName.setText(list.getName());
 
@@ -74,12 +78,27 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         String itemCountText = String.format(Locale.getDefault(), "%d %s",
                 list.getItemCount(),
                 list.getItemCount() == 1 ? context.getString(R.string.item_count_suffix_singular) : context.getString(R.string.item_count_suffix_plural));
-        viewHolder.textViewListItemCount.setText(itemCountText);
+        
+        if (isPending) {
+            viewHolder.textViewListItemCount.setText("Eingeladen");
+            viewHolder.layoutInvitationActions.setVisibility(View.VISIBLE);
+            viewHolder.buttonEditListName.setVisibility(View.GONE);
+            viewHolder.buttonDeleteList.setVisibility(View.GONE);
+        } else {
+            viewHolder.textViewListItemCount.setText(itemCountText);
+            viewHolder.layoutInvitationActions.setVisibility(View.GONE);
+            viewHolder.buttonEditListName.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+            viewHolder.buttonDeleteList.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+        }
 
 
         viewHolder.itemView.setOnClickListener(v -> {
             int currentPos = viewHolder.getBindingAdapterPosition();
             if (currentPos == RecyclerView.NO_POSITION) return;
+            if (isPending) {
+                Toast.makeText(context, "Bitte erst Einladung annehmen.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             if (editingPosition != -1 && editingPosition == currentPos){
                 Toast.makeText(context, "Bitte Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
                 return;
@@ -91,7 +110,6 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
         viewHolder.textViewListName.setVisibility(isEditing ? View.GONE : View.VISIBLE);
         viewHolder.editTextListName.setVisibility(isEditing ? View.VISIBLE : View.GONE);
-        viewHolder.buttonEditListName.setVisibility(isEditing ? View.GONE : View.VISIBLE);
         viewHolder.buttonSaveListName.setVisibility(isEditing ? View.VISIBLE : View.GONE);
         viewHolder.textViewListItemCount.setVisibility(isEditing ? View.GONE : View.VISIBLE);
 
@@ -112,7 +130,6 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             if (currentPos != RecyclerView.NO_POSITION) {
                 int previousEditingPosition = editingPosition;
                 editingPosition = currentPos;
-                // Benachrichtige nur die geänderten Items
                 if (previousEditingPosition != -1) {
                     notifyItemChanged(previousEditingPosition);
                 }
@@ -120,7 +137,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             }
         });
 
-        viewHolder.buttonSaveListName.setOnClickListener(v -> saveListName(viewHolder)); // Übergabe von 'list' nicht mehr nötig
+        viewHolder.buttonSaveListName.setOnClickListener(v -> saveListName(viewHolder));
         viewHolder.editTextListName.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 saveListName(viewHolder);
@@ -131,22 +148,25 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
 
         viewHolder.buttonDeleteList.setOnClickListener(v -> {
-            int currentPos = viewHolder.getBindingAdapterPosition(); // Immer getBindingAdapterPosition() in Listenern verwenden
-            if (currentPos == RecyclerView.NO_POSITION) return; // Position ungültig
-
-            // Verhindern, dass gelöscht wird, während gerade editiert wird
-            if (editingPosition != -1 && editingPosition == currentPos){
-                Toast.makeText(context, "Bitte Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
-                return;
+            int currentPos = viewHolder.getBindingAdapterPosition();
+            if (currentPos == RecyclerView.NO_POSITION) return;
+            
+            ShoppingList listToHandle = localDataSet.get(currentPos);
+            if (listToHandle.getFirebaseId() != null && !isOwner) {
+                // Not owner of cloud list -> Leave
+                if (interactionListener != null) interactionListener.onLeaveClicked(listToHandle);
+            } else {
+                // Local list or owner of cloud list -> Delete
+                if (interactionListener != null) interactionListener.requestListDeleteConfirmation(listToHandle);
             }
+        });
 
-            // Die Liste zur aktuellen Position holen
-            ShoppingList listToDelete = localDataSet.get(currentPos);
+        viewHolder.buttonJoin.setOnClickListener(v -> {
+            if (interactionListener != null) interactionListener.onJoinClicked(list);
+        });
 
-            // Die MainActivity über den Listener benachrichtigen, dass der Custom Dialog gezeigt werden soll
-            if (interactionListener != null) {
-                interactionListener.requestListDeleteConfirmation(listToDelete);
-            }
+        viewHolder.buttonDecline.setOnClickListener(v -> {
+            if (interactionListener != null) interactionListener.onDeclineClicked(list);
         });
     }
 
@@ -161,55 +181,12 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         String newName = viewHolder.editTextListName.getText().toString().trim();
 
         if (!newName.isEmpty() && !newName.equals(list.getName())) {
-            list.setName(newName); // Update local data set directy
-            shoppingListManager.updateShoppingList(list); // NEU: Diese Methode verwenden
+            list.setName(newName); 
+            shoppingListManager.updateShoppingList(list);
             Toast.makeText(context, "Liste umbenannt in \"" + newName + "\"", Toast.LENGTH_SHORT).show();
-            // Keine Notwendigkeit für onListDataSetChanged, da nur ein Item betroffen ist
         }
         editingPosition = -1;
-        notifyItemChanged(currentPosition); // Nur dieses Item neu zeichnen
-    }
-
-
-    private void showDeleteListDialog(ShoppingList list, int position) {
-        new AlertDialog.Builder(context)
-                .setTitle(R.string.confirm_delete_list_title)
-                .setMessage(String.format(context.getString(R.string.confirm_delete_list_message), list.getName()))
-                .setPositiveButton(R.string.button_delete, (dialog, which) -> {
-                    shoppingListManager.deleteShoppingList(list);
-                    // Entferne das Element sicher aus der Liste und benachrichtige den Adapter
-                    if (position != RecyclerView.NO_POSITION && position < localDataSet.size() && localDataSet.get(position).getId() == list.getId()) {
-                        localDataSet.remove(position);
-                        notifyItemRemoved(position);
-                        // Optional: notifyItemRangeChanged, aber oft reicht das Entfernen für die Animation
-                    } else {
-                        // Fallback: Finde die Liste nach ID, falls die Position nicht mehr stimmt
-                        int foundPos = -1;
-                        for (int i = 0; i < localDataSet.size(); i++) {
-                            if (localDataSet.get(i).getId() == list.getId()) {
-                                foundPos = i;
-                                break;
-                            }
-                        }
-                        if (foundPos != -1) {
-                            localDataSet.remove(foundPos);
-                            notifyItemRemoved(foundPos);
-                        } else {
-                            // Wenn nicht gefunden, einfach neu laden als sichersten Fallback
-                            if (interactionListener != null) {
-                                interactionListener.onListDataSetChanged(); // MainActivity lädt neu
-                            }
-                        }
-                    }
-
-                    Toast.makeText(context, "Liste \"" + list.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
-                    // Benachrichtige die Activity auch nach dem lokalen Entfernen, um z.B. die Empty View zu aktualisieren
-                    if (interactionListener != null) {
-                        interactionListener.onListDataSetChanged();
-                    }
-                })
-                .setNegativeButton(R.string.button_cancel, null)
-                .show();
+        notifyItemChanged(currentPosition);
     }
 
 
@@ -223,7 +200,6 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         localDataSet.clear();
         localDataSet.addAll(newLists);
         notifyDataSetChanged();
-        // Kein Listener-Aufruf hier, MainActivity.loadShoppingLists ruft checkEmptyView auf.
     }
 
     @Override
@@ -233,16 +209,14 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             return false;
         }
 
-        // Element in der lokalen Liste verschieben
         ShoppingList movedItem = localDataSet.remove(fromPosition);
         localDataSet.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
 
-        // NEU: Positionen aktualisieren und in der DB speichern
         for (int i = 0; i < localDataSet.size(); i++) {
             localDataSet.get(i).setPosition(i);
         }
-        shoppingListManager.updateListPositions(localDataSet); // Speichert die neue Reihenfolge
+        shoppingListManager.updateListPositions(localDataSet); 
         shoppingListManager.saveListOrder(localDataSet);
 
         return true;
@@ -250,7 +224,6 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
     @Override
     public void onItemDismiss(int position) {
-        // Swipe not implemented for lists
     }
 
 
@@ -262,6 +235,9 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         final ImageButton buttonDeleteList;
         final TextView textViewListItemCount;
         final ImageView cloudIcon;
+        final View layoutInvitationActions;
+        final View buttonJoin;
+        final View buttonDecline;
 
 
         public ViewHolder(View view) {
@@ -273,7 +249,9 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             buttonDeleteList = view.findViewById(R.id.button_delete_list_inline);
             textViewListItemCount = view.findViewById(R.id.list_item_count_text_view);
             cloudIcon = view.findViewById(R.id.cloud_icon);
+            layoutInvitationActions = view.findViewById(R.id.layout_invitation_actions);
+            buttonJoin = view.findViewById(R.id.button_join_list);
+            buttonDecline = view.findViewById(R.id.button_decline_list);
         }
-        // Getter sind nicht unbedingt nötig, wenn die Views final sind
     }
-} // <-- Diese schließende Klammer hat gefehlt
+}

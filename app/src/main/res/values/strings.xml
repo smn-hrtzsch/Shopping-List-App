@@ -90,7 +90,14 @@
     <string name="profile_title">User Profile</string>
     <string name="profile_info">To allow others to add you to their lists, please choose a unique username.</string>
     <string name="profile_username_hint">Choose username</string>
+    <string name="invite_username_hint">Enter username</string>
     <string name="label_username">Username</string>
+    <string name="button_join">Join</string>
+    <string name="button_decline">Decline</string>
+    <string name="button_leave">Leave List</string>
+    <string name="member_role_owner">Owner</string>
+    <string name="member_role_member">Member</string>
+    <string name="dialog_members_title">List Members</string>
     <string name="profile_warning_anonymous">Attention: Your account is currently tied to this device (Anonymous).\nTo strictly secure your lists, you should link your account.</string>
     <string name="profile_delete_account">Delete Cloud Account &amp; Data</string>
     <string name="profile_saved">Profile saved!</string>

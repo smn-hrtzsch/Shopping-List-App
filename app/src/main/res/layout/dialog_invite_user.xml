@@ -29,7 +29,7 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/profile_username_hint"
+        android:hint="@string/invite_username_hint"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         app:boxStrokeColor="@color/input_stroke_selector"
         app:hintTextColor="@color/input_stroke_adaptive"

@@ -7,39 +7,50 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Hilfsfunktion: Prüft, ob die UID des Nutzers im 'members'-Feld des Dokuments steht
-    function isMemberOfList(rsc) {
+    // Prüft, ob Nutzer Besitzer ist
+    function isOwner(rsc) {
+      return isAuthenticated() && request.auth.uid == rsc.data.ownerId;
+    }
+
+    // Prüft, ob Nutzer Mitglied ist
+    function isMember(rsc) {
       return isAuthenticated() && (request.auth.uid in rsc.data.members);
+    }
+
+    // Prüft, ob Nutzer eingeladen ist (ausstehend)
+    function isPendingMember(rsc) {
+      return isAuthenticated() && (request.auth.uid in rsc.data.get('pending_members', []));
     }
 
     // --- Users Collection (Profile) ---
     match /users/{userId} {
-      // Jeder eingeloggte Nutzer darf Profile lesen (um Usernamen zu suchen)
       allow read: if isAuthenticated();
-      
-      // Schreiben darf man nur das eigene Profil (Dokument-ID == UID)
       allow create, update, delete: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // --- Shopping Lists Collection ---
     match /shopping_lists/{listId} {
-      // 1. Lesen (Read/List): Nur erlauben, wenn man im 'members'-Array steht
-      allow read: if isMemberOfList(resource);
+      // Lesen: Erlaubt für Mitglieder und Eingeladene
+      allow read: if isMember(resource) || isPendingMember(resource);
 
-      // 2. Erstellen (Create): Nur erlauben, wenn man eingeloggt ist UND sich selbst als Member/Owner einträgt
+      // Erstellen: OwnerId muss UID sein, UID muss in members sein
       allow create: if isAuthenticated()
                     && request.resource.data.ownerId == request.auth.uid
                     && request.auth.uid in request.resource.data.members;
 
-      // 3. Aktualisieren (Update): Nur für Mitglieder
-      allow update: if isMemberOfList(resource);
+      // Aktualisieren: 
+      // 1. Besitzer/Mitglieder dürfen alles (Name ändern, etc.)
+      // 2. Eingeladene dürfen NUR ihren Status ändern (beitreten/ablehnen)
+      allow update: if isMember(resource) 
+                    || (isPendingMember(resource) 
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'pending_members']));
 
-      // 4. Löschen (Delete): Nur für Mitglieder
-      allow delete: if isMemberOfList(resource);
+      // Löschen: NUR der Besitzer darf die Liste löschen
+      allow delete: if isOwner(resource);
 
       // --- Unter-Sammlung "items" ---
       match /items/{itemId} {
-        // Zugriff nur für Mitglieder der übergeordneten Liste
+        // Zugriff nur für echte Mitglieder (nicht für ausstehende)
         allow read, write: if isAuthenticated()
                            && request.auth.uid in get(/databases/$(database)/documents/shopping_lists/$(listId)).data.members;
       }

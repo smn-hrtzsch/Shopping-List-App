@@ -108,7 +108,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         for (int i = 0; i < items.size(); i++) {
             items.get(i).setPosition(i);
         }
-        repository.updateItemPositions(new ArrayList<>(items));
+        repository.updateItemPositions(items);
         return true;
     }
 

@@ -9,7 +9,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ShoppingListRepository {
     private ShoppingListDatabaseHelper dbHelper;
@@ -33,87 +35,87 @@ public class ShoppingListRepository {
     }
 
     public void getAllShoppingLists(OnListsLoadedListener listener) {
-        // 1. Immediately return all local lists (including cached cloud lists)
         listener.onListsLoaded(dbHelper.getAllShoppingLists());
 
-        // 2. Get shared lists from Firestore
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) {
+        if (currentUser == null) return;
+
+        String userId = currentUser.getUid();
+        
+        com.google.firebase.firestore.EventListener<com.google.firebase.firestore.QuerySnapshot> syncListener = (value, e) -> {
+            if (e != null) {
+                Log.w("Firestore", "Listen for lists failed.", e);
+                return;
+            }
+            refreshAllListsFromServer(userId, listener);
+        };
+
+        db.collection("shopping_lists").whereArrayContains("members", userId).addSnapshotListener(syncListener);
+        db.collection("shopping_lists").whereArrayContains("pending_members", userId).addSnapshotListener(syncListener);
+    }
+
+    private void refreshAllListsFromServer(String userId, OnListsLoadedListener listener) {
+        db.collection("shopping_lists").whereArrayContains("members", userId).get()
+            .addOnSuccessListener(membersSnap -> {
+                db.collection("shopping_lists").whereArrayContains("pending_members", userId).get()
+                    .addOnSuccessListener(pendingSnap -> {
+                        List<QueryDocumentSnapshot> allDocs = new ArrayList<>();
+                        for(QueryDocumentSnapshot d : membersSnap) allDocs.add(d);
+                        for(QueryDocumentSnapshot d : pendingSnap) allDocs.add(d);
+                        processServerLists(allDocs, listener);
+                    });
+            });
+    }
+
+    private void processServerLists(List<QueryDocumentSnapshot> docs, OnListsLoadedListener listener) {
+        if (docs.isEmpty()) {
+            dbHelper.deleteObsoleteCloudLists(new ArrayList<>());
+            listener.onListsLoaded(dbHelper.getAllShoppingLists());
             return;
         }
 
-        String userId = currentUser.getUid();
-        db.collection("shopping_lists")
-                .whereArrayContains("members", userId)
-                .addSnapshotListener((value, e) -> {
-                    if (e != null) {
-                        Log.w("Firestore", "Listen for failed.", e);
-                        // On error, we just keep showing what we have from local DB
-                        return;
-                    }
+        int listCount = docs.size();
+        java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
+        List<String> activeFirebaseIds = new ArrayList<>();
 
-                    if (value == null || value.isEmpty()) {
-                        // No shared lists found on server, clear any locally cached cloud lists
-                        dbHelper.deleteObsoleteCloudLists(new ArrayList<>());
-                        listener.onListsLoaded(dbHelper.getAllShoppingLists());
-                        return;
-                    }
+        for (QueryDocumentSnapshot doc : docs) {
+            String id = doc.getId();
+            String name = doc.getString("name");
+            String ownerId = doc.getString("ownerId");
+            @SuppressWarnings("unchecked")
+            List<String> members = (List<String>) doc.get("members");
+            @SuppressWarnings("unchecked")
+            List<String> pendingMembers = (List<String>) doc.get("pending_members");
 
-                    int listCount = value.size();
-                    java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
-                    List<String> activeFirebaseIds = new ArrayList<>();
+            ShoppingList list = new ShoppingList(name);
+            list.setFirebaseId(id);
+            list.setOwnerId(ownerId);
+            list.setMembers(members != null ? members : new ArrayList<>());
+            list.setPendingMembers(pendingMembers != null ? pendingMembers : new ArrayList<>());
+            
+            activeFirebaseIds.add(id);
 
-                    for (QueryDocumentSnapshot doc : value) {
-                        String id = doc.getId();
-                        String name = doc.getString("name");
-                        String ownerId = doc.getString("ownerId");
-                        @SuppressWarnings("unchecked")
-                        List<String> members = (List<String>) doc.get("members");
-
-                        ShoppingList list = new ShoppingList(name);
-                        list.setFirebaseId(id);
-                        list.setOwnerId(ownerId);
-                        list.setMembers(members);
-                        
-                        activeFirebaseIds.add(id);
-
-                        // Fetch item count for each list
-                        db.collection("shopping_lists").document(id).collection("items").get()
-                                .addOnSuccessListener(items -> {
-                                    list.setItemCount(items.size());
-                                    // Update local cache for this list
-                                    dbHelper.upsertCloudList(list);
-                                    
-                                    if (counter.incrementAndGet() == listCount) {
-                                        // All lists processed
-                                        // Remove lists that are no longer in the cloud result
-                                        dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
-                                        // Return updated full list from DB
-                                        listener.onListsLoaded(dbHelper.getAllShoppingLists());
-                                    }
-                                })
-                                .addOnFailureListener(failure -> {
-                                    Log.w("Firestore", "Error fetching items for count", failure);
-                                    // Even if counting fails, we upsert the list (count might be 0 or old)
-                                    // Optionally we could try to read old count from DB, but for now 0 is safe fallback
-                                    list.setItemCount(0); 
-                                    dbHelper.upsertCloudList(list);
-                                    
-                                    if (counter.incrementAndGet() == listCount) {
-                                        dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
-                                        listener.onListsLoaded(dbHelper.getAllShoppingLists());
-                                    }
-                                });
-                    }
-                });
+            db.collection("shopping_lists").document(id).collection("items").get()
+                    .addOnSuccessListener(items -> {
+                        list.setItemCount(items.size());
+                        dbHelper.upsertCloudList(list);
+                        if (counter.incrementAndGet() == listCount) {
+                            dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
+                            listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                        }
+                    })
+                    .addOnFailureListener(failure -> {
+                        list.setItemCount(0); 
+                        dbHelper.upsertCloudList(list);
+                        if (counter.incrementAndGet() == listCount) {
+                            dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
+                            listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                        }
+                    });
+        }
     }
 
     public void getItemsForListId(long listId, OnItemsLoadedListener listener) {
-        if (listId == -1L) {
-            Log.e("ShoppingListRepository", "Ungültige Listen-ID (-1) beim Abrufen von Items.");
-            listener.onItemsLoaded(new ArrayList<>());
-            return;
-        }
         listener.onItemsLoaded(dbHelper.getAllItems(listId));
     }
 
@@ -122,11 +124,9 @@ public class ShoppingListRepository {
                 .orderBy("position")
                 .addSnapshotListener((value, e) -> {
                     if (e != null) {
-                        Log.w("Firestore", "Listen for items failed.", e);
                         listener.onItemsLoaded(new ArrayList<>());
                         return;
                     }
-
                     List<ShoppingItem> items = new ArrayList<>();
                     if (value != null) {
                         for (QueryDocumentSnapshot doc : value) {
@@ -190,8 +190,7 @@ public class ShoppingListRepository {
 
     public void updateShoppingList(ShoppingList list) {
         if (list.getFirebaseId() != null) {
-            db.collection("shopping_lists").document(list.getFirebaseId())
-                    .update("name", list.getName());
+            db.collection("shopping_lists").document(list.getFirebaseId()).update("name", list.getName());
         } else {
             dbHelper.updateShoppingList(list);
         }
@@ -223,12 +222,8 @@ public class ShoppingListRepository {
 
     public void clearCheckedItemsFromList(String firebaseListId) {
         db.collection("shopping_lists").document(firebaseListId).collection("items")
-                .whereEqualTo("done", true)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        doc.getReference().delete();
-                    }
+                .whereEqualTo("done", true).get().addOnSuccessListener(snaps -> {
+                    for (QueryDocumentSnapshot doc : snaps) doc.getReference().delete();
                 });
     }
 
@@ -237,12 +232,8 @@ public class ShoppingListRepository {
     }
 
     public void clearAllItemsFromList(String firebaseListId) {
-        db.collection("shopping_lists").document(firebaseListId).collection("items")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        doc.getReference().delete();
-                    }
+        db.collection("shopping_lists").document(firebaseListId).collection("items").get().addOnSuccessListener(snaps -> {
+                    for (QueryDocumentSnapshot doc : snaps) doc.getReference().delete();
                 });
     }
 
@@ -256,13 +247,13 @@ public class ShoppingListRepository {
         db.collection("shopping_lists").document(firebaseListId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        @SuppressWarnings("unchecked")
                         List<String> members = (List<String>) documentSnapshot.get("members");
-                        if (members != null && members.contains(userId)) {
+                        List<String> pending = (List<String>) documentSnapshot.get("pending_members");
+                        if ((members != null && members.contains(userId)) || (pending != null && pending.contains(userId))) {
                             listener.onMemberAlreadyExists();
                         } else {
                             db.collection("shopping_lists").document(firebaseListId)
-                                    .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(userId))
+                                    .update("pending_members", com.google.firebase.firestore.FieldValue.arrayUnion(userId))
                                     .addOnSuccessListener(aVoid -> listener.onMemberAdded())
                                     .addOnFailureListener(e -> listener.onError(e.getMessage()));
                         }
@@ -271,6 +262,74 @@ public class ShoppingListRepository {
                     }
                 })
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    public void acceptInvitation(String firebaseListId, UserRepository.OnProfileActionListener listener) {
+        String userId = getCurrentUserId();
+        if (userId == null) return;
+        db.collection("shopping_lists").document(firebaseListId)
+                .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(userId),
+                        "pending_members", com.google.firebase.firestore.FieldValue.arrayRemove(userId))
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    public void declineInvitation(String firebaseListId, UserRepository.OnProfileActionListener listener) {
+        String userId = getCurrentUserId();
+        if (userId == null) return;
+        db.collection("shopping_lists").document(firebaseListId)
+                .update("pending_members", com.google.firebase.firestore.FieldValue.arrayRemove(userId))
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    public void leaveList(String firebaseListId, UserRepository.OnProfileActionListener listener) {
+        String userId = getCurrentUserId();
+        if (userId == null) return;
+        db.collection("shopping_lists").document(firebaseListId)
+                .update("members", com.google.firebase.firestore.FieldValue.arrayRemove(userId))
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    public interface OnMembersLoadedListener {
+        void onLoaded(List<Map<String, String>> membersWithNames);
+        void onError(String error);
+    }
+
+    public void getMembersWithNames(String firebaseListId, OnMembersLoadedListener listener) {
+        db.collection("shopping_lists").document(firebaseListId).get()
+            .addOnSuccessListener(doc -> {
+                if (!doc.exists()) {
+                    listener.onError("Liste nicht gefunden.");
+                    return;
+                }
+                List<String> memberIds = (List<String>) doc.get("members");
+                if (memberIds == null || memberIds.isEmpty()) {
+                    listener.onLoaded(new ArrayList<>());
+                    return;
+                }
+                List<Map<String, String>> result = new ArrayList<>();
+                java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
+                for (String uid : memberIds) {
+                    db.collection("users").document(uid).get()
+                        .addOnSuccessListener(userDoc -> {
+                            Map<String, String> memberInfo = new HashMap<>();
+                            memberInfo.put("uid", uid);
+                            memberInfo.put("username", userDoc.exists() ? userDoc.getString("username") : "Unbekannt");
+                            memberInfo.put("role", uid.equals(doc.getString("ownerId")) ? "Besitzer" : "Mitglied");
+                            result.add(memberInfo);
+                            if (counter.incrementAndGet() == memberIds.size()) listener.onLoaded(result);
+                        })
+                        .addOnFailureListener(e -> {
+                            if (counter.incrementAndGet() == memberIds.size()) listener.onLoaded(result);
+                        });
+                }
+            });
+    }
+
+    public String getCurrentUserId() {
+        return mAuth.getUid();
     }
 
     public void updateListTimestamp(String firebaseListId) {

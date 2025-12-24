@@ -14,6 +14,7 @@ public class ShoppingList {
     private String firebaseId;
     private String ownerId;
     private List<String> members;
+    private List<String> pendingMembers;
 
     public ShoppingList(long id, String name) {
         this.id = id;
@@ -22,6 +23,7 @@ public class ShoppingList {
         this.itemCount = 0;
         this.position = 0; // NEU
         this.members = new ArrayList<>();
+        this.pendingMembers = new ArrayList<>();
     }
 
     public ShoppingList(String name) {
@@ -29,6 +31,7 @@ public class ShoppingList {
         this.items = new ArrayList<>();
         this.itemCount = 0;
         this.members = new ArrayList<>();
+        this.pendingMembers = new ArrayList<>();
     }
 
     // --- Getter und Setter ---
@@ -52,6 +55,16 @@ public class ShoppingList {
     public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
     public List<String> getMembers() { return members; }
     public void setMembers(List<String> members) { this.members = members; }
+    public List<String> getPendingMembers() { return pendingMembers; }
+    public void setPendingMembers(List<String> pendingMembers) { this.pendingMembers = pendingMembers; }
+
+    public boolean isCurrentUserPending(String currentUid) {
+        return pendingMembers != null && pendingMembers.contains(currentUid);
+    }
+
+    public boolean isOwner(String currentUid) {
+        return ownerId != null && ownerId.equals(currentUid);
+    }
 
     public void addItem(ShoppingItem item) {
         this.items.add(item);

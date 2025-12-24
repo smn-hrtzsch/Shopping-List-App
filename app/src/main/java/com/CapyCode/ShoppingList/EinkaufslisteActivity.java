@@ -29,7 +29,9 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class EinkaufslisteActivity extends AppCompatActivity implements MyRecyclerViewAdapter.OnItemInteractionListener {
 
@@ -141,8 +143,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (firebaseListId != null) {
             menu.findItem(R.id.action_share_list).setVisible(false);
             menu.findItem(R.id.action_invite_user).setVisible(true);
+            menu.findItem(R.id.action_view_members).setVisible(true);
         } else {
             menu.findItem(R.id.action_invite_user).setVisible(false);
+            menu.findItem(R.id.action_view_members).setVisible(false);
         }
         return true;
     }
@@ -159,8 +163,37 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         } else if (itemId == R.id.action_invite_user) {
             showInviteUserDialog();
             return true;
+        } else if (itemId == R.id.action_view_members) {
+            showMembersDialog();
+            return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showMembersDialog() {
+        if (firebaseListId == null) return;
+
+        shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
+            @Override
+            public void onLoaded(List<Map<String, String>> membersWithNames) {
+                StringBuilder message = new StringBuilder();
+                for (Map<String, String> member : membersWithNames) {
+                    message.append("• ").append(member.get("username"))
+                           .append(" (").append(member.get("role")).append(")\n");
+                }
+
+                new MaterialAlertDialogBuilder(EinkaufslisteActivity.this, R.style.AppMaterialAlertDialogTheme)
+                        .setTitle(R.string.dialog_members_title)
+                        .setMessage(message.toString().trim())
+                        .setPositiveButton(R.string.ok, null)
+                        .show();
+            }
+
+            @Override
+            public void onError(String error) {
+                Toast.makeText(EinkaufslisteActivity.this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showInviteUserDialog() {
