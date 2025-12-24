@@ -142,10 +142,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         inflater.inflate(R.menu.einkaufsliste_menu, menu);
         if (firebaseListId != null) {
             menu.findItem(R.id.action_share_list).setVisible(false);
-            menu.findItem(R.id.action_invite_user).setVisible(true);
             menu.findItem(R.id.action_view_members).setVisible(true);
         } else {
-            menu.findItem(R.id.action_invite_user).setVisible(false);
             menu.findItem(R.id.action_view_members).setVisible(false);
         }
         return true;
@@ -159,9 +157,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             return true;
         } else if (itemId == R.id.action_share_list) {
             shareShoppingList();
-            return true;
-        } else if (itemId == R.id.action_invite_user) {
-            showInviteUserDialog();
             return true;
         } else if (itemId == R.id.action_view_members) {
             showMembersDialog();

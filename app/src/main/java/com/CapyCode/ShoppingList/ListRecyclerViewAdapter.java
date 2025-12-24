@@ -81,14 +81,25 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         
         if (isPending) {
             viewHolder.textViewListItemCount.setText("Eingeladen");
-            viewHolder.layoutInvitationActions.setVisibility(View.VISIBLE);
+            viewHolder.buttonJoin.setVisibility(View.VISIBLE);
+            viewHolder.buttonDecline.setVisibility(View.VISIBLE);
             viewHolder.buttonEditListName.setVisibility(View.GONE);
             viewHolder.buttonDeleteList.setVisibility(View.GONE);
         } else {
             viewHolder.textViewListItemCount.setText(itemCountText);
-            viewHolder.layoutInvitationActions.setVisibility(View.GONE);
+            viewHolder.buttonJoin.setVisibility(View.GONE);
+            viewHolder.buttonDecline.setVisibility(View.GONE);
             viewHolder.buttonEditListName.setVisibility(isEditing ? View.GONE : View.VISIBLE);
             viewHolder.buttonDeleteList.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+            
+            // Set correct icon for delete/leave
+            if (list.getFirebaseId() != null && !isOwner) {
+                viewHolder.buttonDeleteList.setImageResource(R.drawable.ic_logout_24);
+                viewHolder.buttonDeleteList.setContentDescription(context.getString(R.string.button_leave));
+            } else {
+                viewHolder.buttonDeleteList.setImageResource(R.drawable.ic_delete_24);
+                viewHolder.buttonDeleteList.setContentDescription(context.getString(R.string.button_delete_list));
+            }
         }
 
 
@@ -235,9 +246,8 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         final ImageButton buttonDeleteList;
         final TextView textViewListItemCount;
         final ImageView cloudIcon;
-        final View layoutInvitationActions;
-        final View buttonJoin;
-        final View buttonDecline;
+        final ImageButton buttonJoin;
+        final ImageButton buttonDecline;
 
 
         public ViewHolder(View view) {
@@ -249,7 +259,6 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             buttonDeleteList = view.findViewById(R.id.button_delete_list_inline);
             textViewListItemCount = view.findViewById(R.id.list_item_count_text_view);
             cloudIcon = view.findViewById(R.id.cloud_icon);
-            layoutInvitationActions = view.findViewById(R.id.layout_invitation_actions);
             buttonJoin = view.findViewById(R.id.button_join_list);
             buttonDecline = view.findViewById(R.id.button_decline_list);
         }
