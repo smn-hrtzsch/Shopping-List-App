@@ -582,11 +582,13 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     @Override
     public void onLeaveClicked(ShoppingList list) {
         if (list.getFirebaseId() == null) return;
-        
-        new AlertDialog.Builder(this)
-                .setTitle("Liste verlassen?")
-                .setMessage("Möchtest du die Liste \"" + list.getName() + "\" wirklich verlassen?")
-                .setPositiveButton("Verlassen", (dialog, which) -> {
+
+        showCustomDialog(
+                "Liste verlassen?",
+                "Möchtest du die Liste \"" + list.getName() + "\" wirklich verlassen?",
+                "Verlassen",
+                "Abbrechen",
+                () -> {
                     shoppingListRepository.leaveList(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
                         @Override
                         public void onSuccess() {
@@ -599,9 +601,9 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                             Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
                         }
                     });
-                })
-                .setNegativeButton("Abbrechen", null)
-                .show();
+                },
+                null
+        );
     }
 
     @Override
