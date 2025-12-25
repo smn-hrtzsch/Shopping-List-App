@@ -25,6 +25,9 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 
 public class AuthActivity extends AppCompatActivity {
 
@@ -92,8 +95,17 @@ public class AuthActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         finishAuth(true);
                     } else {
-                        Toast.makeText(AuthActivity.this, getString(R.string.auth_failed) + ": " + task.getException().getMessage(),
-                                Toast.LENGTH_LONG).show();
+                        String errorMsg = "Login fehlgeschlagen.";
+                        try {
+                            throw task.getException();
+                        } catch(FirebaseAuthInvalidUserException e) {
+                            errorMsg = "Konto existiert nicht oder wurde deaktiviert.";
+                        } catch(FirebaseAuthInvalidCredentialsException e) {
+                            errorMsg = "Ungültige E-Mail oder falsches Passwort.";
+                        } catch(Exception e) {
+                            errorMsg = e.getMessage();
+                        }
+                        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -144,8 +156,15 @@ public class AuthActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         finishAuth(true);
                     } else {
-                        Toast.makeText(AuthActivity.this, getString(R.string.auth_failed) + ": " + task.getException().getMessage(),
-                                Toast.LENGTH_LONG).show();
+                        String errorMsg = "Registrierung fehlgeschlagen.";
+                        try {
+                            throw task.getException();
+                        } catch(FirebaseAuthUserCollisionException e) {
+                            errorMsg = "Ein Konto mit dieser E-Mail existiert bereits.";
+                        } catch(Exception e) {
+                            errorMsg = e.getMessage();
+                        }
+                        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -158,15 +177,32 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        mAuth.sendPasswordResetEmail(email)
-                .addOnCompleteListener(task -> {
-                    showLoading(false);
-                    if (task.isSuccessful()) {
-                        Toast.makeText(AuthActivity.this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(AuthActivity.this, "Failed to send reset email", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        
+        // Try to check if user exists first (Best effort)
+        mAuth.fetchSignInMethodsForEmail(email)
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                     if (task.getResult().getSignInMethods() != null && task.getResult().getSignInMethods().isEmpty()) {
+                         showLoading(false);
+                         Toast.makeText(AuthActivity.this, "Kein Konto mit dieser E-Mail gefunden.", Toast.LENGTH_LONG).show();
+                         return;
+                     }
+                }
+                
+                mAuth.sendPasswordResetEmail(email)
+                    .addOnCompleteListener(resetTask -> {
+                        showLoading(false);
+                        if (resetTask.isSuccessful()) {
+                            Toast.makeText(AuthActivity.this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
+                        } else {
+                             String msg = resetTask.getException() != null ? resetTask.getException().getMessage() : "Fehler";
+                             if (resetTask.getException() instanceof FirebaseAuthInvalidUserException) {
+                                 msg = "Kein Konto mit dieser E-Mail gefunden.";
+                             }
+                             Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+            });
     }
 
     private void showLoading(boolean show) {

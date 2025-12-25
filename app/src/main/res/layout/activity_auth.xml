@@ -39,9 +39,7 @@
                 android:layout_width="120dp"
                 android:layout_height="120dp"
                 android:layout_marginBottom="48dp"
-                android:background="@drawable/ic_launcher_background"
-                android:padding="20dp"
-                android:src="@drawable/ic_launcher_foreground"
+                android:src="@mipmap/ic_launcher_round"
                 android:scaleType="centerInside"/>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -51,6 +49,7 @@
                 android:layout_marginBottom="16dp"
                 android:hint="@string/prompt_email"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:theme="@style/AccentInputTheme"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -70,7 +69,9 @@
                 android:layout_marginBottom="32dp"
                 android:hint="@string/prompt_password"
                 app:endIconMode="password_toggle"
+                app:errorIconDrawable="@null"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:theme="@style/AccentInputTheme"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -89,6 +90,7 @@
                 android:layout_height="60dp"
                 android:layout_marginBottom="16dp"
                 android:text="@string/action_sign_in"
+                style="@style/ButtonStyle.Solid"
                 app:cornerRadius="30dp"
                 android:textAllCaps="true"
                 android:textSize="16sp"/>

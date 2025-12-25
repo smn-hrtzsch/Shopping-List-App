@@ -38,6 +38,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.UserInfo;
 
 public class ProfileActivity extends AppCompatActivity {
@@ -99,7 +100,6 @@ public class ProfileActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         
-        // Configure Google Sign In
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
@@ -112,7 +112,7 @@ public class ProfileActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowTitleEnabled(false);
+            getSupportActionBar().setDisplayShowTitleEnabled(true);
         }
         
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
@@ -155,15 +155,28 @@ public class ProfileActivity extends AppCompatActivity {
 
         buttonSignOut.setOnClickListener(v -> confirmSignOut());
         
-        View.OnClickListener imageClickListener = v -> {
-             if (mAuth.getCurrentUser() != null && !mAuth.getCurrentUser().isAnonymous()) {
-                 pickImageLauncher.launch("image/*");
-             } else {
-                 Toast.makeText(this, getString(R.string.profile_warning_anonymous), Toast.LENGTH_SHORT).show();
-             }
-        };
+        View.OnClickListener imageClickListener = v -> showImageOptions();
         imageProfile.setOnClickListener(imageClickListener);
         iconEditImage.setOnClickListener(imageClickListener);
+    }
+    
+    private void showImageOptions() {
+        if (mAuth.getCurrentUser() == null || mAuth.getCurrentUser().isAnonymous()) {
+             Toast.makeText(this, getString(R.string.profile_warning_anonymous), Toast.LENGTH_SHORT).show();
+             return;
+        }
+
+        String[] options = {"Neues Bild wählen", "Bild entfernen", "Abbrechen"};
+        new AlertDialog.Builder(this)
+                .setTitle("Profilbild")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        pickImageLauncher.launch("image/*");
+                    } else if (which == 1) {
+                        removeImage();
+                    }
+                })
+                .show();
     }
 
 
@@ -177,66 +190,41 @@ public class ProfileActivity extends AppCompatActivity {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null && currentUser.isAnonymous()) {
+        if (currentUser != null) {
+            // Try to link first
             currentUser.linkWithCredential(credential)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(ProfileActivity.this, "Linked with Google", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ProfileActivity.this, "Google verknüpft", Toast.LENGTH_SHORT).show();
                             loadCurrentProfile();
                         } else {
-                             // Fallback: Sign in directly if linking fails (e.g. account exists)
-                             mAuth.signInWithCredential(credential)
-                                .addOnCompleteListener(this, signInTask -> {
-                                    if (signInTask.isSuccessful()) {
-                                        Toast.makeText(ProfileActivity.this, "Signed in with Google", Toast.LENGTH_SHORT).show();
-                                        loadCurrentProfile();
-                                    } else {
-                                        progressBarLoading.setVisibility(View.GONE);
-                                        Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                        }
-                    });
-        } else {
-            // Already logged in, maybe try to link?
-            if (currentUser != null) {
-                currentUser.linkWithCredential(credential)
-                    .addOnCompleteListener(this, task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(ProfileActivity.this, "Account linked with Google", Toast.LENGTH_SHORT).show();
-                            loadCurrentProfile();
-                        } else {
-                             // If linking fails (e.g. account already exists with different credentials),
-                             // we could ask user to switch accounts, but for now we just try to sign in
-                             // which effectively switches user
                              if (task.getException() != null && task.getException().getMessage().contains("already linked")) {
-                                 Toast.makeText(ProfileActivity.this, "Google already linked", Toast.LENGTH_SHORT).show();
+                                 Toast.makeText(ProfileActivity.this, "Konto ist bereits verknüpft", Toast.LENGTH_SHORT).show();
                                  loadCurrentProfile();
                              } else {
-                                 // Try sign in (Switch account)
+                                 // Link failed (e.g. credential used by another account), try sign in
                                  mAuth.signInWithCredential(credential)
                                     .addOnCompleteListener(this, signInTask -> {
                                         if (signInTask.isSuccessful()) {
                                             loadCurrentProfile();
                                         } else {
                                             progressBarLoading.setVisibility(View.GONE);
-                                            Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(ProfileActivity.this, "Anmeldung fehlgeschlagen", Toast.LENGTH_SHORT).show();
                                         }
                                     });
                              }
                         }
                     });
-            } else {
-                mAuth.signInWithCredential(credential)
-                        .addOnCompleteListener(this, task -> {
-                            if (task.isSuccessful()) {
-                                loadCurrentProfile();
-                            } else {
-                                progressBarLoading.setVisibility(View.GONE);
-                                Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-            }
+        } else {
+            mAuth.signInWithCredential(credential)
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            loadCurrentProfile();
+                        } else {
+                            progressBarLoading.setVisibility(View.GONE);
+                            Toast.makeText(ProfileActivity.this, "Anmeldung fehlgeschlagen", Toast.LENGTH_SHORT).show();
+                        }
+                    });
         }
     }
 
@@ -244,7 +232,6 @@ public class ProfileActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_profile, menu);
         MenuItem editItem = menu.findItem(R.id.action_edit_profile);
-        // Only show edit icon if we are in view mode (profile exists) AND currently not editing
         if (isInitialProfileCreation || layoutEditMode.getVisibility() == View.VISIBLE) {
             editItem.setVisible(false);
         } else {
@@ -269,7 +256,6 @@ public class ProfileActivity extends AppCompatActivity {
         progressBarLoading.setVisibility(View.VISIBLE);
         containerContent.setVisibility(View.GONE);
 
-        // Define what to do once we have a user (anonymous or real)
         Runnable fetchProfileData = () -> {
             updateAuthUI();
             
@@ -283,21 +269,23 @@ public class ProfileActivity extends AppCompatActivity {
                         Glide.with(ProfileActivity.this)
                             .load(imageUrl)
                             .apply(RequestOptions.circleCropTransform())
-                            .placeholder(R.drawable.ic_account_circle_24)
                             .into(imageProfile);
+                         // Padding remove to fill circle
+                         imageProfile.setPadding(0,0,0,0);
+                         imageProfile.setBackgroundResource(0); // Remove background
                     } else {
                          // Reset to default
                          imageProfile.setImageResource(R.drawable.ic_account_circle_24);
+                         imageProfile.setPadding(0,0,0,0); // Reset padding
+                         imageProfile.setBackgroundResource(android.R.color.transparent);
                     }
 
                     if (username != null) {
-                        // User has a profile -> Show View Mode
                         isInitialProfileCreation = false;
                         textViewCurrentUsername.setText(username);
                         editTextUsername.setText(username);
                         showViewMode();
                     } else {
-                        // No profile -> Show Edit Mode
                         isInitialProfileCreation = true;
                         showEditMode();
                     }
@@ -336,29 +324,45 @@ public class ProfileActivity extends AppCompatActivity {
     private void updateAuthUI() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null && !user.isAnonymous()) {
-            // Logged in
             textViewWarning.setVisibility(View.GONE);
             textEmailDisplay.setVisibility(View.VISIBLE);
             textEmailDisplay.setText(user.getEmail());
             
             buttonSignOut.setVisibility(View.VISIBLE);
-            
-            // Check provider data to see if Google is linked
+            layoutAuthButtons.setVisibility(View.VISIBLE); // Keep visible for Unlink options
+
             boolean isGoogleLinked = false;
+            boolean isEmailLinked = false;
+            
             for (UserInfo profile : user.getProviderData()) {
-                if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
-                    isGoogleLinked = true;
-                    break;
-                }
+                if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) isGoogleLinked = true;
+                if (EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) isEmailLinked = true;
+            }
+            
+            // Configure Google Button
+            if (isGoogleLinked) {
+                buttonRegisterGoogle.setText("Google verbunden (Trennen)");
+                buttonRegisterGoogle.setIconTintResource(R.color.teal_700); // Indicate active? Or keep null.
+                buttonRegisterGoogle.setOnClickListener(v -> confirmUnlink(GoogleAuthProvider.PROVIDER_ID));
+            } else {
+                buttonRegisterGoogle.setText("Mit Google verknüpfen");
+                buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
+                buttonRegisterGoogle.setIconTint(null);
+                buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
             }
 
-            if (!isGoogleLinked) {
-                 layoutAuthButtons.setVisibility(View.VISIBLE);
-                 buttonRegisterEmail.setVisibility(View.GONE); // Already logged in (via email presumably)
-                 buttonRegisterGoogle.setText("Mit Google verknüpfen");
-                 buttonRegisterGoogle.setVisibility(View.VISIBLE);
+            // Configure Email Button
+            if (isEmailLinked) {
+                buttonRegisterEmail.setText("E-Mail verbunden (Trennen)");
+                buttonRegisterEmail.setIconResource(R.drawable.ic_email); // Make sure ic_email exists
+                buttonRegisterEmail.setOnClickListener(v -> confirmUnlink(EmailAuthProvider.PROVIDER_ID));
             } else {
-                 layoutAuthButtons.setVisibility(View.GONE);
+                buttonRegisterEmail.setText("Mit E-Mail verknüpfen");
+                 buttonRegisterEmail.setIconResource(R.drawable.ic_email); 
+                buttonRegisterEmail.setOnClickListener(v -> {
+                    Intent intent = new Intent(this, AuthActivity.class);
+                    authActivityLauncher.launch(intent);
+                });
             }
             
             iconEditImage.setVisibility(View.VISIBLE);
@@ -368,29 +372,96 @@ public class ProfileActivity extends AppCompatActivity {
             textEmailDisplay.setVisibility(View.GONE);
             
             layoutAuthButtons.setVisibility(View.VISIBLE);
-            buttonRegisterEmail.setVisibility(View.VISIBLE);
+            
+            buttonRegisterEmail.setText(R.string.action_sign_in_email);
+            buttonRegisterEmail.setIconResource(R.drawable.ic_email); 
+            buttonRegisterEmail.setOnClickListener(v -> {
+                Intent intent = new Intent(this, AuthActivity.class);
+                authActivityLauncher.launch(intent);
+            });
+
             buttonRegisterGoogle.setText(R.string.sign_in_google);
-            buttonRegisterGoogle.setVisibility(View.VISIBLE);
+             buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
+             buttonRegisterGoogle.setIconTint(null);
+            buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
             
             buttonSignOut.setVisibility(View.GONE);
-            
              iconEditImage.setVisibility(View.GONE);
         }
     }
     
+    private void confirmUnlink(String providerId) {
+        showCustomDialog(
+                "Verknüpfung aufheben?",
+                "Möchtest du diese Anmelde-Methode wirklich entfernen? Wenn du keine anderen Methoden hast, verlierst du den Zugriff auf dein Konto.",
+                "Trennen",
+                () -> unlinkProvider(providerId)
+        );
+    }
+    
+    private void unlinkProvider(String providerId) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            user.unlink(providerId)
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(this, "Verknüpfung aufgehoben", Toast.LENGTH_SHORT).show();
+                            loadCurrentProfile();
+                        } else {
+                            Toast.makeText(this, "Fehler beim Trennen: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+        }
+    }
+    
     private void confirmSignOut() {
-        new AlertDialog.Builder(this)
-            .setTitle(R.string.button_sign_out)
-            .setMessage("Wenn du dich abmeldest, sind deine geteilten Listen nicht mehr sichtbar, bis du dich wieder anmeldest.")
-            .setPositiveButton(R.string.button_sign_out, (dialog, which) -> {
-                 mAuth.signOut();
-                 mGoogleSignInClient.signOut();
-                 Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
-                 // Reload profile will trigger anonymous login again
-                 loadCurrentProfile(); 
-            })
-            .setNegativeButton(R.string.cancel, null)
-            .show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
+        textTitle.setText(R.string.button_sign_out);
+        textMessage.setText("Wenn du dich abmeldest, sind deine geteilten Listen nicht mehr sichtbar, bis du dich wieder anmeldest.");
+        btnPositive.setText(R.string.button_sign_out);
+        btnNegative.setText(R.string.button_cancel);
+        
+        btnPositive.setOnClickListener(v -> {
+             mAuth.signOut();
+             mGoogleSignInClient.signOut();
+             Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
+             dialog.dismiss();
+             loadCurrentProfile(); 
+        });
+
+        btnNegative.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private void removeImage() {
+        progressBarLoading.setVisibility(View.VISIBLE);
+        userRepository.removeProfileImage(new UserRepository.OnProfileActionListener() {
+            @Override
+            public void onSuccess() {
+                 progressBarLoading.setVisibility(View.GONE);
+                 loadCurrentProfile(); // Reloads to set default
+                 Toast.makeText(ProfileActivity.this, "Bild entfernt", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(String message) {
+                progressBarLoading.setVisibility(View.GONE);
+                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void uploadImage(Uri imageUri) {
@@ -403,6 +474,8 @@ public class ProfileActivity extends AppCompatActivity {
                         .load(downloadUrl)
                         .apply(RequestOptions.circleCropTransform())
                         .into(imageProfile);
+                imageProfile.setPadding(0,0,0,0);
+                 imageProfile.setBackgroundResource(0);
                 Toast.makeText(ProfileActivity.this, "Image uploaded!", Toast.LENGTH_SHORT).show();
             }
 
@@ -419,7 +492,6 @@ public class ProfileActivity extends AppCompatActivity {
         layoutEditMode.setVisibility(View.GONE);
         
         buttonDelete.setVisibility(View.VISIBLE);
-        // Warning visibility is handled in updateAuthUI
         textViewProfileInfo.setVisibility(View.GONE);
         invalidateOptionsMenu();
     }
@@ -432,11 +504,9 @@ public class ProfileActivity extends AppCompatActivity {
             buttonDelete.setVisibility(View.GONE);
             textViewProfileInfo.setVisibility(View.VISIBLE);
         } else {
-            // Editing existing
             buttonDelete.setVisibility(View.VISIBLE);
             textViewProfileInfo.setVisibility(View.GONE);
         }
-        // Warning visibility is handled in updateAuthUI
         invalidateOptionsMenu();
     }
 

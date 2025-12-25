@@ -201,14 +201,39 @@ public class UserRepository {
                 .addOnFailureListener(e -> listener.onError("Upload failed: " + e.getMessage()));
     }
 
+    public void removeProfileImage(OnProfileActionListener listener) {
+        if (!isAuthenticated()) {
+            listener.onError("Not logged in");
+            return;
+        }
+        String uid = getCurrentUserId();
+        
+        // 1. Delete from Storage (Optional: if it exists)
+        StorageReference ref = storage.getReference().child("profile_images/" + uid + ".jpg");
+        ref.delete().addOnCompleteListener(task -> {
+            // Even if delete fails (maybe file didn't exist), we remove the URL from Firestore
+            updateProfileImage(null, listener);
+        });
+    }
+
     private void updateProfileImage(String url, OnProfileActionListener listener) {
         Map<String, Object> updateData = new HashMap<>();
-        updateData.put("profileImageUrl", url);
+        updateData.put("profileImageUrl", url); // Firestore handles null correctly (sets to null or deletes field? update handles null as value)
+        // Ideally we use FieldValue.delete() if url is null, but setting to null is fine for now if we check != null in code
         
-        db.collection("users").document(getCurrentUserId())
-                .set(updateData, com.google.firebase.firestore.SetOptions.merge())
+        if (url == null) {
+             Map<String, Object> deleteData = new HashMap<>();
+             deleteData.put("profileImageUrl", com.google.firebase.firestore.FieldValue.delete());
+             db.collection("users").document(getCurrentUserId())
+                .update(deleteData)
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
+        } else {
+            db.collection("users").document(getCurrentUserId())
+                    .set(updateData, com.google.firebase.firestore.SetOptions.merge())
+                    .addOnSuccessListener(aVoid -> listener.onSuccess())
+                    .addOnFailureListener(e -> listener.onError(e.getMessage()));
+        }
     }
 
     public void getUserProfile(OnUserProfileLoadedListener listener) {
