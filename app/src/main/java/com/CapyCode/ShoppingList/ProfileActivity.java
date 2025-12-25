@@ -190,42 +190,64 @@ public class ProfileActivity extends AppCompatActivity {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
-            // Try to link first
+        if (currentUser != null && currentUser.isAnonymous()) {
             currentUser.linkWithCredential(credential)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(ProfileActivity.this, "Google verknüpft", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ProfileActivity.this, "Linked with Google", Toast.LENGTH_SHORT).show();
                             loadCurrentProfile();
                         } else {
-                             if (task.getException() != null && task.getException().getMessage().contains("already linked")) {
-                                 Toast.makeText(ProfileActivity.this, "Konto ist bereits verknüpft", Toast.LENGTH_SHORT).show();
-                                 loadCurrentProfile();
+                             // Link failed (e.g. account exists)
+                             if (task.getException() != null && task.getException().getMessage().contains("already in use")) {
+                                 progressBarLoading.setVisibility(View.GONE);
+                                 // Ask user if they want to switch accounts (losing guest data)
+                                 showCustomDialog(
+                                     "Konto wechseln?",
+                                     "Ein Konto mit diesem Google-Account existiert bereits.\n\nMöchtest du dich in dieses Konto einloggen? Deine aktuellen Gast-Listen werden dabei durch die des anderen Kontos ersetzt.",
+                                     "Wechseln (Daten verwerfen)",
+                                     () -> performGoogleSignIn(credential)
+                                 );
                              } else {
-                                 // Link failed (e.g. credential used by another account), try sign in
-                                 mAuth.signInWithCredential(credential)
-                                    .addOnCompleteListener(this, signInTask -> {
-                                        if (signInTask.isSuccessful()) {
-                                            loadCurrentProfile();
-                                        } else {
-                                            progressBarLoading.setVisibility(View.GONE);
-                                            Toast.makeText(ProfileActivity.this, "Anmeldung fehlgeschlagen", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
+                                 progressBarLoading.setVisibility(View.GONE);
+                                 Toast.makeText(ProfileActivity.this, "Verknüpfung fehlgeschlagen: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                              }
                         }
                     });
         } else {
-            mAuth.signInWithCredential(credential)
-                    .addOnCompleteListener(this, task -> {
-                        if (task.isSuccessful()) {
-                            loadCurrentProfile();
-                        } else {
-                            progressBarLoading.setVisibility(View.GONE);
-                            Toast.makeText(ProfileActivity.this, "Anmeldung fehlgeschlagen", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            // Not anonymous or already logged in (should be handled by updateAuthUI but safe check)
+            if (currentUser != null) {
+                 // Try to link (logic for existing user adding google)
+                 currentUser.linkWithCredential(credential).addOnCompleteListener(this, task -> {
+                     if (task.isSuccessful()) {
+                         loadCurrentProfile();
+                     } else {
+                         // Handle error (e.g. already linked)
+                         if (task.getException() != null && task.getException().getMessage().contains("already linked")) {
+                             // Ignore or notify
+                             loadCurrentProfile();
+                         } else {
+                             progressBarLoading.setVisibility(View.GONE);
+                             Toast.makeText(ProfileActivity.this, "Fehler: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                         }
+                     }
+                 });
+            } else {
+                performGoogleSignIn(credential);
+            }
         }
+    }
+
+    private void performGoogleSignIn(AuthCredential credential) {
+        progressBarLoading.setVisibility(View.VISIBLE);
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        loadCurrentProfile();
+                    } else {
+                        progressBarLoading.setVisibility(View.GONE);
+                        Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     @Override

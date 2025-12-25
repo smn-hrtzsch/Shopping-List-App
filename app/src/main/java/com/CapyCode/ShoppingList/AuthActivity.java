@@ -12,6 +12,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
@@ -87,8 +88,21 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null && currentUser.isAnonymous()) {
+            showCustomDialog(
+                "Konto wechseln?",
+                "Du bist aktuell als Gast angemeldet. Wenn du dich in ein anderes bestehendes Konto einloggst, werden deine aktuellen Gast-Listen von diesem Gerät entfernt und durch die des anderen Kontos ersetzt.\n\nMöchtest du fortfahren?",
+                "Anmelden (Daten verwerfen)",
+                () -> performLogin(email, password)
+            );
+        } else {
+            performLogin(email, password);
+        }
+    }
+
+    private void performLogin(String email, String password) {
         showLoading(true);
-        
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     showLoading(false);
@@ -178,7 +192,6 @@ public class AuthActivity extends AppCompatActivity {
 
         showLoading(true);
         
-        // Try to check if user exists first (Best effort)
         mAuth.fetchSignInMethodsForEmail(email)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
@@ -217,6 +230,35 @@ public class AuthActivity extends AppCompatActivity {
             setResult(RESULT_OK);
             finish();
         }
+    }
+
+    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
+        textTitle.setText(title);
+        textMessage.setText(message);
+        btnPositive.setText(positiveButtonText);
+        
+        btnPositive.setOnClickListener(v -> {
+            onPositiveAction.run();
+            dialog.dismiss();
+        });
+
+        btnNegative.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     @Override
