@@ -2,6 +2,7 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/profile_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -42,48 +43,73 @@
         <LinearLayout
             android:id="@+id/container_content"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="visible">
 
-            <!-- Header Icon -->
-            <ImageView
-                android:layout_width="96dp"
-                android:layout_height="96dp"
+            <!-- Profile Image Area -->
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:src="@drawable/ic_account_circle_24"
-                app:tint="@color/icon_tint_adaptive"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="32dp"/>
+                android:layout_marginBottom="24dp">
 
-            <!-- View Mode: Zeigt existierenden Namen -->
+                <ImageView
+                    android:id="@+id/image_profile"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:background="@drawable/ic_launcher_background"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_account_circle_24"
+                    app:tint="?attr/colorControlNormal" />
+                
+                 <ImageView
+                    android:id="@+id/icon_edit_image"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="bottom|end"
+                    android:background="@mipmap/ic_launcher_round"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_edit_24"
+                    app:tint="@android:color/white" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/text_email_display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:text="user@example.com"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- View Mode -->
             <LinearLayout
                 android:id="@+id/layout_view_mode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:visibility="gone">
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/label_username"
+                    android:textAppearance="?attr/textAppearanceCaption" />
 
                 <TextView
                     android:id="@+id/text_view_current_username"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Max Mustermann"
-                    android:textSize="32sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary_adaptive"
-                    android:layout_marginBottom="4dp"/>
-
-                <TextView
-                    android:id="@+id/text_view_label_username"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/label_username"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary_adaptive"
-                    android:layout_marginBottom="4dp"/>
-
+                    android:layout_marginBottom="24dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="12dp"
+                    android:text="Benutzername"
+                    android:textAppearance="?attr/textAppearanceBody1"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <!-- Edit Mode: Eingabefeld -->
@@ -142,32 +168,42 @@
 
             </LinearLayout>
 
+            <!-- Spacing -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"/>
+                android:layout_weight="1"
+                android:minHeight="16dp"/>
 
-            <!-- Danger Zone -->
+            <!-- Danger Zone / Auth Actions -->
             <TextView
                 android:id="@+id/text_view_warning_anonymous"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="#1A0F55AA"
+                android:padding="12dp"
                 android:text="@string/profile_warning_anonymous"
                 android:textColor="?attr/colorError"
-                android:gravity="center"
                 android:textSize="12sp"
-                android:layout_marginBottom="12dp"/>
+                android:visibility="gone" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_delete_account"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/profile_delete_account"
-                android:textColor="?attr/colorError"
-                app:strokeColor="?attr/colorError"
-                app:cornerRadius="8dp"
-                android:layout_marginBottom="16dp"/>
+                android:textColor="?attr/colorError" />
+
+                
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_auth_action"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/action_sign_in" />
 
         </LinearLayout>
     </LinearLayout>

@@ -1,42 +1,69 @@
 package com.CapyCode.ShoppingList;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private TextInputEditText editTextUsername;
     private MaterialButton buttonSave;
     private MaterialButton buttonDelete;
+    private MaterialButton buttonAuthAction;
     private TextView textViewCurrentUsername;
     private TextView textViewProfileInfo;
     private TextView textViewWarning;
+    private TextView textEmailDisplay;
+    private ImageView imageProfile;
+    private ImageView iconEditImage;
     private LinearLayout layoutViewMode;
     private LinearLayout layoutEditMode;
     private LinearLayout containerContent;
     private ProgressBar progressBarLoading;
     private UserRepository userRepository;
     private boolean isInitialProfileCreation = false;
-    private com.google.firebase.auth.FirebaseAuth mAuth;
+    private FirebaseAuth mAuth;
+
+    private final ActivityResultLauncher<Intent> authActivityLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    loadCurrentProfile();
+                }
+            });
+
+    private final ActivityResultLauncher<String> pickImageLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    uploadImage(uri);
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +71,7 @@ public class ProfileActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_profile);
 
-        mAuth = com.google.firebase.auth.FirebaseAuth.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
         View root = findViewById(R.id.profile_root);
         
@@ -66,9 +93,13 @@ public class ProfileActivity extends AppCompatActivity {
         editTextUsername = findViewById(R.id.edit_text_username);
         buttonSave = findViewById(R.id.button_save_profile);
         buttonDelete = findViewById(R.id.button_delete_account);
+        buttonAuthAction = findViewById(R.id.button_auth_action);
         textViewCurrentUsername = findViewById(R.id.text_view_current_username);
         textViewProfileInfo = findViewById(R.id.text_view_profile_info);
         textViewWarning = findViewById(R.id.text_view_warning_anonymous);
+        textEmailDisplay = findViewById(R.id.text_email_display);
+        imageProfile = findViewById(R.id.image_profile);
+        iconEditImage = findViewById(R.id.icon_edit_image);
         layoutViewMode = findViewById(R.id.layout_view_mode);
         layoutEditMode = findViewById(R.id.layout_edit_mode);
         containerContent = findViewById(R.id.container_content);
@@ -78,6 +109,39 @@ public class ProfileActivity extends AppCompatActivity {
 
         buttonSave.setOnClickListener(v -> saveProfile());
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
+        buttonAuthAction.setOnClickListener(v -> handleAuthAction());
+        
+        View.OnClickListener imageClickListener = v -> {
+             if (mAuth.getCurrentUser() != null && !mAuth.getCurrentUser().isAnonymous()) {
+                 pickImageLauncher.launch("image/*");
+             } else {
+                 Toast.makeText(this, getString(R.string.profile_warning_anonymous), Toast.LENGTH_SHORT).show();
+             }
+        };
+        imageProfile.setOnClickListener(imageClickListener);
+        iconEditImage.setOnClickListener(imageClickListener);
+    }
+
+    private void handleAuthAction() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || user.isAnonymous()) {
+            // Sign In
+            Intent intent = new Intent(this, AuthActivity.class);
+            authActivityLauncher.launch(intent);
+        } else {
+            // Sign Out
+            mAuth.signOut();
+            // After sign out, we usually go back to anonymous or login screen.
+            // For now, let's just reload the profile which will trigger anonymous login if needed
+            // or just show empty state.
+            // Ideally, we restart the app or activity to ensure clean state.
+            // But let's try just reloading.
+            
+            // Actually, if we sign out, we are null.
+            // loadCurrentProfile handles null by signing in anonymously.
+            loadCurrentProfile();
+            Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -109,55 +173,110 @@ public class ProfileActivity extends AppCompatActivity {
         progressBarLoading.setVisibility(View.VISIBLE);
         containerContent.setVisibility(View.GONE);
 
-        Runnable fetchProfile = () -> userRepository.getCurrentUsername(new UserRepository.OnUsernameLoadedListener() {
-            @Override
-            public void onLoaded(String username) {
-                progressBarLoading.setVisibility(View.GONE);
-                containerContent.setVisibility(View.VISIBLE);
+        // Define what to do once we have a user (anonymous or real)
+        Runnable fetchProfileData = () -> {
+            updateAuthUI();
+            
+            userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
+                @Override
+                public void onLoaded(String username, String imageUrl) {
+                    progressBarLoading.setVisibility(View.GONE);
+                    containerContent.setVisibility(View.VISIBLE);
+                    
+                    if (imageUrl != null && !imageUrl.isEmpty()) {
+                        Glide.with(ProfileActivity.this)
+                            .load(imageUrl)
+                            .apply(RequestOptions.circleCropTransform())
+                            .placeholder(R.drawable.ic_account_circle_24)
+                            .into(imageProfile);
+                    } else {
+                         // Reset to default
+                         imageProfile.setImageResource(R.drawable.ic_account_circle_24);
+                    }
 
-                if (username != null) {
-                    // User has a profile -> Show View Mode
-                    isInitialProfileCreation = false;
-                    textViewCurrentUsername.setText(username);
-                    editTextUsername.setText(username);
-                    showViewMode();
-                } else {
-                    // No profile -> Show Edit Mode
+                    if (username != null) {
+                        // User has a profile -> Show View Mode
+                        isInitialProfileCreation = false;
+                        textViewCurrentUsername.setText(username);
+                        editTextUsername.setText(username);
+                        showViewMode();
+                    } else {
+                        // No profile -> Show Edit Mode
+                        isInitialProfileCreation = true;
+                        showEditMode();
+                    }
+                    invalidateOptionsMenu();
+                }
+
+                @Override
+                public void onError(String error) {
+                    progressBarLoading.setVisibility(View.GONE);
+                    containerContent.setVisibility(View.VISIBLE);
+                    Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
                     isInitialProfileCreation = true;
                     showEditMode();
                 }
-                invalidateOptionsMenu(); // Refresh menu visibility
-            }
-
-            @Override
-            public void onError(String error) {
-                progressBarLoading.setVisibility(View.GONE);
-                containerContent.setVisibility(View.VISIBLE);
-                Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
-
-                // Fallback: Edit Mode erlauben, damit man es nochmal probieren kann
-                isInitialProfileCreation = true;
-                showEditMode();
-            }
-        });
+            });
+        };
 
         if (mAuth.getCurrentUser() == null) {
             mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
                 if (task.isSuccessful()) {
-                    fetchProfile.run();
+                    fetchProfileData.run();
                 } else {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
                     String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
                     Toast.makeText(ProfileActivity.this, "Authentication failed: " + errorMsg, Toast.LENGTH_LONG).show();
-                    
                     isInitialProfileCreation = true;
                     showEditMode();
                 }
             });
         } else {
-            fetchProfile.run();
+            fetchProfileData.run();
         }
+    }
+
+    private void updateAuthUI() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && !user.isAnonymous()) {
+            // Logged in
+            textViewWarning.setVisibility(View.GONE);
+            textEmailDisplay.setVisibility(View.VISIBLE);
+            textEmailDisplay.setText(user.getEmail());
+            buttonAuthAction.setText(R.string.button_sign_out);
+            buttonAuthAction.setTextColor(ContextCompat.getColor(this, R.color.black)); // Or standard color
+            iconEditImage.setVisibility(View.VISIBLE);
+        } else {
+            // Anonymous
+            textViewWarning.setVisibility(View.VISIBLE);
+            textEmailDisplay.setVisibility(View.GONE);
+            buttonAuthAction.setText(R.string.action_sign_in);
+            buttonAuthAction.setTextColor(ContextCompat.getColor(this, R.color.white));
+             // Maybe style it as primary button
+             iconEditImage.setVisibility(View.GONE); // Can't upload image as guest
+        }
+    }
+
+    private void uploadImage(Uri imageUri) {
+        progressBarLoading.setVisibility(View.VISIBLE);
+        userRepository.uploadProfileImage(imageUri, new UserRepository.OnImageUploadListener() {
+            @Override
+            public void onSuccess(String downloadUrl) {
+                progressBarLoading.setVisibility(View.GONE);
+                Glide.with(ProfileActivity.this)
+                        .load(downloadUrl)
+                        .apply(RequestOptions.circleCropTransform())
+                        .into(imageProfile);
+                Toast.makeText(ProfileActivity.this, "Image uploaded!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(String message) {
+                progressBarLoading.setVisibility(View.GONE);
+                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void showViewMode() {
@@ -165,7 +284,7 @@ public class ProfileActivity extends AppCompatActivity {
         layoutEditMode.setVisibility(View.GONE);
         
         buttonDelete.setVisibility(View.VISIBLE);
-        textViewWarning.setVisibility(View.VISIBLE);
+        // Warning visibility is handled in updateAuthUI
         textViewProfileInfo.setVisibility(View.GONE);
         invalidateOptionsMenu();
     }
@@ -176,14 +295,13 @@ public class ProfileActivity extends AppCompatActivity {
         
         if (isInitialProfileCreation) {
             buttonDelete.setVisibility(View.GONE);
-            textViewWarning.setVisibility(View.GONE);
             textViewProfileInfo.setVisibility(View.VISIBLE);
         } else {
             // Editing existing
             buttonDelete.setVisibility(View.VISIBLE);
-            textViewWarning.setVisibility(View.VISIBLE);
             textViewProfileInfo.setVisibility(View.GONE);
         }
+        // Warning visibility is handled in updateAuthUI
         invalidateOptionsMenu();
     }
 
@@ -272,7 +390,6 @@ public class ProfileActivity extends AppCompatActivity {
         builder.setView(dialogView);
         AlertDialog dialog = builder.create();
 
-        // Transparent background for rounded corners
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
@@ -286,9 +403,6 @@ public class ProfileActivity extends AppCompatActivity {
         textMessage.setText(message);
         btnPositive.setText(positiveButtonText);
         
-        // If it's a destructive action (like delete), maybe color it red?
-        // For now we use standard themed colors which are adaptive gray.
-
         btnPositive.setOnClickListener(v -> {
             onPositiveAction.run();
             dialog.dismiss();

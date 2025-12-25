@@ -5,6 +5,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import android.net.Uri;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +16,7 @@ public class UserRepository {
 
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private FirebaseStorage storage;
     private Context context;
 
     public interface OnUserSearchListener {
@@ -34,6 +38,7 @@ public class UserRepository {
         this.context = context;
         this.db = FirebaseFirestore.getInstance();
         this.auth = FirebaseAuth.getInstance();
+        this.storage = FirebaseStorage.getInstance();
     }
 
     public boolean isAuthenticated() {
@@ -164,6 +169,72 @@ public class UserRepository {
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
 
+    public interface OnImageUploadListener {
+        void onSuccess(String downloadUrl);
+        void onError(String message);
+    }
+
+    public void uploadProfileImage(Uri imageUri, OnImageUploadListener listener) {
+        if (!isAuthenticated()) {
+            listener.onError(context.getString(R.string.auth_required));
+            return;
+        }
+        
+        String uid = getCurrentUserId();
+        StorageReference ref = storage.getReference().child("profile_images/" + uid + ".jpg");
+        
+        ref.putFile(imageUri)
+                .addOnSuccessListener(taskSnapshot -> ref.getDownloadUrl().addOnSuccessListener(uri -> {
+                    String url = uri.toString();
+                    // Save URL to Firestore user profile
+                    updateProfileImage(url, new OnProfileActionListener() {
+                        @Override
+                        public void onSuccess() {
+                            listener.onSuccess(url);
+                        }
+                        @Override
+                        public void onError(String message) {
+                            listener.onError("Image uploaded but profile update failed: " + message);
+                        }
+                    });
+                }))
+                .addOnFailureListener(e -> listener.onError("Upload failed: " + e.getMessage()));
+    }
+
+    private void updateProfileImage(String url, OnProfileActionListener listener) {
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("profileImageUrl", url);
+        
+        db.collection("users").document(getCurrentUserId())
+                .set(updateData, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    public void getUserProfile(OnUserProfileLoadedListener listener) {
+        if (!isAuthenticated()) {
+             listener.onLoaded(null, null); // Or handle error
+             return;
+        }
+
+        db.collection("users").document(getCurrentUserId()).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String username = documentSnapshot.getString("username");
+                        String imageUrl = documentSnapshot.getString("profileImageUrl");
+                        listener.onLoaded(username, imageUrl);
+                    } else {
+                        listener.onLoaded(null, null);
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError("Ladefehler: " + e.getMessage()));
+    }
+
+    public interface OnUserProfileLoadedListener {
+        void onLoaded(String username, String imageUrl);
+        void onError(String error);
+    }
+
     public void deleteAccount(OnProfileActionListener listener) {
         if (!isAuthenticated()) return;
         FirebaseUser user = auth.getCurrentUser();
@@ -183,3 +254,4 @@ public class UserRepository {
                 });
     }
 }
+

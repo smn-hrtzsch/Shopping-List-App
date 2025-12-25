@@ -156,4 +156,22 @@
     <string name="error_member_already_exists">Dieser Nutzer ist bereits Mitglied der Liste.</string>
     <string name="member_is_me">" (Du)"</string>
     <string name="invited_by">Eingeladen von %s</string>
+    <string name="prompt_email">E-Mail</string>
+    <string name="prompt_password">Passwort</string>
+    <string name="action_sign_in">Anmelden</string>
+    <string name="action_register">Registrieren</string>
+    <string name="action_forgot_password">Passwort vergessen?</string>
+    <string name="sign_in_google">Mit Google anmelden</string>
+    <string name="sign_in_apple">Mit Apple anmelden</string>
+    <string name="auth_success">Anmeldung erfolgreich</string>
+    <string name="auth_failed">Anmeldung fehlgeschlagen</string>
+    <string name="email_sent">E-Mail zum Zurücksetzen gesendet</string>
+    <string name="error_email_required">E-Mail ist erforderlich</string>
+    <string name="error_password_required">Passwort ist erforderlich</string>
+    <string name="dialog_create_account_title">Konto erstellen?</string>
+    <string name="dialog_create_account_message">Erstelle ein Konto, um deine Listen zu sichern und von anderen Geräten darauf zuzugreifen.</string>
+    <string name="button_create_account">Konto erstellen</string>
+    <string name="button_sign_out">Abmelden</string>
+    <string name="account_info">Konto-Info</string>
+    <string name="change_profile_picture">Bild ändern</string>
 </resources>
