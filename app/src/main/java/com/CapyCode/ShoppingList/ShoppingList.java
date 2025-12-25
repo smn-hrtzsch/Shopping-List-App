@@ -13,6 +13,7 @@ public class ShoppingList {
     // Firebase-related fields
     private String firebaseId;
     private String ownerId;
+    private String ownerUsername;
     private List<String> members;
     private List<String> pendingMembers;
 
@@ -53,6 +54,8 @@ public class ShoppingList {
     public void setFirebaseId(String firebaseId) { this.firebaseId = firebaseId; }
     public String getOwnerId() { return ownerId; }
     public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
+    public String getOwnerUsername() { return ownerUsername; }
+    public void setOwnerUsername(String ownerUsername) { this.ownerUsername = ownerUsername; }
     public List<String> getMembers() { return members; }
     public void setMembers(List<String> members) { this.members = members; }
     public List<String> getPendingMembers() { return pendingMembers; }

@@ -133,4 +133,6 @@
     <string name="error_username_cooldown">You can only change your username once a week.</string>
     <string name="error_check_date">Error checking date.</string>
     <string name="error_member_already_exists">This user is already a member of the list.</string>
+    <string name="member_is_me">" (You)"</string>
+    <string name="invited_by">Invited by %s</string>
 </resources>

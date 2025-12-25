@@ -3,18 +3,14 @@
     android:height="40dp"
     android:viewportWidth="100"
     android:viewportHeight="100">
-    
-    <!-- Hintergrund Rechteck -->
     <path
         android:pathData="M20,5 H80 A15,15 0 0 1 95,20 V80 A15,15 0 0 1 80,95 H20 A15,15 0 0 1 5,80 V20 A15,15 0 0 1 20,5 Z"
-        android:strokeColor="#2D6A4F"
+        android:strokeColor="?attr/colorSecondaryVariant"
         android:strokeWidth="6"
-        android:fillColor="#D8F3DC"/>
-        
-    <!-- Haken -->
+        android:fillColor="@android:color/transparent"/>
     <path
         android:pathData="M30,50 L45,65 L70,35"
-        android:strokeColor="#2D6A4F"
+        android:strokeColor="?attr/colorSecondaryVariant"
         android:strokeWidth="8"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"/>

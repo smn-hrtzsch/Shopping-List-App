@@ -80,7 +80,8 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
                 list.getItemCount() == 1 ? context.getString(R.string.item_count_suffix_singular) : context.getString(R.string.item_count_suffix_plural));
         
         if (isPending) {
-            viewHolder.textViewListItemCount.setText("Eingeladen");
+            String ownerName = list.getOwnerUsername() != null ? list.getOwnerUsername() : "...";
+            viewHolder.textViewListItemCount.setText(context.getString(R.string.invited_by, ownerName));
             viewHolder.buttonJoin.setVisibility(View.VISIBLE);
             viewHolder.buttonDecline.setVisibility(View.VISIBLE);
             viewHolder.buttonEditListName.setVisibility(View.GONE);

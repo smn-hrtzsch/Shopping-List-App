@@ -212,7 +212,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     TextView text = new TextView(EinkaufslisteActivity.this);
                     String role = member.get("role");
                     String username = member.get("username");
-                    if (isMe) username += " (Du)";
+                    if (isMe) username += getString(R.string.member_is_me);
                     
                     android.text.SpannableString content = new android.text.SpannableString(username + "\n" + role);
                     content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);

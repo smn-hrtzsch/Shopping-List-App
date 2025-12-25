@@ -95,23 +95,47 @@ public class ShoppingListRepository {
             
             activeFirebaseIds.add(id);
 
-            db.collection("shopping_lists").document(id).collection("items").get()
-                    .addOnSuccessListener(items -> {
-                        list.setItemCount(items.size());
-                        dbHelper.upsertCloudList(list);
-                        if (counter.incrementAndGet() == listCount) {
-                            dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
-                            listener.onListsLoaded(dbHelper.getAllShoppingLists());
-                        }
-                    })
-                    .addOnFailureListener(failure -> {
-                        list.setItemCount(0); 
-                        dbHelper.upsertCloudList(list);
-                        if (counter.incrementAndGet() == listCount) {
-                            dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
-                            listener.onListsLoaded(dbHelper.getAllShoppingLists());
-                        }
-                    });
+            // Fetch owner name
+            db.collection("users").document(ownerId).get()
+                .addOnSuccessListener(userDoc -> {
+                    if (userDoc.exists()) {
+                        list.setOwnerUsername(userDoc.getString("username"));
+                    } else {
+                        list.setOwnerUsername("Unbekannt");
+                    }
+                    
+                    // After owner name, fetch item count
+                    db.collection("shopping_lists").document(id).collection("items").get()
+                        .addOnSuccessListener(items -> {
+                            list.setItemCount(items.size());
+                            dbHelper.upsertCloudList(list);
+                            if (counter.incrementAndGet() == listCount) {
+                                dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
+                                listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                            }
+                        })
+                        .addOnFailureListener(failure -> {
+                            list.setItemCount(0); 
+                            dbHelper.upsertCloudList(list);
+                            if (counter.incrementAndGet() == listCount) {
+                                dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
+                                listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                            }
+                        });
+                })
+                .addOnFailureListener(e -> {
+                    list.setOwnerUsername("Fehler");
+                    // Continue with item count anyway
+                    db.collection("shopping_lists").document(id).collection("items").get()
+                        .addOnCompleteListener(t -> {
+                            if (t.isSuccessful()) list.setItemCount(t.getResult().size());
+                            dbHelper.upsertCloudList(list);
+                            if (counter.incrementAndGet() == listCount) {
+                                dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
+                                listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                            }
+                        });
+                });
         }
     }
 
