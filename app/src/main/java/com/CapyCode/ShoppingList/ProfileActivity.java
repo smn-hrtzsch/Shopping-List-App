@@ -26,17 +26,27 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private TextInputEditText editTextUsername;
     private MaterialButton buttonSave;
     private MaterialButton buttonDelete;
-    private MaterialButton buttonAuthAction;
+    private MaterialButton buttonRegisterEmail;
+    private MaterialButton buttonRegisterGoogle;
+    private MaterialButton buttonSignOut;
     private TextView textViewCurrentUsername;
     private TextView textViewProfileInfo;
     private TextView textViewWarning;
@@ -45,11 +55,13 @@ public class ProfileActivity extends AppCompatActivity {
     private ImageView iconEditImage;
     private LinearLayout layoutViewMode;
     private LinearLayout layoutEditMode;
-    private LinearLayout containerContent;
+    private LinearLayout layoutAuthButtons;
+    private View containerContent;
     private ProgressBar progressBarLoading;
     private UserRepository userRepository;
     private boolean isInitialProfileCreation = false;
     private FirebaseAuth mAuth;
+    private GoogleSignInClient mGoogleSignInClient;
 
     private final ActivityResultLauncher<Intent> authActivityLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -65,6 +77,19 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             });
 
+    private final ActivityResultLauncher<Intent> googleSignInLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                    try {
+                        GoogleSignInAccount account = task.getResult(ApiException.class);
+                        firebaseAuthWithGoogle(account.getIdToken());
+                    } catch (ApiException e) {
+                        Toast.makeText(ProfileActivity.this, "Google Sign-In failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,6 +97,13 @@ public class ProfileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_profile);
 
         mAuth = FirebaseAuth.getInstance();
+        
+        // Configure Google Sign In
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
         View root = findViewById(R.id.profile_root);
         
@@ -79,7 +111,7 @@ public class ProfileActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowTitleEnabled(false);
+            getSupportActionBar().setDisplayShowTitleEnabled(true);
         }
         
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
@@ -93,7 +125,9 @@ public class ProfileActivity extends AppCompatActivity {
         editTextUsername = findViewById(R.id.edit_text_username);
         buttonSave = findViewById(R.id.button_save_profile);
         buttonDelete = findViewById(R.id.button_delete_account);
-        buttonAuthAction = findViewById(R.id.button_auth_action);
+        buttonRegisterEmail = findViewById(R.id.button_register_email);
+        buttonRegisterGoogle = findViewById(R.id.button_register_google);
+        buttonSignOut = findViewById(R.id.button_sign_out);
         textViewCurrentUsername = findViewById(R.id.text_view_current_username);
         textViewProfileInfo = findViewById(R.id.text_view_profile_info);
         textViewWarning = findViewById(R.id.text_view_warning_anonymous);
@@ -102,6 +136,7 @@ public class ProfileActivity extends AppCompatActivity {
         iconEditImage = findViewById(R.id.icon_edit_image);
         layoutViewMode = findViewById(R.id.layout_view_mode);
         layoutEditMode = findViewById(R.id.layout_edit_mode);
+        layoutAuthButtons = findViewById(R.id.layout_auth_buttons);
         containerContent = findViewById(R.id.container_content);
         progressBarLoading = findViewById(R.id.progress_bar_loading);
 
@@ -109,7 +144,20 @@ public class ProfileActivity extends AppCompatActivity {
 
         buttonSave.setOnClickListener(v -> saveProfile());
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
-        buttonAuthAction.setOnClickListener(v -> handleAuthAction());
+        
+        buttonRegisterEmail.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AuthActivity.class);
+            authActivityLauncher.launch(intent);
+        });
+
+        buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
+
+        buttonSignOut.setOnClickListener(v -> {
+             mAuth.signOut();
+             mGoogleSignInClient.signOut();
+             Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show();
+             loadCurrentProfile();
+        });
         
         View.OnClickListener imageClickListener = v -> {
              if (mAuth.getCurrentUser() != null && !mAuth.getCurrentUser().isAnonymous()) {
@@ -122,25 +170,46 @@ public class ProfileActivity extends AppCompatActivity {
         iconEditImage.setOnClickListener(imageClickListener);
     }
 
-    private void handleAuthAction() {
-        FirebaseUser user = mAuth.getCurrentUser();
-        if (user == null || user.isAnonymous()) {
-            // Sign In
-            Intent intent = new Intent(this, AuthActivity.class);
-            authActivityLauncher.launch(intent);
+    private void signInWithGoogle() {
+        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        googleSignInLauncher.launch(signInIntent);
+    }
+
+    private void firebaseAuthWithGoogle(String idToken) {
+        progressBarLoading.setVisibility(View.VISIBLE);
+        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
+        
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null && currentUser.isAnonymous()) {
+            currentUser.linkWithCredential(credential)
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(ProfileActivity.this, "Linked with Google", Toast.LENGTH_SHORT).show();
+                            loadCurrentProfile();
+                        } else {
+                             // Fallback: Sign in directly if linking fails (e.g. account exists)
+                             mAuth.signInWithCredential(credential)
+                                .addOnCompleteListener(this, signInTask -> {
+                                    if (signInTask.isSuccessful()) {
+                                        Toast.makeText(ProfileActivity.this, "Signed in with Google", Toast.LENGTH_SHORT).show();
+                                        loadCurrentProfile();
+                                    } else {
+                                        progressBarLoading.setVisibility(View.GONE);
+                                        Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                        }
+                    });
         } else {
-            // Sign Out
-            mAuth.signOut();
-            // After sign out, we usually go back to anonymous or login screen.
-            // For now, let's just reload the profile which will trigger anonymous login if needed
-            // or just show empty state.
-            // Ideally, we restart the app or activity to ensure clean state.
-            // But let's try just reloading.
-            
-            // Actually, if we sign out, we are null.
-            // loadCurrentProfile handles null by signing in anonymously.
-            loadCurrentProfile();
-            Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show();
+            mAuth.signInWithCredential(credential)
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            loadCurrentProfile();
+                        } else {
+                            progressBarLoading.setVisibility(View.GONE);
+                            Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
         }
     }
 
@@ -187,11 +256,14 @@ public class ProfileActivity extends AppCompatActivity {
                         Glide.with(ProfileActivity.this)
                             .load(imageUrl)
                             .apply(RequestOptions.circleCropTransform())
-                            .placeholder(R.drawable.ic_account_circle_24)
+                            .placeholder(R.drawable.ic_launcher_foreground) // Placeholder logic adjusted
                             .into(imageProfile);
+                        // If we have an image, make padding 0 so it fills nicely
+                        imageProfile.setPadding(0,0,0,0);
                     } else {
-                         // Reset to default
-                         imageProfile.setImageResource(R.drawable.ic_account_circle_24);
+                         // Reset to default placeholder look
+                         imageProfile.setImageResource(R.drawable.ic_launcher_foreground);
+                         imageProfile.setPadding(20,20,20,20); // Restore padding for icon look
                     }
 
                     if (username != null) {
@@ -244,17 +316,20 @@ public class ProfileActivity extends AppCompatActivity {
             textViewWarning.setVisibility(View.GONE);
             textEmailDisplay.setVisibility(View.VISIBLE);
             textEmailDisplay.setText(user.getEmail());
-            buttonAuthAction.setText(R.string.button_sign_out);
-            buttonAuthAction.setTextColor(ContextCompat.getColor(this, R.color.black)); // Or standard color
+            
+            layoutAuthButtons.setVisibility(View.GONE);
+            buttonSignOut.setVisibility(View.VISIBLE);
+            
             iconEditImage.setVisibility(View.VISIBLE);
         } else {
             // Anonymous
             textViewWarning.setVisibility(View.VISIBLE);
             textEmailDisplay.setVisibility(View.GONE);
-            buttonAuthAction.setText(R.string.action_sign_in);
-            buttonAuthAction.setTextColor(ContextCompat.getColor(this, R.color.white));
-             // Maybe style it as primary button
-             iconEditImage.setVisibility(View.GONE); // Can't upload image as guest
+            
+            layoutAuthButtons.setVisibility(View.VISIBLE);
+            buttonSignOut.setVisibility(View.GONE);
+            
+             iconEditImage.setVisibility(View.GONE);
         }
     }
 
@@ -268,6 +343,7 @@ public class ProfileActivity extends AppCompatActivity {
                         .load(downloadUrl)
                         .apply(RequestOptions.circleCropTransform())
                         .into(imageProfile);
+                imageProfile.setPadding(0,0,0,0);
                 Toast.makeText(ProfileActivity.this, "Image uploaded!", Toast.LENGTH_SHORT).show();
             }
 

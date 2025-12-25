@@ -18,8 +18,9 @@
             android:id="@+id/toolbar_profile"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="?attr/homeAsUpIndicator" 
-            app:title=""/>
+            app:navigationIcon="?attr/homeAsUpIndicator"
+            app:title="@string/account_info"
+            app:titleTextColor="?attr/colorOnSurface"/>
             
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -40,171 +41,212 @@
             android:visibility="visible"/>
 
         <!-- Content Container (Hidden initially) -->
-        <LinearLayout
+        <ScrollView
             android:id="@+id/container_content"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_height="match_parent"
             android:visibility="gone"
             tools:visibility="visible">
 
-            <!-- Profile Image Area -->
-            <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="24dp">
-
-                <ImageView
-                    android:id="@+id/image_profile"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:background="@drawable/ic_launcher_background"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_account_circle_24"
-                    app:tint="?attr/colorControlNormal" />
-                
-                 <ImageView
-                    android:id="@+id/icon_edit_image"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_gravity="bottom|end"
-                    android:background="@mipmap/ic_launcher_round"
-                    android:padding="4dp"
-                    android:src="@drawable/ic_edit_24"
-                    app:tint="@android:color/white" />
-            </FrameLayout>
-
-            <TextView
-                android:id="@+id/text_email_display"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="16dp"
-                android:text="user@example.com"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
-            <!-- View Mode -->
             <LinearLayout
-                android:id="@+id/layout_view_mode"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/label_username"
-                    android:textAppearance="?attr/textAppearanceCaption" />
-
-                <TextView
-                    android:id="@+id/text_view_current_username"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="24dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:padding="12dp"
-                    android:text="Benutzername"
-                    android:textAppearance="?attr/textAppearanceBody1"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Edit Mode: Eingabefeld -->
-            <LinearLayout
-                android:id="@+id/layout_edit_mode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone">
-                
+                android:gravity="center_horizontal">
+
+                <!-- Profile Image Area (Restored to look like screenshot) -->
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp">
+
+                    <ImageView
+                        android:id="@+id/image_profile"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:background="@drawable/ic_launcher_background"
+                        android:padding="20dp"
+                        android:src="@drawable/ic_launcher_foreground" 
+                        android:scaleType="centerInside" />
+                        <!-- Note: src used to be launcher_foreground on top of background in typical adaptive icons. 
+                             If the user wants strictly the 'green placeholder', launcher_background is key. 
+                             I'll layer them to make it look like the app icon. -->
+
+                    <ImageView
+                        android:id="@+id/icon_edit_image"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="bottom|end"
+                        android:background="@mipmap/ic_launcher_round"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_edit_24"
+                        app:tint="@android:color/white"
+                        android:visibility="gone"
+                        tools:visibility="visible"/>
+                </FrameLayout>
+
                 <TextView
-                    android:id="@+id/text_view_profile_info"
+                    android:id="@+id/text_email_display"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="user@example.com"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <!-- View Mode -->
+                <LinearLayout
+                    android:id="@+id/layout_view_mode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/profile_info"
-                    android:textAlignment="center"
-                    android:textAppearance="?attr/textAppearanceBody2"
-                    android:textColor="@color/text_secondary_adaptive"
-                    android:layout_marginBottom="24dp"/>
+                    android:orientation="vertical"
+                    android:gravity="start">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/profile_username_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:theme="@style/AccentInputTheme"
-                    app:boxStrokeColor="@color/input_stroke_selector"
-                    app:hintTextColor="@color/input_stroke_adaptive"
-                    android:textColorHint="@color/input_stroke_adaptive"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="@string/label_username"
+                        android:textAppearance="?attr/textAppearanceCaption"
+                        android:textColor="?android:attr/textColorSecondary"/>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/edit_text_username"
+                    <TextView
+                        android:id="@+id/text_view_current_username"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textPersonName"
-                        android:textColor="@color/text_primary_adaptive"
-                        android:textCursorDrawable="@null"
-                        android:maxLines="1"/>
+                        android:layout_marginBottom="24dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="12dp"
+                        android:text="Benutzername"
+                        android:textAppearance="?attr/textAppearanceBody1"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/button_save_profile"
-                    style="@style/Widget.MaterialComponents.Button"
+                <!-- Edit Mode -->
+                <LinearLayout
+                    android:id="@+id/layout_edit_mode"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="@string/button_save"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+                    
+                    <TextView
+                        android:id="@+id/text_view_profile_info"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/profile_info"
+                        android:textAlignment="center"
+                        android:textAppearance="?attr/textAppearanceBody2"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:layout_marginBottom="24dp"/>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/profile_username_hint"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/edit_text_username"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPersonName"
+                            android:maxLines="1"/>
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/button_save_profile"
+                        style="@style/Widget.MaterialComponents.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:text="@string/button_save"
+                        android:layout_marginTop="16dp"
+                        app:cornerRadius="28dp"/>
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp" />
+
+                <!-- Anonymous Warning -->
+                <TextView
+                    android:id="@+id/text_view_warning_anonymous"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="#1A0F55AA"
+                    android:padding="12dp"
+                    android:text="@string/profile_warning_anonymous"
+                    android:textColor="?attr/colorError"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+                <!-- Delete Account Button (Always visible) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_delete_account"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/profile_delete_account"
+                    android:textColor="?attr/colorError" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp" />
+
+                <!-- NEW: Auth Buttons (Visible only when anonymous) -->
+                <LinearLayout
+                    android:id="@+id/layout_auth_buttons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/button_register_email"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_marginBottom="16dp"
+                        android:text="@string/action_register_email"
+                        app:cornerRadius="30dp"
+                        android:textAllCaps="false"
+                        android:textSize="16sp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/button_register_google"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:text="@string/sign_in_google"
+                        app:icon="@drawable/ic_cloud_24"
+                        app:iconGravity="textStart"
+                        app:cornerRadius="30dp"
+                        android:textAllCaps="false"
+                        android:textSize="16sp"/>
+
+                </LinearLayout>
+
+                 <!-- Sign Out Button (Visible only when logged in) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_sign_out"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
                     android:layout_marginTop="16dp"
-                    app:backgroundTint="@color/button_background_adaptive"
-                    android:textColor="@color/text_primary_adaptive"
-                    app:cornerRadius="28dp"/>
+                    android:text="@string/button_sign_out"
+                    app:cornerRadius="30dp"
+                    android:visibility="gone" />
 
             </LinearLayout>
-
-            <!-- Spacing -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:minHeight="16dp"/>
-
-            <!-- Danger Zone / Auth Actions -->
-            <TextView
-                android:id="@+id/text_view_warning_anonymous"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"
-                android:background="#1A0F55AA"
-                android:padding="12dp"
-                android:text="@string/profile_warning_anonymous"
-                android:textColor="?attr/colorError"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/button_delete_account"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/profile_delete_account"
-                android:textColor="?attr/colorError" />
-
-                
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/button_auth_action"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/action_sign_in" />
-
-        </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

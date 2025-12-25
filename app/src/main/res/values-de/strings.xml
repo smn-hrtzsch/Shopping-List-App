@@ -174,4 +174,5 @@
     <string name="button_sign_out">Abmelden</string>
     <string name="account_info">Konto-Info</string>
     <string name="change_profile_picture">Bild ändern</string>
+    <string name="action_register_email">Mit E-Mail registrieren</string>
 </resources>
