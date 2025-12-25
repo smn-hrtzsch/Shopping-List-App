@@ -161,11 +161,6 @@ public class ProfileActivity extends AppCompatActivity {
     }
     
     private void showImageOptions() {
-        if (mAuth.getCurrentUser() == null || mAuth.getCurrentUser().isAnonymous()) {
-             Toast.makeText(this, getString(R.string.profile_warning_anonymous), Toast.LENGTH_SHORT).show();
-             return;
-        }
-
         String[] options = {"Neues Bild wählen", "Bild entfernen", "Abbrechen"};
         new AlertDialog.Builder(this)
                 .setTitle("Profilbild")
@@ -190,50 +185,36 @@ public class ProfileActivity extends AppCompatActivity {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null && currentUser.isAnonymous()) {
+        if (currentUser != null) {
+            // Try to link first
             currentUser.linkWithCredential(credential)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(ProfileActivity.this, "Linked with Google", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ProfileActivity.this, "Google verknüpft", Toast.LENGTH_SHORT).show();
                             loadCurrentProfile();
                         } else {
-                             // Link failed (e.g. account exists)
-                             if (task.getException() != null && task.getException().getMessage().contains("already in use")) {
-                                 progressBarLoading.setVisibility(View.GONE);
-                                 // Ask user if they want to switch accounts (losing guest data)
-                                 showCustomDialog(
-                                     "Konto wechseln?",
-                                     "Ein Konto mit diesem Google-Account existiert bereits.\n\nMöchtest du dich in dieses Konto einloggen? Deine aktuellen Gast-Listen werden dabei durch die des anderen Kontos ersetzt.",
-                                     "Wechseln (Daten verwerfen)",
-                                     () -> performGoogleSignIn(credential)
-                                 );
+                             if (task.getException() != null && task.getException().getMessage().contains("already linked")) {
+                                 Toast.makeText(ProfileActivity.this, "Konto ist bereits verknüpft", Toast.LENGTH_SHORT).show();
+                                 loadCurrentProfile();
                              } else {
-                                 progressBarLoading.setVisibility(View.GONE);
-                                 Toast.makeText(ProfileActivity.this, "Verknüpfung fehlgeschlagen: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                 // Link failed, ask user if they want to switch
+                                 if (task.getException() != null && task.getException().getMessage().contains("already in use")) {
+                                     progressBarLoading.setVisibility(View.GONE);
+                                     showCustomDialog(
+                                         "Konto wechseln?",
+                                         "Ein Konto mit diesem Google-Account existiert bereits.\n\nMöchtest du dich in dieses Konto einloggen? Deine aktuellen Gast-Listen werden dabei durch die des anderen Kontos ersetzt.",
+                                         "Wechseln (Daten verwerfen)",
+                                         () -> performGoogleSignIn(credential)
+                                     );
+                                 } else {
+                                     progressBarLoading.setVisibility(View.GONE);
+                                     Toast.makeText(ProfileActivity.this, "Verknüpfung fehlgeschlagen: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                 }
                              }
                         }
                     });
         } else {
-            // Not anonymous or already logged in (should be handled by updateAuthUI but safe check)
-            if (currentUser != null) {
-                 // Try to link (logic for existing user adding google)
-                 currentUser.linkWithCredential(credential).addOnCompleteListener(this, task -> {
-                     if (task.isSuccessful()) {
-                         loadCurrentProfile();
-                     } else {
-                         // Handle error (e.g. already linked)
-                         if (task.getException() != null && task.getException().getMessage().contains("already linked")) {
-                             // Ignore or notify
-                             loadCurrentProfile();
-                         } else {
-                             progressBarLoading.setVisibility(View.GONE);
-                             Toast.makeText(ProfileActivity.this, "Fehler: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                         }
-                     }
-                 });
-            } else {
-                performGoogleSignIn(credential);
-            }
+            performGoogleSignIn(credential);
         }
     }
 
@@ -292,13 +273,11 @@ public class ProfileActivity extends AppCompatActivity {
                             .load(imageUrl)
                             .apply(RequestOptions.circleCropTransform())
                             .into(imageProfile);
-                         // Padding remove to fill circle
                          imageProfile.setPadding(0,0,0,0);
-                         imageProfile.setBackgroundResource(0); // Remove background
+                         imageProfile.setBackgroundResource(0);
                     } else {
-                         // Reset to default
                          imageProfile.setImageResource(R.drawable.ic_account_circle_24);
-                         imageProfile.setPadding(0,0,0,0); // Reset padding
+                         imageProfile.setPadding(0,0,0,0);
                          imageProfile.setBackgroundResource(android.R.color.transparent);
                     }
 
@@ -351,7 +330,7 @@ public class ProfileActivity extends AppCompatActivity {
             textEmailDisplay.setText(user.getEmail());
             
             buttonSignOut.setVisibility(View.VISIBLE);
-            layoutAuthButtons.setVisibility(View.VISIBLE); // Keep visible for Unlink options
+            layoutAuthButtons.setVisibility(View.VISIBLE);
 
             boolean isGoogleLinked = false;
             boolean isEmailLinked = false;
@@ -363,8 +342,13 @@ public class ProfileActivity extends AppCompatActivity {
             
             // Configure Google Button
             if (isGoogleLinked) {
-                buttonRegisterGoogle.setText("Google verbunden (Trennen)");
-                buttonRegisterGoogle.setIconTintResource(R.color.teal_700); // Indicate active? Or keep null.
+                buttonRegisterGoogle.setText("Google verknüpft (Trennen)");
+                buttonRegisterGoogle.setIconResource(R.drawable.ic_unlink);
+                buttonRegisterGoogle.setIconTint(ContextCompat.getColorStateList(this, android.R.color.black));
+                if ((getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                     buttonRegisterGoogle.setIconTint(ContextCompat.getColorStateList(this, android.R.color.white));
+                }
+                
                 buttonRegisterGoogle.setOnClickListener(v -> confirmUnlink(GoogleAuthProvider.PROVIDER_ID));
             } else {
                 buttonRegisterGoogle.setText("Mit Google verknüpfen");
@@ -375,12 +359,20 @@ public class ProfileActivity extends AppCompatActivity {
 
             // Configure Email Button
             if (isEmailLinked) {
-                buttonRegisterEmail.setText("E-Mail verbunden (Trennen)");
-                buttonRegisterEmail.setIconResource(R.drawable.ic_email); // Make sure ic_email exists
+                buttonRegisterEmail.setText("E-Mail Verknüpfung entfernen");
+                buttonRegisterEmail.setIconResource(R.drawable.ic_unlink);
+                
+                if ((getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                     buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, android.R.color.white));
+                } else {
+                     buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, android.R.color.black));
+                }
+
                 buttonRegisterEmail.setOnClickListener(v -> confirmUnlink(EmailAuthProvider.PROVIDER_ID));
             } else {
                 buttonRegisterEmail.setText("Mit E-Mail verknüpfen");
-                 buttonRegisterEmail.setIconResource(R.drawable.ic_email); 
+                buttonRegisterEmail.setIconResource(R.drawable.ic_email); 
+                buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.text_primary_adaptive)); // Use text color
                 buttonRegisterEmail.setOnClickListener(v -> {
                     Intent intent = new Intent(this, AuthActivity.class);
                     authActivityLauncher.launch(intent);
@@ -396,19 +388,20 @@ public class ProfileActivity extends AppCompatActivity {
             layoutAuthButtons.setVisibility(View.VISIBLE);
             
             buttonRegisterEmail.setText(R.string.action_sign_in_email);
-            buttonRegisterEmail.setIconResource(R.drawable.ic_email); 
+            buttonRegisterEmail.setIconResource(R.drawable.ic_email);
+            buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.text_primary_adaptive));
             buttonRegisterEmail.setOnClickListener(v -> {
                 Intent intent = new Intent(this, AuthActivity.class);
                 authActivityLauncher.launch(intent);
             });
 
             buttonRegisterGoogle.setText(R.string.sign_in_google);
-             buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
-             buttonRegisterGoogle.setIconTint(null);
+            buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
+            buttonRegisterGoogle.setIconTint(null);
             buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
             
             buttonSignOut.setVisibility(View.GONE);
-             iconEditImage.setVisibility(View.GONE);
+            iconEditImage.setVisibility(View.VISIBLE);
         }
     }
     
@@ -437,35 +430,17 @@ public class ProfileActivity extends AppCompatActivity {
     }
     
     private void confirmSignOut() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
-        builder.setView(dialogView);
-        AlertDialog dialog = builder.create();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
-        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
-        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
-        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
-
-        textTitle.setText(R.string.button_sign_out);
-        textMessage.setText("Wenn du dich abmeldest, sind deine geteilten Listen nicht mehr sichtbar, bis du dich wieder anmeldest.");
-        btnPositive.setText(R.string.button_sign_out);
-        btnNegative.setText(R.string.button_cancel);
-        
-        btnPositive.setOnClickListener(v -> {
-             mAuth.signOut();
-             mGoogleSignInClient.signOut();
-             Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
-             dialog.dismiss();
-             loadCurrentProfile(); 
-        });
-
-        btnNegative.setOnClickListener(v -> dialog.dismiss());
-        dialog.show();
+        showCustomDialog(
+            getString(R.string.button_sign_out),
+            "Wenn du dich abmeldest, sind deine geteilten Listen nicht mehr sichtbar, bis du dich wieder anmeldest.",
+            getString(R.string.button_sign_out),
+            () -> {
+                 mAuth.signOut();
+                 mGoogleSignInClient.signOut();
+                 Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
+                 loadCurrentProfile(); 
+            }
+        );
     }
 
     private void removeImage() {
@@ -474,7 +449,7 @@ public class ProfileActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                  progressBarLoading.setVisibility(View.GONE);
-                 loadCurrentProfile(); // Reloads to set default
+                 loadCurrentProfile();
                  Toast.makeText(ProfileActivity.this, "Bild entfernt", Toast.LENGTH_SHORT).show();
             }
 
