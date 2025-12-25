@@ -38,6 +38,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.auth.UserInfo;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -111,7 +112,7 @@ public class ProfileActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowTitleEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
         
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
@@ -152,12 +153,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
 
-        buttonSignOut.setOnClickListener(v -> {
-             mAuth.signOut();
-             mGoogleSignInClient.signOut();
-             Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show();
-             loadCurrentProfile();
-        });
+        buttonSignOut.setOnClickListener(v -> confirmSignOut());
         
         View.OnClickListener imageClickListener = v -> {
              if (mAuth.getCurrentUser() != null && !mAuth.getCurrentUser().isAnonymous()) {
@@ -169,6 +165,7 @@ public class ProfileActivity extends AppCompatActivity {
         imageProfile.setOnClickListener(imageClickListener);
         iconEditImage.setOnClickListener(imageClickListener);
     }
+
 
     private void signInWithGoogle() {
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
@@ -201,15 +198,45 @@ public class ProfileActivity extends AppCompatActivity {
                         }
                     });
         } else {
-            mAuth.signInWithCredential(credential)
+            // Already logged in, maybe try to link?
+            if (currentUser != null) {
+                currentUser.linkWithCredential(credential)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
+                            Toast.makeText(ProfileActivity.this, "Account linked with Google", Toast.LENGTH_SHORT).show();
                             loadCurrentProfile();
                         } else {
-                            progressBarLoading.setVisibility(View.GONE);
-                            Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                             // If linking fails (e.g. account already exists with different credentials),
+                             // we could ask user to switch accounts, but for now we just try to sign in
+                             // which effectively switches user
+                             if (task.getException() != null && task.getException().getMessage().contains("already linked")) {
+                                 Toast.makeText(ProfileActivity.this, "Google already linked", Toast.LENGTH_SHORT).show();
+                                 loadCurrentProfile();
+                             } else {
+                                 // Try sign in (Switch account)
+                                 mAuth.signInWithCredential(credential)
+                                    .addOnCompleteListener(this, signInTask -> {
+                                        if (signInTask.isSuccessful()) {
+                                            loadCurrentProfile();
+                                        } else {
+                                            progressBarLoading.setVisibility(View.GONE);
+                                            Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                             }
                         }
                     });
+            } else {
+                mAuth.signInWithCredential(credential)
+                        .addOnCompleteListener(this, task -> {
+                            if (task.isSuccessful()) {
+                                loadCurrentProfile();
+                            } else {
+                                progressBarLoading.setVisibility(View.GONE);
+                                Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            }
         }
     }
 
@@ -256,14 +283,11 @@ public class ProfileActivity extends AppCompatActivity {
                         Glide.with(ProfileActivity.this)
                             .load(imageUrl)
                             .apply(RequestOptions.circleCropTransform())
-                            .placeholder(R.drawable.ic_launcher_foreground) // Placeholder logic adjusted
+                            .placeholder(R.drawable.ic_account_circle_24)
                             .into(imageProfile);
-                        // If we have an image, make padding 0 so it fills nicely
-                        imageProfile.setPadding(0,0,0,0);
                     } else {
-                         // Reset to default placeholder look
-                         imageProfile.setImageResource(R.drawable.ic_launcher_foreground);
-                         imageProfile.setPadding(20,20,20,20); // Restore padding for icon look
+                         // Reset to default
+                         imageProfile.setImageResource(R.drawable.ic_account_circle_24);
                     }
 
                     if (username != null) {
@@ -317,8 +341,25 @@ public class ProfileActivity extends AppCompatActivity {
             textEmailDisplay.setVisibility(View.VISIBLE);
             textEmailDisplay.setText(user.getEmail());
             
-            layoutAuthButtons.setVisibility(View.GONE);
             buttonSignOut.setVisibility(View.VISIBLE);
+            
+            // Check provider data to see if Google is linked
+            boolean isGoogleLinked = false;
+            for (UserInfo profile : user.getProviderData()) {
+                if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                    isGoogleLinked = true;
+                    break;
+                }
+            }
+
+            if (!isGoogleLinked) {
+                 layoutAuthButtons.setVisibility(View.VISIBLE);
+                 buttonRegisterEmail.setVisibility(View.GONE); // Already logged in (via email presumably)
+                 buttonRegisterGoogle.setText("Mit Google verknüpfen");
+                 buttonRegisterGoogle.setVisibility(View.VISIBLE);
+            } else {
+                 layoutAuthButtons.setVisibility(View.GONE);
+            }
             
             iconEditImage.setVisibility(View.VISIBLE);
         } else {
@@ -327,10 +368,29 @@ public class ProfileActivity extends AppCompatActivity {
             textEmailDisplay.setVisibility(View.GONE);
             
             layoutAuthButtons.setVisibility(View.VISIBLE);
+            buttonRegisterEmail.setVisibility(View.VISIBLE);
+            buttonRegisterGoogle.setText(R.string.sign_in_google);
+            buttonRegisterGoogle.setVisibility(View.VISIBLE);
+            
             buttonSignOut.setVisibility(View.GONE);
             
              iconEditImage.setVisibility(View.GONE);
         }
+    }
+    
+    private void confirmSignOut() {
+        new AlertDialog.Builder(this)
+            .setTitle(R.string.button_sign_out)
+            .setMessage("Wenn du dich abmeldest, sind deine geteilten Listen nicht mehr sichtbar, bis du dich wieder anmeldest.")
+            .setPositiveButton(R.string.button_sign_out, (dialog, which) -> {
+                 mAuth.signOut();
+                 mGoogleSignInClient.signOut();
+                 Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
+                 // Reload profile will trigger anonymous login again
+                 loadCurrentProfile(); 
+            })
+            .setNegativeButton(R.string.cancel, null)
+            .show();
     }
 
     private void uploadImage(Uri imageUri) {
@@ -343,7 +403,6 @@ public class ProfileActivity extends AppCompatActivity {
                         .load(downloadUrl)
                         .apply(RequestOptions.circleCropTransform())
                         .into(imageProfile);
-                imageProfile.setPadding(0,0,0,0);
                 Toast.makeText(ProfileActivity.this, "Image uploaded!", Toast.LENGTH_SHORT).show();
             }
 

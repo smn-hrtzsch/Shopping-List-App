@@ -175,4 +175,5 @@
     <string name="account_info">Konto-Info</string>
     <string name="change_profile_picture">Bild ändern</string>
     <string name="action_register_email">Mit E-Mail registrieren</string>
+    <string name="action_sign_in_email">Mit E-Mail anmelden</string>
 </resources>

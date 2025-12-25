@@ -154,5 +154,6 @@
     <string name="account_info">Account Info</string>
     <string name="change_profile_picture">Change Picture</string>
     <string name="action_register_email">Register with Email</string>
+    <string name="action_sign_in_email">Sign in with Email</string>
     <string name="default_web_client_id">YOUR_WEB_CLIENT_ID</string>
 </resources>
