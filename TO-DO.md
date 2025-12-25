@@ -20,5 +20,5 @@
 
 ## Getreilte Listen
 
-- [ ] Verwaltung von Nutzerrechten (Admin, Editor, Viewer)
+- [ ] Verwaltung von Nutzerrechten (Admin, Editor, Viewer)
 - [ ] Benachrichtigungen bei Änderungen in geteilten Listen
