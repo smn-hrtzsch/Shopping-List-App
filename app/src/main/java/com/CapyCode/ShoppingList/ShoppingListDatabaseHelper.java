@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "shopping_list.db";
-    private static final int DATABASE_VERSION = 5; // Version 5: Membership status
+    private static final int DATABASE_VERSION = 6; // Version 6: Owner username
 
     // Tabellen- und Spaltennamen
     public static final String TABLE_LISTS = "shopping_lists";
@@ -26,8 +26,9 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_LIST_POSITION = "position"; // Für die Reihenfolge
     public static final String COLUMN_FIREBASE_ID = "firebase_id"; // Für Cloud-Listen
     public static final String COLUMN_OWNER_ID = "owner_id"; // Für Cloud-Listen
-    public static final String COLUMN_MEMBERS = "members"; // Neu
-    public static final String COLUMN_PENDING_MEMBERS = "pending_members"; // Neu
+    public static final String COLUMN_OWNER_USERNAME = "owner_username"; // Neu: Username des Besitzers
+    public static final String COLUMN_MEMBERS = "members";
+    public static final String COLUMN_PENDING_MEMBERS = "pending_members";
 
     // Spalten für die Artikeltabelle
     public static final String COLUMN_ITEM_NAME = "name";
@@ -46,6 +47,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                     COLUMN_LIST_POSITION + " INTEGER DEFAULT 0," +
                     COLUMN_FIREBASE_ID + " TEXT," +
                     COLUMN_OWNER_ID + " TEXT," +
+                    COLUMN_OWNER_USERNAME + " TEXT," +
                     COLUMN_MEMBERS + " TEXT," +
                     COLUMN_PENDING_MEMBERS + " TEXT);";
 
@@ -117,6 +119,13 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                 Log.w("DBUpgrade", "Spalten für Mitglieder existieren vermutlich bereits.", e);
             }
         }
+        if (oldVersion < 6) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_OWNER_USERNAME + " TEXT;");
+            } catch (SQLiteException e) {
+                Log.w("DBUpgrade", "Spalte owner_username existiert vermutlich bereits.", e);
+            }
+        }
     }
 
 
@@ -149,7 +158,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = null;
         try {
             cursor = db.query(TABLE_LISTS,
-                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT, COLUMN_LIST_POSITION, COLUMN_FIREBASE_ID, COLUMN_OWNER_ID, COLUMN_MEMBERS, COLUMN_PENDING_MEMBERS},
+                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT, COLUMN_LIST_POSITION, COLUMN_FIREBASE_ID, COLUMN_OWNER_ID, COLUMN_OWNER_USERNAME, COLUMN_MEMBERS, COLUMN_PENDING_MEMBERS},
                     COLUMN_ID + "=?", new String[]{String.valueOf(listId)}, null, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
                 ShoppingList list = new ShoppingList(
@@ -160,6 +169,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                 list.setPosition(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_POSITION)));
                 list.setFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FIREBASE_ID)));
                 list.setOwnerId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_ID)));
+                list.setOwnerUsername(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_USERNAME)));
                 list.setMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEMBERS))));
                 list.setPendingMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PENDING_MEMBERS))));
                 return list;
@@ -186,6 +196,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                     shoppingList.setPosition(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_LIST_POSITION)));
                     shoppingList.setFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FIREBASE_ID)));
                     shoppingList.setOwnerId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_ID)));
+                    shoppingList.setOwnerUsername(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_USERNAME)));
                     shoppingList.setMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEMBERS))));
                     shoppingList.setPendingMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PENDING_MEMBERS))));
                     shoppingLists.add(shoppingList);
@@ -208,6 +219,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             values.put(COLUMN_LIST_ITEM_COUNT, list.getItemCount());
             values.put(COLUMN_FIREBASE_ID, list.getFirebaseId());
             values.put(COLUMN_OWNER_ID, list.getOwnerId());
+            values.put(COLUMN_OWNER_USERNAME, list.getOwnerUsername());
             values.put(COLUMN_MEMBERS, listToCsv(list.getMembers()));
             values.put(COLUMN_PENDING_MEMBERS, listToCsv(list.getPendingMembers()));
             // Position wird nicht überschrieben, um lokale Sortierung zu erhalten,
