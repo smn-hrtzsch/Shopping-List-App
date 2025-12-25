@@ -69,7 +69,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
         viewHolder.textViewListName.setText(list.getName());
 
-        if (list.getFirebaseId() != null) {
+        if (list.getFirebaseId() != null && !isPending) {
             viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
         } else {
             viewHolder.cloudIcon.setVisibility(View.GONE);
