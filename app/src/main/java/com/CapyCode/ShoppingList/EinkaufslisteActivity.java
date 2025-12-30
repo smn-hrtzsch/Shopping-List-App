@@ -441,9 +441,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
                     if (firebaseListId != null) {
                         updateSyncIcon(R.drawable.ic_cloud_upload_24);
-                        shoppingListRepository.clearCheckedItemsFromList(firebaseListId);
-                        shoppingListRepository.updateListTimestamp(firebaseListId, () -> {
-                            updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                        shoppingListRepository.clearCheckedItemsFromList(firebaseListId, () -> {
+                            shoppingListRepository.updateListTimestamp(firebaseListId, () -> {
+                                updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                            });
                         });
                     } else {
                         shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
@@ -454,9 +455,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
                     if (firebaseListId != null) {
                         updateSyncIcon(R.drawable.ic_cloud_upload_24);
-                        shoppingListRepository.clearAllItemsFromList(firebaseListId);
-                        shoppingListRepository.updateListTimestamp(firebaseListId, () -> {
-                            updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                        shoppingListRepository.clearAllItemsFromList(firebaseListId, () -> {
+                            shoppingListRepository.updateListTimestamp(firebaseListId, () -> {
+                                updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                            });
                         });
                     } else {
                         shoppingListRepository.clearAllItemsFromList(currentShoppingListId);

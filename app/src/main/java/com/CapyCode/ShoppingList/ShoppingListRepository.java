@@ -207,20 +207,31 @@ public class ShoppingListRepository {
         dbHelper.deleteAllLists();
     }
 
+    public interface OnActionListener {
+        void onActionComplete();
+    }
+
     public long addItemToShoppingList(long listId, ShoppingItem item) {
         item.setListId(listId);
         return dbHelper.addItem(item);
     }
 
-    public void addItemToShoppingList(String firebaseListId, ShoppingItem item) {
-        db.collection("shopping_lists").document(firebaseListId).collection("items").add(item);
+    public void addItemToShoppingList(String firebaseListId, ShoppingItem item, OnActionListener listener) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items").add(item)
+            .addOnCompleteListener(task -> {
+                if (listener != null) listener.onActionComplete();
+            });
     }
 
-    public void updateItemInList(ShoppingItem item, String firebaseListId) {
+    public void updateItemInList(ShoppingItem item, String firebaseListId, OnActionListener listener) {
         if (firebaseListId != null && item.getFirebaseId() != null) {
-            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item);
+            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item)
+                .addOnCompleteListener(task -> {
+                    if (listener != null) listener.onActionComplete();
+                });
         } else {
             dbHelper.updateItem(item);
+            if (listener != null) listener.onActionComplete();
         }
     }
 
@@ -252,18 +263,25 @@ public class ShoppingListRepository {
         }
     }
 
-    public void toggleItemChecked(String firebaseListId, String firebaseItemId, boolean isChecked) {
-        db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).update("done", isChecked);
+    public void toggleItemChecked(String firebaseListId, String firebaseItemId, boolean isChecked, OnActionListener listener) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).update("done", isChecked)
+            .addOnCompleteListener(task -> {
+                if (listener != null) listener.onActionComplete();
+            });
     }
 
     public void clearCheckedItemsFromList(long listId) {
         dbHelper.deleteCheckedItems(listId);
     }
 
-    public void clearCheckedItemsFromList(String firebaseListId) {
+    public void clearCheckedItemsFromList(String firebaseListId, OnActionListener listener) {
         db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .whereEqualTo("done", true).get().addOnSuccessListener(snaps -> {
-                    for (QueryDocumentSnapshot doc : snaps) doc.getReference().delete();
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    for (QueryDocumentSnapshot doc : snaps) batch.delete(doc.getReference());
+                    batch.commit().addOnCompleteListener(t -> {
+                        if (listener != null) listener.onActionComplete();
+                    });
                 });
     }
 
@@ -271,9 +289,13 @@ public class ShoppingListRepository {
         dbHelper.clearList(listId);
     }
 
-    public void clearAllItemsFromList(String firebaseListId) {
+    public void clearAllItemsFromList(String firebaseListId, OnActionListener listener) {
         db.collection("shopping_lists").document(firebaseListId).collection("items").get().addOnSuccessListener(snaps -> {
-                    for (QueryDocumentSnapshot doc : snaps) doc.getReference().delete();
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    for (QueryDocumentSnapshot doc : snaps) batch.delete(doc.getReference());
+                    batch.commit().addOnCompleteListener(t -> {
+                        if (listener != null) listener.onActionComplete();
+                    });
                 });
     }
 
@@ -389,8 +411,11 @@ public class ShoppingListRepository {
         return mAuth.getUid();
     }
 
-    public void updateListTimestamp(String firebaseListId) {
-        db.collection("shopping_lists").document(firebaseListId).update("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp());
+    public void updateListTimestamp(String firebaseListId, OnActionListener listener) {
+        db.collection("shopping_lists").document(firebaseListId).update("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp())
+            .addOnCompleteListener(task -> {
+                if (listener != null) listener.onActionComplete();
+            });
     }
 
     public void migrateLocalListsToCloud(Runnable onComplete) {

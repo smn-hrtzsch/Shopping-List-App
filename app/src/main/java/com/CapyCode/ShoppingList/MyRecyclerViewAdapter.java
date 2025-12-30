@@ -139,7 +139,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
         if (firebaseListId != null) {
             repository.deleteItemFromList(firebaseListId, itemToDelete.getFirebaseId());
-            repository.updateListTimestamp(firebaseListId);
+            repository.updateListTimestamp(firebaseListId, null);
         } else {
             repository.deleteItemFromList(itemToDelete.getId());
         }
@@ -156,8 +156,8 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                         "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG)
                 .setAction(R.string.undo, view -> {
                     if (firebaseListId != null) {
-                        repository.addItemToShoppingList(firebaseListId, itemToDelete);
-                        repository.updateListTimestamp(firebaseListId);
+                        repository.addItemToShoppingList(firebaseListId, itemToDelete, null);
+                        repository.updateListTimestamp(firebaseListId, null);
                     } else {
                         long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
                         itemToDelete.setId(newId);
@@ -254,9 +254,9 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
                 item.setDone(isChecked);
                 if (firebaseListId != null) {
-                    repository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked);
+                    repository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked, null);
                 } else {
-                    repository.updateItemInList(item, firebaseListId);
+                    repository.updateItemInList(item, firebaseListId, null);
                 }
                 if (interactionListener != null) {
                     interactionListener.onItemCheckboxChanged(item, isChecked);
@@ -321,9 +321,9 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 return;
             }
             item.setName(newName);
-            repository.updateItemInList(item, firebaseListId);
+            repository.updateItemInList(item, firebaseListId, null);
             if (firebaseListId != null) {
-                repository.updateListTimestamp(firebaseListId);
+                repository.updateListTimestamp(firebaseListId, null);
             }
             editingItemPosition = -1;
             notifyItemChanged(position);
