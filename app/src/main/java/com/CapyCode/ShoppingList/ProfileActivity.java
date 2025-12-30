@@ -215,9 +215,9 @@ public class ProfileActivity extends AppCompatActivity {
                                  // Link failed because credential already exists on another user
                                  progressBarLoading.setVisibility(View.GONE);
                                  showCustomDialog(
-                                     "Konto wechseln?",
-                                     "Ein Konto mit der E-Mail dieses Google-Accounts existiert bereits.\n\nMöchtest du dich stattdessen in dieses Konto einloggen? Dabei wird dein Google-Konto mit dem bestehenden Account verknüpft (und deine aktuellen Gast-Daten ersetzt).",
-                                     "Wechseln & Verknüpfen",
+                                     getString(R.string.dialog_switch_account_title),
+                                     getString(R.string.dialog_switch_account_message),
+                                     getString(R.string.button_switch_and_link),
                                      () -> performGoogleSignIn(credential)
                                  );
                              } else {

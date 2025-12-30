@@ -157,4 +157,7 @@
     <string name="action_sign_in_email">Sign in with Email</string>
     <string name="error_login_user_not_found">No account found with this email. Please register first.</string>
     <string name="error_login_wrong_password">The password you entered is incorrect.</string>
+    <string name="dialog_switch_account_title">Switch Account?</string>
+    <string name="dialog_switch_account_message">An account with the email of this Google account already exists.\n\nDo you want to sign in to that account instead? This will link your Google account to the existing account (and replace your current guest data).</string>
+    <string name="button_switch_and_link">Switch &amp; Link</string>
 </resources>
