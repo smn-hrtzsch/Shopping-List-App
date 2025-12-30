@@ -85,6 +85,10 @@ public class AuthActivity extends AppCompatActivity {
             editTextEmail.setError(getString(R.string.error_email_required));
             return;
         }
+        if (!AuthValidator.isValidEmail(email)) {
+            editTextEmail.setError(getString(R.string.error_invalid_email));
+            return;
+        }
         if (TextUtils.isEmpty(password)) {
             editTextPassword.setError(getString(R.string.error_password_required));
             return;
@@ -179,8 +183,6 @@ public class AuthActivity extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 // If profile fetch fails, assume not empty to be safe (show dialog)
-                // Or if it fails because doc doesn't exist (likely for anon), it might be empty.
-                // But safer to show dialog.
                 listener.onResult(false);
             }
         });
@@ -226,8 +228,16 @@ public class AuthActivity extends AppCompatActivity {
             editTextEmail.setError(getString(R.string.error_email_required));
             return;
         }
+        if (!AuthValidator.isValidEmail(email)) {
+            editTextEmail.setError(getString(R.string.error_invalid_email));
+            return;
+        }
         if (TextUtils.isEmpty(password)) {
             editTextPassword.setError(getString(R.string.error_password_required));
+            return;
+        }
+        if (!AuthValidator.isValidPassword(password)) {
+            editTextPassword.setError(getString(R.string.error_password_short));
             return;
         }
 

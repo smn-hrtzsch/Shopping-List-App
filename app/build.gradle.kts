@@ -75,6 +75,8 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation("androidx.window:window:1.5.0")
     testImplementation(libs.junit)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.inline)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 

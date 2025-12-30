@@ -35,10 +35,14 @@ public class UserRepository {
     }
 
     public UserRepository(Context context) {
+        this(context, FirebaseFirestore.getInstance(), FirebaseAuth.getInstance(), FirebaseStorage.getInstance());
+    }
+
+    public UserRepository(Context context, FirebaseFirestore db, FirebaseAuth auth, FirebaseStorage storage) {
         this.context = context;
-        this.db = FirebaseFirestore.getInstance();
-        this.auth = FirebaseAuth.getInstance();
-        this.storage = FirebaseStorage.getInstance();
+        this.db = db;
+        this.auth = auth;
+        this.storage = storage;
     }
 
     public boolean isAuthenticated() {
