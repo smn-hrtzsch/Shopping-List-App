@@ -90,11 +90,11 @@
                 android:layout_height="60dp"
                 android:layout_marginBottom="16dp"
                 android:text="@string/action_sign_in"
-                style="@style/ButtonStyle.Solid"
-                app:backgroundTint="@color/black"
-                android:textColor="@color/white"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="?attr/colorOnSurface"
+                app:strokeColor="?attr/colorOnSurface"
                 app:cornerRadius="30dp"
-                android:textAllCaps="true"
+                android:textAllCaps="false"
                 android:textSize="16sp"/>
 
             <com.google.android.material.button.MaterialButton
