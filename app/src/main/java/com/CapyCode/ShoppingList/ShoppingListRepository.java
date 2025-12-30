@@ -503,6 +503,33 @@ public class ShoppingListRepository {
             });
     }
 
+    public void uploadSingleListToCloud(ShoppingList list, Runnable onComplete) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+        List<ShoppingList> singleList = new ArrayList<>();
+        singleList.add(list);
+        uploadNextList(singleList, 0, user, onComplete);
+    }
+
+    public void deleteSingleListFromCloud(String firebaseId, Runnable onComplete) {
+        db.collection("shopping_lists").document(firebaseId).get()
+            .addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    List<com.google.firebase.firestore.DocumentSnapshot> list = new ArrayList<>();
+                    list.add(doc);
+                    deleteNextListRecursive(list, 0, onComplete);
+                } else {
+                    if (onComplete != null) onComplete.run();
+                }
+            })
+            .addOnFailureListener(e -> {
+                if (onComplete != null) onComplete.run();
+            });
+    }
+
     public void deleteAllUserData(Runnable onComplete) {
          FirebaseUser user = mAuth.getCurrentUser();
          if (user == null) {

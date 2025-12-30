@@ -27,6 +27,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,6 +54,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private com.google.firebase.firestore.ListenerRegistration listSnapshotListener;
     private com.google.firebase.firestore.ListenerRegistration itemsSnapshotListener;
     private final android.os.Handler syncIconHandler = new android.os.Handler();
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +62,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_einkaufsliste);
 
+        mAuth = FirebaseAuth.getInstance();
         Toolbar toolbar = findViewById(R.id.toolbar_einkaufsliste);
         setSupportActionBar(toolbar);
         toolbarTitleTextView = findViewById(R.id.toolbar_title_einkaufsliste);
@@ -97,13 +101,20 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             toolbarTitleTextView.setText(listName);
         }
 
-        if (firebaseListId != null) {
-            if (toolbarCloudIcon != null) {
-                toolbarCloudIcon.setVisibility(View.VISIBLE);
+        if (toolbarCloudIcon != null) {
+            boolean canSync = mAuth.getCurrentUser() != null;
+            toolbarCloudIcon.setVisibility((firebaseListId != null || canSync) ? View.VISIBLE : View.GONE);
+            
+            if (firebaseListId != null) {
                 toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
+            } else {
+                toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
             }
             
-            // Listen for list deletion and updates
+            setupSyncToggle();
+        }
+
+        if (firebaseListId != null) {
             listSnapshotListener = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     .collection("shopping_lists")
                     .document(firebaseListId)
@@ -136,17 +147,55 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         refreshItemList();
     }
 
+    private void setupSyncToggle() {
+        if (toolbarCloudIcon != null) {
+            toolbarCloudIcon.setOnClickListener(v -> {
+                if (currentShoppingList == null) return;
+                
+                if (currentShoppingList.isShared()) {
+                    return;
+                }
+                
+                if (firebaseListId == null) {
+                    updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                    shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
+                        firebaseListId = currentShoppingList.getFirebaseId();
+                        updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                        Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
+                        refreshItemList();
+                    });
+                } else {
+                    showCustomDialog(
+                        getString(R.string.dialog_stop_sync_title),
+                        getString(R.string.dialog_stop_sync_message),
+                        getString(R.string.button_stop_sync),
+                        () -> {
+                            updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                            shoppingListRepository.deleteSingleListFromCloud(firebaseListId, () -> {
+                                currentShoppingList.setFirebaseId(null);
+                                shoppingListRepository.getShoppingListDatabaseHelper().updateShoppingListFirebaseId(currentShoppingList.getId(), null);
+                                firebaseListId = null;
+                                toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
+                                Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
+                                refreshItemList(); 
+                            });
+                        }
+                    );
+                }
+            });
+        }
+    }
+
     private void updateSyncIcon(int drawableId) {
         if (toolbarCloudIcon != null && firebaseListId != null) {
             toolbarCloudIcon.setImageResource(drawableId);
-            // Revert to "synced" icon after a delay to ensure visibility
             if (drawableId != R.drawable.ic_cloud_synced_24) {
                 syncIconHandler.removeCallbacksAndMessages(null);
                 syncIconHandler.postDelayed(() -> {
                     if (toolbarCloudIcon != null) {
                         toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
                     }
-                }, 1000); // 1 second minimum visibility
+                }, 1000);
             }
         }
     }
@@ -167,14 +216,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.einkaufsliste_menu, menu);
-        
         boolean isShared = currentShoppingList != null && currentShoppingList.isShared();
-        
-        // JSON share is visible for local lists AND private cloud lists
         menu.findItem(R.id.action_share_list).setVisible(!isShared);
-        // Members list is ONLY visible for shared cloud lists
         menu.findItem(R.id.action_view_members).setVisible(isShared);
-        
         return true;
     }
 
@@ -216,11 +260,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
 
                 for (Map<String, String> member : membersWithNames) {
-                    // Create row layout programmatically
                     android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
                     row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
                     row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-                    row.setPadding(0, 24, 0, 24); // More padding
+                    row.setPadding(0, 24, 0, 24);
 
                     ImageView icon = new ImageView(EinkaufslisteActivity.this);
                     icon.setImageResource(R.drawable.ic_account_circle_24);
@@ -228,13 +271,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     String uid = member.get("uid");
                     boolean isMe = uid != null && uid.equals(currentUid);
                     
-                    // Use theme color for icon, but highlight color if it's the current user
                     int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
                     int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
                     
                     icon.setColorFilter(isMe ? highlightColor : textColor);
                     
-                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); // Bigger icon
+                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64);
                     iconParams.setMargins(0, 0, 32, 0);
                     row.addView(icon, iconParams);
 
@@ -264,13 +306,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 });
 
                 buttonClose.setOnClickListener(v -> dialog.dismiss());
-
                 dialog.show();
             }
 
             @Override
             public void onError(String error) {
-                Toast.makeText(EinkaufslisteActivity.this, error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(EinkaufslisteActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -292,12 +333,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         btnPositive.setOnClickListener(v -> {
             String username = editText.getText().toString().trim();
             if (!username.isEmpty()) {
-                // 1. Search for UID by username
                 UserRepository userRepository = new UserRepository(this);
                 userRepository.findUidByUsername(username, new UserRepository.OnUserSearchListener() {
                     @Override
                     public void onUserFound(String uid) {
-                        // 2. Add UID to list
                         shoppingListRepository.addMemberToList(firebaseListId, uid, new ShoppingListRepository.OnMemberAddListener() {
                             @Override
                             public void onMemberAdded() {
@@ -312,40 +351,33 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
                             @Override
                             public void onError(String message) {
-                                Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
+                                Toast.makeText(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
                             }
                         });
                     }
 
                     @Override
                     public void onError(String message) {
-                        Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
+                        Toast.makeText(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
                     }
                 });
             }
         });
 
         btnNegative.setOnClickListener(v -> dialog.dismiss());
-
         dialog.show();
     }
 
     private void shareShoppingList() {
-        if (firebaseListId != null) {
+        if (currentShoppingList != null && currentShoppingList.isShared()) {
             Toast.makeText(this, R.string.error_cannot_share_shared, Toast.LENGTH_SHORT).show();
             return;
         }
-        ShoppingList shoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
-        if (shoppingList == null) {
-            Toast.makeText(this, R.string.list_not_found, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         shoppingListRepository.getItemsForListId(currentShoppingListId, items -> {
             try {
                 org.json.JSONObject jsonList = new org.json.JSONObject();
                 jsonList.put("app_id", "com.CapyCode.ShoppingList");
-                jsonList.put("name", shoppingList.getName());
+                jsonList.put("name", currentShoppingList != null ? currentShoppingList.getName() : "List");
 
                 org.json.JSONArray jsonItems = new org.json.JSONArray();
                 for (ShoppingItem item : items) {
@@ -361,20 +393,16 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 jsonList.put("items", jsonItems);
 
                 String jsonString = jsonList.toString(2);
-
                 java.io.File file = new java.io.File(getCacheDir(), "list.json");
                 try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
                     fos.write(jsonString.getBytes());
                 }
 
                 android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.CapyCode.ShoppingList.provider", file);
-
                 android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
                 shareIntent.setType("application/json");
                 shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, fileUri);
-                shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.shopping_list) + ": " + shoppingList.getName());
                 shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
                 startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_list)));
 
             } catch (org.json.JSONException | java.io.IOException e) {
@@ -391,14 +419,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         editTextAddItem.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 boolean hasText = !s.toString().trim().isEmpty();
                 buttonAddItem.setEnabled(hasText);
                 buttonAddItem.setAlpha(hasText ? 1.0f : 0.5f);
             }
-
             @Override
             public void afterTextChanged(Editable s) {}
         });
@@ -487,8 +513,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private void refreshItemList() {
         if (shoppingListRepository == null || adapter == null) return;
         adapter.resetEditingPosition();
-
-        // Clean up previous listener if exists
         if (itemsSnapshotListener != null) {
             itemsSnapshotListener.remove();
             itemsSnapshotListener = null;
@@ -557,5 +581,28 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     @Override
     public View getSnackbarAnchorView() {
         return findViewById(R.id.add_item_bar_container);
+    }
+
+    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction) {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        com.google.android.material.button.MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        com.google.android.material.button.MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+        textTitle.setText(title);
+        textMessage.setText(message);
+        btnPositive.setText(positiveButtonText);
+        btnPositive.setOnClickListener(v -> {
+            onPositiveAction.run();
+            dialog.dismiss();
+        });
+        btnNegative.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 }

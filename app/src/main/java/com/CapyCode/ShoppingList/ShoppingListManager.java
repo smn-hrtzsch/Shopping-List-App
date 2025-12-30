@@ -15,6 +15,9 @@ public class ShoppingListManager {
 
     private static final String PREFS_NAME = "list_order_prefs";
     private static final String KEY_LIST_ORDER = "list_order";
+    
+    public static final String SETTINGS_PREFS = "settings_prefs";
+    public static final String KEY_SYNC_PRIVATE_DEFAULT = "sync_private_default";
 
     public interface OnListsLoadedListener {
         void onListsLoaded(List<ShoppingList> shoppingLists);

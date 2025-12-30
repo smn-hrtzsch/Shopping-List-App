@@ -248,7 +248,24 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             int nextPosition = shoppingListRepository.getNextPosition();
             long newId = shoppingListManager.addShoppingList(listName, nextPosition, false);
             if (newId != -1) {
-                loadShoppingLists();
+                // Check if we should sync this new private list immediately
+                android.content.SharedPreferences settings = getSharedPreferences(ShoppingListManager.SETTINGS_PREFS, MODE_PRIVATE);
+                boolean syncDefault = settings.getBoolean(ShoppingListManager.KEY_SYNC_PRIVATE_DEFAULT, true);
+                FirebaseUser user = mAuth.getCurrentUser();
+                boolean hasAccount = false;
+                if (user != null && !user.isAnonymous()) hasAccount = true;
+                if (user != null && user.isAnonymous()) {
+                    for (com.google.firebase.auth.UserInfo info : user.getProviderData()) {
+                        if (!info.getProviderId().equals("firebase")) { hasAccount = true; break; }
+                    }
+                }
+
+                if (syncDefault && hasAccount) {
+                    Toast.makeText(MainActivity.this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
+                    shoppingListRepository.migrateLocalListsToCloud(this::loadShoppingLists);
+                } else {
+                    loadShoppingLists();
+                }
                 Toast.makeText(MainActivity.this, getString(R.string.local_list_created, listName), Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();

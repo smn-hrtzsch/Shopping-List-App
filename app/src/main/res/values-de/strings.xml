@@ -254,4 +254,11 @@
     <string name="error_create_share_data">Fehler beim Erstellen der Export-Daten.</string>
     <string name="toast_registration_aborted">Registrierung abgebrochen.</string>
     <string name="error_generic_message">Fehler: %s</string>
+    <string name="pref_sync_private_title">Private Listen synchronisieren</string>
+    <string name="pref_sync_private_desc">Neue private Listen automatisch in der Cloud sichern.</string>
+    <string name="dialog_stop_sync_title">Synchronisation beenden?</string>
+    <string name="dialog_stop_sync_message">Möchtest du die Cloud-Sicherung für diese Liste beenden? Die Liste wird aus der Cloud gelöscht, bleibt aber auf diesem Gerät erhalten.</string>
+    <string name="button_stop_sync">Beenden &amp; Löschen</string>
+    <string name="toast_sync_enabled">Cloud-Sicherung aktiviert</string>
+    <string name="toast_sync_disabled">Cloud-Sicherung deaktiviert</string>
 </resources>

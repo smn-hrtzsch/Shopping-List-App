@@ -393,6 +393,17 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return rows;
     }
 
+    public void updateShoppingListFirebaseId(long listId, String firebaseId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_FIREBASE_ID, firebaseId);
+        try {
+            db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
+        } finally {
+            db.close();
+        }
+    }
+
     public void deleteShoppingList(long listId) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {

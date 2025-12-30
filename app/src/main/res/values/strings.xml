@@ -233,4 +233,11 @@
     <string name="error_create_share_data">Error creating export data.</string>
     <string name="toast_registration_aborted">Registration aborted.</string>
     <string name="error_generic_message">Error: %s</string>
+    <string name="pref_sync_private_title">Sync private lists</string>
+    <string name="pref_sync_private_desc">Automatically back up new private lists to the cloud.</string>
+    <string name="dialog_stop_sync_title">Stop synchronization?</string>
+    <string name="dialog_stop_sync_message">Do you want to stop cloud backup for this list? It will be deleted from the cloud but kept on this device.</string>
+    <string name="button_stop_sync">Stop &amp; Delete</string>
+    <string name="toast_sync_enabled">Cloud backup enabled</string>
+    <string name="toast_sync_disabled">Cloud backup disabled</string>
 </resources>
