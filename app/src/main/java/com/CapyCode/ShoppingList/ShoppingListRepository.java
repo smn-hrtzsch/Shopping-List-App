@@ -38,6 +38,10 @@ public class ShoppingListRepository {
         return dbHelper.getShoppingListCount();
     }
 
+    public int getNextPosition() {
+        return dbHelper.getMaxPosition() + 1;
+    }
+
     public void getAllShoppingLists(OnListsLoadedListener listener) {
         listener.onListsLoaded(dbHelper.getAllShoppingLists());
 

@@ -245,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         if (isShared) {
             createSharedListInFirestore(listName);
         } else {
-            int nextPosition = shoppingLists.size();
+            int nextPosition = shoppingListRepository.getNextPosition();
             long newId = shoppingListManager.addShoppingList(listName, nextPosition);
             if (newId != -1) {
                 loadShoppingLists();

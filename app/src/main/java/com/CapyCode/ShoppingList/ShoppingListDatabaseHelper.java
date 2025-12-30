@@ -264,7 +264,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             } else {
                 // Insert
                 // Position ans Ende setzen
-                values.put(COLUMN_LIST_POSITION, 9999); // Wird später sortiert
+                values.put(COLUMN_LIST_POSITION, getMaxPosition() + 1);
                 db.insert(TABLE_LISTS, null, values);
             }
             if (cursor != null) cursor.close();
