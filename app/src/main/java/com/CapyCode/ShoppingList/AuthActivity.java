@@ -127,18 +127,63 @@ public class AuthActivity extends AppCompatActivity {
             .addOnCompleteListener(task -> {
                 showLoading(false);
                 if (task.isSuccessful()) {
-                    // Credentials are correct. Now show the warning.
-                    showCustomDialog(
-                        "Konto wechseln?",
-                        "Du bist aktuell als Gast angemeldet. Wenn du dich in ein anderes bestehendes Konto einloggst, werden deine aktuellen Gast-Listen von diesem Gerät entfernt und durch die des anderen Kontos ersetzt.\n\nMöchtest du fortfahren?",
-                        "Anmelden (Daten verwerfen)",
-                        () -> performLogin(email, password)
-                    );
+                    checkIfAccountIsEmpty(isEmpty -> {
+                        if (isEmpty) {
+                            performLogin(email, password);
+                        } else {
+                            // Credentials are correct. Now show the warning.
+                            showCustomDialog(
+                                getString(R.string.dialog_switch_account_title),
+                                getString(R.string.dialog_switch_account_message),
+                                getString(R.string.button_switch_and_link),
+                                () -> performLogin(email, password)
+                            );
+                        }
+                    });
                 } else {
                     // Verification failed (wrong password or user doesn't exist)
                     handleLoginError(task);
                 }
             });
+    }
+
+    private interface OnAccountEmptyCheckListener {
+        void onResult(boolean isEmpty);
+    }
+
+    private void checkIfAccountIsEmpty(OnAccountEmptyCheckListener listener) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || !user.isAnonymous()) {
+            listener.onResult(false);
+            return;
+        }
+
+        userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
+            @Override
+            public void onLoaded(String username, String imageUrl) {
+                if (username != null && !username.isEmpty()) {
+                    listener.onResult(false);
+                    return;
+                }
+                
+                // No username. Check lists.
+                ShoppingListRepository listRepo = new ShoppingListRepository(AuthActivity.this);
+                if (listRepo.getLocalListCount() > 0) {
+                     listener.onResult(false);
+                } else {
+                     // Anonymous, No Username, No Lists -> Empty!
+                     listener.onResult(true);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                // If profile fetch fails, assume not empty to be safe (show dialog)
+                // Or if it fails because doc doesn't exist (likely for anon), it might be empty.
+                // But safer to show dialog.
+                listener.onResult(false);
+            }
+        });
     }
 
     private void performLogin(String email, String password) {

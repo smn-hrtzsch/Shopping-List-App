@@ -34,6 +34,10 @@ public class ShoppingListRepository {
         this.context = context;
     }
 
+    public int getLocalListCount() {
+        return dbHelper.getShoppingListCount();
+    }
+
     public void getAllShoppingLists(OnListsLoadedListener listener) {
         listener.onListsLoaded(dbHelper.getAllShoppingLists());
 

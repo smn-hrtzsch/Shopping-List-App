@@ -213,13 +213,19 @@ public class ProfileActivity extends AppCompatActivity {
                         } else {
                              if (task.getException() instanceof FirebaseAuthUserCollisionException) {
                                  // Link failed because credential already exists on another user
-                                 progressBarLoading.setVisibility(View.GONE);
-                                 showCustomDialog(
-                                     getString(R.string.dialog_switch_account_title),
-                                     getString(R.string.dialog_switch_account_message),
-                                     getString(R.string.button_switch_and_link),
-                                     () -> performGoogleSignIn(credential)
-                                 );
+                                 checkIfAccountIsEmpty(isEmpty -> {
+                                     if (isEmpty) {
+                                         performGoogleSignIn(credential);
+                                     } else {
+                                         progressBarLoading.setVisibility(View.GONE);
+                                         showCustomDialog(
+                                             getString(R.string.dialog_switch_account_title),
+                                             getString(R.string.dialog_switch_account_message),
+                                             getString(R.string.button_switch_and_link),
+                                             () -> performGoogleSignIn(credential)
+                                         );
+                                     }
+                                 });
                              } else {
                                  progressBarLoading.setVisibility(View.GONE);
                                  String msg = task.getException() != null ? task.getException().getMessage() : "Fehler beim Verknüpfen";
@@ -230,6 +236,40 @@ public class ProfileActivity extends AppCompatActivity {
         } else {
             performGoogleSignIn(credential);
         }
+    }
+
+    private interface OnAccountEmptyCheckListener {
+        void onResult(boolean isEmpty);
+    }
+
+    private void checkIfAccountIsEmpty(OnAccountEmptyCheckListener listener) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || !user.isAnonymous()) {
+            listener.onResult(false);
+            return;
+        }
+
+        userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
+            @Override
+            public void onLoaded(String username, String imageUrl) {
+                if (username != null && !username.isEmpty()) {
+                    listener.onResult(false);
+                    return;
+                }
+                
+                ShoppingListRepository listRepo = new ShoppingListRepository(ProfileActivity.this);
+                if (listRepo.getLocalListCount() > 0) {
+                     listener.onResult(false);
+                } else {
+                     listener.onResult(true);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                listener.onResult(false);
+            }
+        });
     }
 
     private void performGoogleSignIn(AuthCredential credential) {

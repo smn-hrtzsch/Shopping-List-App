@@ -180,6 +180,21 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return null;
     }
 
+    public int getShoppingListCount() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        int count = 0;
+        try {
+            Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_LISTS, null);
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0);
+            }
+            cursor.close();
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error counting lists", e);
+        }
+        return count;
+    }
+
     public List<ShoppingList> getAllShoppingLists() {
         List<ShoppingList> shoppingLists = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
