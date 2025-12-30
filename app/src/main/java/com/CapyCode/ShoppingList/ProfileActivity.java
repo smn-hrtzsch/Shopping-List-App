@@ -66,6 +66,7 @@ public class ProfileActivity extends AppCompatActivity {
     private View containerContent;
     private ProgressBar progressBarLoading;
     private UserRepository userRepository;
+    private String currentLoadedUsername = null;
     private boolean isInitialProfileCreation = false;
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
@@ -354,11 +355,13 @@ public class ProfileActivity extends AppCompatActivity {
 
                     if (username != null) {
                         isInitialProfileCreation = false;
+                        currentLoadedUsername = username;
                         textViewCurrentUsername.setText(username);
                         editTextUsername.setText(username);
                         showViewMode();
                     } else {
                         isInitialProfileCreation = true;
+                        currentLoadedUsername = null;
                         editTextUsername.setText(""); // Clear potentially old data
                         showEditMode();
                     }
@@ -528,7 +531,9 @@ public class ProfileActivity extends AppCompatActivity {
             
             layoutAuthButtons.setVisibility(View.VISIBLE);
             
-            buttonRegisterEmail.setText(R.string.action_link_email);
+            boolean shouldShowLinkText = currentLoadedUsername != null && !currentLoadedUsername.isEmpty();
+            
+            buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
             buttonRegisterEmail.setIconResource(R.drawable.ic_email);
             buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.text_primary_adaptive));
             buttonRegisterEmail.setOnClickListener(v -> {
@@ -536,7 +541,7 @@ public class ProfileActivity extends AppCompatActivity {
                 authActivityLauncher.launch(intent);
             });
 
-            buttonRegisterGoogle.setText(R.string.action_link_google);
+            buttonRegisterGoogle.setText(shouldShowLinkText ? R.string.action_link_google : R.string.sign_in_google);
             buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
             buttonRegisterGoogle.setIconTint(null);
             buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());

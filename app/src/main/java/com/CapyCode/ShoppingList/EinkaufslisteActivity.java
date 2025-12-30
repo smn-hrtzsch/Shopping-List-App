@@ -47,8 +47,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private EditText editTextAddItem;
     private ImageButton buttonAddItem;
+    private ImageView toolbarCloudIcon;
     private com.google.firebase.firestore.ListenerRegistration listSnapshotListener;
     private com.google.firebase.firestore.ListenerRegistration itemsSnapshotListener;
+    private final android.os.Handler syncIconHandler = new android.os.Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +63,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         toolbarTitleTextView = findViewById(R.id.toolbar_title_einkaufsliste);
         emptyView = findViewById(R.id.empty_view_items);
         activityRootView = findViewById(R.id.einkaufsliste_activity_root);
+        toolbarCloudIcon = findViewById(R.id.toolbar_cloud_icon);
 
         AppBarLayout appBarLayout = findViewById(R.id.appbar);
         View addItemBarContainer = findViewById(R.id.add_item_bar_container);
@@ -93,9 +96,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         }
 
         if (firebaseListId != null) {
-            ImageView toolbarCloudIcon = findViewById(R.id.toolbar_cloud_icon);
             if (toolbarCloudIcon != null) {
                 toolbarCloudIcon.setVisibility(View.VISIBLE);
+                toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
             }
             
             // Listen for list deletion
@@ -125,9 +128,21 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         refreshItemList();
     }
 
+    private void updateSyncIcon(int drawableId) {
+        if (toolbarCloudIcon != null && firebaseListId != null) {
+            toolbarCloudIcon.setImageResource(drawableId);
+            // If it's a transient state (upload/download), set a timer to return to "synced"
+            if (drawableId != R.drawable.ic_cloud_synced_24) {
+                syncIconHandler.removeCallbacksAndMessages(null);
+                syncIconHandler.postDelayed(() -> toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24), 1500);
+            }
+        }
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        syncIconHandler.removeCallbacksAndMessages(null);
         if (listSnapshotListener != null) {
             listSnapshotListener.remove();
         }
@@ -388,8 +403,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
                 ShoppingItem newItem = new ShoppingItem(name, "1", "", false, currentShoppingListId, "", nextPosition);
                 if (firebaseListId != null) {
-                    shoppingListRepository.addItemToShoppingList(firebaseListId, newItem);
-                    shoppingListRepository.updateListTimestamp(firebaseListId);
+                    updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                    shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> {
+                        updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                    });
+                    shoppingListRepository.updateListTimestamp(firebaseListId, null);
                 } else {
                     long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
                     if (newId != -1) {
@@ -422,8 +440,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .setMessage(R.string.dialog_clear_list_message)
                 .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
                     if (firebaseListId != null) {
+                        updateSyncIcon(R.drawable.ic_cloud_upload_24);
                         shoppingListRepository.clearCheckedItemsFromList(firebaseListId);
-                        shoppingListRepository.updateListTimestamp(firebaseListId);
+                        shoppingListRepository.updateListTimestamp(firebaseListId, () -> {
+                            updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                        });
                     } else {
                         shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
                     }
@@ -432,8 +453,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 })
                 .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
                     if (firebaseListId != null) {
+                        updateSyncIcon(R.drawable.ic_cloud_upload_24);
                         shoppingListRepository.clearAllItemsFromList(firebaseListId);
-                        shoppingListRepository.updateListTimestamp(firebaseListId);
+                        shoppingListRepository.updateListTimestamp(firebaseListId, () -> {
+                            updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                        });
                     } else {
                         shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
                     }
@@ -456,6 +480,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
         if (firebaseListId != null) {
             itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, loadedItems -> {
+                updateSyncIcon(R.drawable.ic_cloud_download_24);
                 this.shoppingItems = loadedItems;
                 adapter.setItems(shoppingItems);
                 checkEmptyViewItems(shoppingItems.isEmpty());
@@ -485,8 +510,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     @Override
     public void onItemCheckboxChanged(ShoppingItem item, boolean isChecked) {
         if (firebaseListId != null) {
-            shoppingListRepository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked);
-            shoppingListRepository.updateListTimestamp(firebaseListId);
+            updateSyncIcon(R.drawable.ic_cloud_upload_24);
+            shoppingListRepository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked, () -> {
+                updateSyncIcon(R.drawable.ic_cloud_synced_24);
+            });
+            shoppingListRepository.updateListTimestamp(firebaseListId, null);
         } else {
             shoppingListRepository.toggleItemChecked(item.getId(), isChecked);
         }
