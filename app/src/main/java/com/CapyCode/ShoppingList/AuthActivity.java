@@ -145,7 +145,7 @@ public class AuthActivity extends AppCompatActivity {
                         }
                     });
                 } else {
-                    // Verification failed (wrong password or user doesn't exist)
+                    // Verification failed
                     handleLoginError(task);
                 }
             });
@@ -170,19 +170,16 @@ public class AuthActivity extends AppCompatActivity {
                     return;
                 }
                 
-                // No username. Check lists.
                 ShoppingListRepository listRepo = new ShoppingListRepository(AuthActivity.this);
                 if (listRepo.getLocalListCount() > 0) {
                      listener.onResult(false);
                 } else {
-                     // Anonymous, No Username, No Lists -> Empty!
                      listener.onResult(true);
                 }
             }
 
             @Override
             public void onError(String error) {
-                // If profile fetch fails, assume not empty to be safe (show dialog)
                 listener.onResult(false);
             }
         });
@@ -206,17 +203,8 @@ public class AuthActivity extends AppCompatActivity {
                 });
     }
 
-    private void handleLoginError(Task<?> task) {
-        String errorMsg;
-        try {
-            throw task.getException();
-        } catch(FirebaseAuthInvalidUserException e) {
-            errorMsg = getString(R.string.error_login_user_not_found);
-        } catch(FirebaseAuthInvalidCredentialsException e) {
-            errorMsg = getString(R.string.error_login_wrong_password);
-        } catch(Exception e) {
-            errorMsg = getString(R.string.error_auth_failed, e.getMessage());
-        }
+    void handleLoginError(Task<?> task) {
+        String errorMsg = AuthErrorMapper.getErrorMessage(this, task.getException());
         Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
     }
 
@@ -244,7 +232,6 @@ public class AuthActivity extends AppCompatActivity {
         showLoading(true);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        // Allow linking if ANY user is logged in (Anonymous OR Google)
         if (currentUser != null) {
             linkEmailCredential(currentUser, email, password);
         } else {
@@ -257,17 +244,14 @@ public class AuthActivity extends AppCompatActivity {
         user.linkWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Success: Account is now linked. Start verification.
-                        // Pass 'true' because this is a linking operation (revert = unlink)
                         startVerificationFlow(user, true);
                     } else {
                         showLoading(false);
+                        String errorMsg = AuthErrorMapper.getErrorMessage(this, task.getException());
                         if (task.getException() instanceof FirebaseAuthUserCollisionException) {
-                            Toast.makeText(AuthActivity.this, R.string.error_email_collision_link, Toast.LENGTH_LONG).show();
-                        } else {
-                            String msg = task.getException() != null ? task.getException().getMessage() : getString(R.string.error_link_general);
-                            Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_LONG).show();
+                            errorMsg = getString(R.string.error_email_collision_link);
                         }
+                        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -279,14 +263,7 @@ public class AuthActivity extends AppCompatActivity {
                         startVerificationFlow(task.getResult().getUser(), false);
                     } else {
                         showLoading(false);
-                        String errorMsg = getString(R.string.error_registration_failed);
-                        try {
-                            throw task.getException();
-                        } catch(FirebaseAuthUserCollisionException e) {
-                            errorMsg = getString(R.string.error_email_collision);
-                        } catch(Exception e) {
-                            errorMsg = e.getMessage();
-                        }
+                        String errorMsg = AuthErrorMapper.getErrorMessage(this, task.getException());
                         Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
@@ -299,7 +276,6 @@ public class AuthActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         showVerificationDialog(user, isLinkedAccount);
                     } else {
-                        // Email sending failed. Revert changes immediately.
                         Toast.makeText(this, getString(R.string.error_send_email_failed, task.getException().getMessage()), Toast.LENGTH_LONG).show();
                         revertRegistration(user, isLinkedAccount);
                     }
@@ -310,7 +286,7 @@ public class AuthActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
         builder.setView(dialogView);
-        builder.setCancelable(false); // Prevent dismissal by clicking outside
+        builder.setCancelable(false);
         
         AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) {
@@ -324,12 +300,10 @@ public class AuthActivity extends AppCompatActivity {
 
         textTitle.setText(R.string.dialog_verify_email_title);
         textMessage.setText(getString(R.string.dialog_verify_email_message, user.getEmail()));
-        
         btnPositive.setText(R.string.button_confirmed);
         btnNegative.setText(R.string.button_cancel_delete);
 
         btnPositive.setOnClickListener(v -> {
-            // Reload user to get fresh data
             user.reload().addOnCompleteListener(reloadTask -> {
                 if (reloadTask.isSuccessful()) {
                     if (user.isEmailVerified()) {
@@ -345,7 +319,6 @@ public class AuthActivity extends AppCompatActivity {
         });
 
         btnNegative.setOnClickListener(v -> {
-            // Show confirmation dialog to abort
             AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
             View confirmView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
             confirmBuilder.setView(confirmView);
@@ -362,7 +335,6 @@ public class AuthActivity extends AppCompatActivity {
 
             confirmTitle.setText(R.string.dialog_abort_title);
             confirmMessage.setText(R.string.dialog_abort_message);
-            
             confirmBtnPositive.setText(R.string.button_yes_abort);
             confirmBtnNegative.setText(R.string.button_no_wait);
 
@@ -373,7 +345,6 @@ public class AuthActivity extends AppCompatActivity {
             });
 
             confirmBtnNegative.setOnClickListener(confirmV -> confirmDialog.dismiss());
-
             confirmDialog.show();
         });
 
@@ -383,19 +354,16 @@ public class AuthActivity extends AppCompatActivity {
     private void revertRegistration(FirebaseUser user, boolean isLinkedAccount) {
         showLoading(true);
         if (isLinkedAccount) {
-            // User was anonymous and we linked email. Unlink email to revert.
             user.unlink(com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID)
                     .addOnCompleteListener(task -> {
                         showLoading(false);
                         if (task.isSuccessful()) {
                             Toast.makeText(AuthActivity.this, R.string.toast_link_cancelled, Toast.LENGTH_SHORT).show();
                         } else {
-                            // If unlink fails (rare), maybe sign out or show error
                             Toast.makeText(AuthActivity.this, R.string.error_revert_failed, Toast.LENGTH_LONG).show();
                         }
                     });
         } else {
-            // User was newly created. Delete user.
             user.delete()
                     .addOnCompleteListener(task -> {
                         showLoading(false);
@@ -414,24 +382,19 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-
         mAuth.fetchSignInMethodsForEmail(email)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     java.util.List<String> methods = task.getResult().getSignInMethods();
-                    
                     if (methods == null || methods.isEmpty()) {
                         showLoading(false);
                         Toast.makeText(AuthActivity.this, R.string.error_login_user_not_found, Toast.LENGTH_LONG).show();
                         return;
                     }
 
-                    // Check if the user has a password provider setup
                     if (methods.contains(com.google.firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
-                        // User has a password, send reset email
                         sendResetEmail(email);
                     } else if (methods.contains(com.google.firebase.auth.GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD)) {
-                        // User only has Google (or other providers), warn them
                         showLoading(false);
                         showCustomDialog(
                             getString(R.string.dialog_google_account_title),
@@ -440,11 +403,9 @@ public class AuthActivity extends AppCompatActivity {
                             () -> {}
                         );
                     } else {
-                        // Fallback
                         sendResetEmail(email);
                     }
                 } else {
-                    // If fetch fails (e.g. strict security settings), try sending anyway
                     sendResetEmail(email);
                 }
             });
@@ -457,10 +418,7 @@ public class AuthActivity extends AppCompatActivity {
                 if (resetTask.isSuccessful()) {
                     Toast.makeText(AuthActivity.this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
                 } else {
-                     String msg = resetTask.getException() != null ? resetTask.getException().getMessage() : "Fehler";
-                     if (resetTask.getException() instanceof FirebaseAuthInvalidUserException) {
-                         msg = "Kein Konto mit dieser E-Mail gefunden.";
-                     }
+                     String msg = AuthErrorMapper.getErrorMessage(this, resetTask.getException());
                      Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_SHORT).show();
                 }
             });
@@ -475,16 +433,13 @@ public class AuthActivity extends AppCompatActivity {
     private void finishAuth(boolean success, boolean shouldSync) {
         if (success) {
             Toast.makeText(AuthActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
-            
             if (shouldSync) {
-                // Trigger Sync of local lists to cloud
                 Toast.makeText(AuthActivity.this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
                 ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
                 repository.migrateLocalListsToCloud(() -> {
                     android.util.Log.d("Auth", "Local lists migrated to cloud.");
                 });
             }
-
             setResult(RESULT_OK);
             finish();
         }
@@ -515,7 +470,6 @@ public class AuthActivity extends AppCompatActivity {
         });
 
         btnNegative.setOnClickListener(v -> dialog.dismiss());
-
         dialog.show();
     }
 
