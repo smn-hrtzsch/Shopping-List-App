@@ -460,6 +460,14 @@ public class AuthActivity extends AppCompatActivity {
     private void finishAuth(boolean success) {
         if (success) {
             Toast.makeText(AuthActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
+            
+            // Trigger Sync of local lists to cloud
+            Toast.makeText(AuthActivity.this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
+            ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
+            repository.migrateLocalListsToCloud(() -> {
+                android.util.Log.d("Auth", "Local lists migrated to cloud.");
+            });
+
             setResult(RESULT_OK);
             finish();
         }

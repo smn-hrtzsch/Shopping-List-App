@@ -380,4 +380,123 @@ public class ShoppingListRepository {
     public void updateListTimestamp(String firebaseListId) {
         db.collection("shopping_lists").document(firebaseListId).update("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp());
     }
+
+    public void migrateLocalListsToCloud(Runnable onComplete) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        List<ShoppingList> localLists = dbHelper.getAllShoppingLists();
+        List<ShoppingList> listsToUpload = new ArrayList<>();
+        for (ShoppingList list : localLists) {
+            // Only upload lists that don't have a Firebase ID yet
+            if (list.getFirebaseId() == null || list.getFirebaseId().isEmpty()) {
+                listsToUpload.add(list);
+            }
+        }
+
+        if (listsToUpload.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        uploadNextList(listsToUpload, 0, user, onComplete);
+    }
+
+    private void uploadNextList(List<ShoppingList> lists, int index, FirebaseUser user, Runnable onComplete) {
+        if (index >= lists.size()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        ShoppingList list = lists.get(index);
+        List<ShoppingItem> items = dbHelper.getAllItems(list.getId());
+
+        Map<String, Object> listData = new HashMap<>();
+        listData.put("name", list.getName());
+        listData.put("ownerId", user.getUid());
+        listData.put("members", java.util.Collections.singletonList(user.getUid()));
+        listData.put("pending_members", new ArrayList<>());
+        listData.put("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp());
+
+        db.collection("shopping_lists").add(listData)
+            .addOnSuccessListener(docRef -> {
+                String firebaseId = docRef.getId();
+                list.setFirebaseId(firebaseId);
+                list.setOwnerId(user.getUid());
+                list.setMembers(java.util.Collections.singletonList(user.getUid()));
+                
+                dbHelper.upsertCloudList(list);
+
+                if (items.isEmpty()) {
+                     uploadNextList(lists, index + 1, user, onComplete);
+                } else {
+                     com.google.firebase.firestore.WriteBatch batch = db.batch();
+                     for (ShoppingItem item : items) {
+                         com.google.firebase.firestore.DocumentReference itemRef = docRef.collection("items").document();
+                         item.setFirebaseId(itemRef.getId());
+                         // Ensure we don't upload local ID
+                         Map<String, Object> itemData = new HashMap<>();
+                         itemData.put("name", item.getName());
+                         itemData.put("quantity", item.getQuantity());
+                         itemData.put("unit", item.getUnit());
+                         itemData.put("done", item.isDone());
+                         itemData.put("notes", item.getNotes());
+                         itemData.put("position", item.getPosition());
+                         
+                         batch.set(itemRef, itemData);
+                     }
+                     batch.commit().addOnCompleteListener(t -> {
+                         uploadNextList(lists, index + 1, user, onComplete);
+                     });
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e("Repo", "Failed to upload list " + list.getName(), e);
+                uploadNextList(lists, index + 1, user, onComplete);
+            });
+    }
+
+    public void deleteAllUserData(Runnable onComplete) {
+         FirebaseUser user = mAuth.getCurrentUser();
+         if (user == null) {
+             onComplete.run();
+             return;
+         }
+         
+         db.collection("shopping_lists").whereEqualTo("ownerId", user.getUid()).get()
+             .addOnSuccessListener(snaps -> {
+                 List<com.google.firebase.firestore.DocumentSnapshot> docs = snaps.getDocuments();
+                 deleteNextListRecursive(docs, 0, onComplete);
+             })
+             .addOnFailureListener(e -> onComplete.run());
+    }
+
+    private void deleteNextListRecursive(List<com.google.firebase.firestore.DocumentSnapshot> docs, int index, Runnable onComplete) {
+        if (index >= docs.size()) {
+            onComplete.run();
+            return;
+        }
+        
+        com.google.firebase.firestore.DocumentReference listRef = docs.get(index).getReference();
+        
+        listRef.collection("items").get().addOnSuccessListener(itemSnaps -> {
+            com.google.firebase.firestore.WriteBatch batch = db.batch();
+            for(com.google.firebase.firestore.DocumentSnapshot item : itemSnaps) {
+                batch.delete(item.getReference());
+            }
+            batch.commit().addOnCompleteListener(t -> {
+                listRef.delete().addOnCompleteListener(t2 -> {
+                     deleteNextListRecursive(docs, index + 1, onComplete);
+                });
+            });
+        }).addOnFailureListener(e -> {
+             // If items fetch fails, try deleting list anyway
+             listRef.delete().addOnCompleteListener(t2 -> {
+                  deleteNextListRecursive(docs, index + 1, onComplete);
+             });
+        });
+    }
 }

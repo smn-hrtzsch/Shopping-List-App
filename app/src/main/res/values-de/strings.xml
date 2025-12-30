@@ -169,7 +169,8 @@
     <string name="error_email_required">E-Mail ist erforderlich</string>
     <string name="error_password_required">Passwort ist erforderlich</string>
     <string name="dialog_create_account_title">Konto erstellen?</string>
-    <string name="dialog_create_account_message">Erstelle ein Konto, um deine Listen zu sichern und von anderen Geräten darauf zuzugreifen.</string>
+    <string name="dialog_create_account_message">Erstelle ein Konto, um all deine Listen (auch private) sicher in der Cloud zu speichern und von anderen Geräten darauf zuzugreifen.</string>
+    <string name="syncing_data">Listen werden gesichert...</string>
     <string name="button_create_account">Konto erstellen</string>
     <string name="button_sign_out">Abmelden</string>
     <string name="account_info">Konto-Info</string>

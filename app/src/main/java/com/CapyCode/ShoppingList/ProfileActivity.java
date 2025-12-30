@@ -209,6 +209,7 @@ public class ProfileActivity extends AppCompatActivity {
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
                             Toast.makeText(ProfileActivity.this, "Google verknüpft", Toast.LENGTH_SHORT).show();
+                            triggerSync();
                             loadCurrentProfile();
                         } else {
                              if (task.getException() instanceof FirebaseAuthUserCollisionException) {
@@ -272,11 +273,20 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
+    private void triggerSync() {
+        Toast.makeText(this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
+        ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
+        repository.migrateLocalListsToCloud(() -> {
+            android.util.Log.d("Profile", "Local lists migrated to cloud.");
+        });
+    }
+
     private void performGoogleSignIn(AuthCredential credential) {
         progressBarLoading.setVisibility(View.VISIBLE);
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        triggerSync();
                         loadCurrentProfile();
                     } else {
                         progressBarLoading.setVisibility(View.GONE);
@@ -796,21 +806,25 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void deleteAccount() {
         buttonDelete.setEnabled(false);
-        userRepository.deleteAccount(new UserRepository.OnProfileActionListener() {
-            @Override
-            public void onSuccess() {
-                Toast.makeText(ProfileActivity.this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-                finish();
-            }
-
-            @Override
-            public void onError(String message) {
-                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
-                buttonDelete.setEnabled(true);
-            }
+        
+        ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
+        repository.deleteAllUserData(() -> {
+            userRepository.deleteAccount(new UserRepository.OnProfileActionListener() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(ProfileActivity.this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
+                }
+    
+                @Override
+                public void onError(String message) {
+                    Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+                    buttonDelete.setEnabled(true);
+                }
+            });
         });
     }
 }
