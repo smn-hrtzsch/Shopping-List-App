@@ -196,9 +196,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:background="#1A0F55AA"
                     android:padding="12dp"
                     android:text="@string/profile_warning_anonymous"
+                    android:textAlignment="center"
                     android:textColor="?attr/colorError"
                     android:textSize="12sp"
                     android:visibility="gone" />
