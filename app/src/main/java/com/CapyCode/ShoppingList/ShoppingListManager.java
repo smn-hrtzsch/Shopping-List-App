@@ -40,29 +40,32 @@ public class ShoppingListManager {
 
     public List<ShoppingList> sortListsBasedOnSavedOrder(List<ShoppingList> lists) {
         String orderString = sharedPreferences.getString(KEY_LIST_ORDER, null);
-        if (orderString == null || orderString.isEmpty()) {
-            return lists;
-        }
-
-        String[] orderedIds = orderString.split(",");
         Map<String, Integer> orderMap = new HashMap<>();
-        for (int i = 0; i < orderedIds.length; i++) {
-            orderMap.put(orderedIds[i], i);
+        if (orderString != null && !orderString.isEmpty()) {
+            String[] orderedIds = orderString.split(",");
+            for (int i = 0; i < orderedIds.length; i++) {
+                orderMap.put(orderedIds[i], i);
+            }
         }
 
         Collections.sort(lists, (l1, l2) -> {
             String id1 = l1.getFirebaseId() != null ? l1.getFirebaseId() : String.valueOf(l1.getId());
             String id2 = l2.getFirebaseId() != null ? l2.getFirebaseId() : String.valueOf(l2.getId());
+            
             Integer pos1 = orderMap.get(id1);
             Integer pos2 = orderMap.get(id2);
-            if (pos1 == null) pos1 = Integer.MAX_VALUE;
-            if (pos2 == null) pos2 = Integer.MAX_VALUE;
-            int comp = pos1.compareTo(pos2);
-            if (comp != 0) {
-                return comp;
+            
+            // If both are in manual order, use that
+            if (pos1 != null && pos2 != null) {
+                return pos1.compareTo(pos2);
             }
-            // Fallback: Sort by name (case-insensitive) to have a stable order for unsorted lists
-            return l1.getName().compareToIgnoreCase(l2.getName());
+            
+            // Items in manual order come before items not in manual order
+            if (pos1 != null) return -1;
+            if (pos2 != null) return 1;
+            
+            // Both are not in manual order (e.g. new lists), sort by DB position
+            return Integer.compare(l1.getPosition(), l2.getPosition());
         });
 
         return lists;

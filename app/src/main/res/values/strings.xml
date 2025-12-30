@@ -125,10 +125,10 @@
 
     <string name="shared_list_created">Shared list \"%s\" created</string>
     <string name="local_list_created">Private list \"%s\" created</string>
-    <string name="list_type_private">Private List</string>
+    <string name="list_type_private">Personal List</string>
     <string name="list_type_shared">Shared List</string>
-    <string name="list_type_private_desc">Stored only on this device.</string>
-    <string name="list_type_shared_desc">Synced online and shareable.</string>
+    <string name="list_type_private_desc">Your own list. Cloud backup included.</string>
+    <string name="list_type_shared_desc">Plan and edit together with others.</string>
     <string name="error_create_shared_list">Error creating shared list.</string>
     <string name="error_username_cooldown">You can only change your username once a week.</string>
     <string name="error_check_date">Error checking date.</string>

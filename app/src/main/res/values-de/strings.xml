@@ -146,10 +146,10 @@
     
     <string name="shared_list_created">Geteilte Liste \"%s\" erstellt</string>
     <string name="local_list_created">Private Liste \"%s\" erstellt</string>
-    <string name="list_type_private">Private Liste</string>
+    <string name="list_type_private">Eigene Liste</string>
     <string name="list_type_shared">Geteilte Liste</string>
-    <string name="list_type_private_desc">Nur auf diesem Gerät gespeichert.</string>
-    <string name="list_type_shared_desc">Online synchronisiert und teilbar.</string>
+    <string name="list_type_private_desc">Persönliche Liste. Cloud-Backup inklusive.</string>
+    <string name="list_type_shared_desc">Gemeinsam mit anderen planen und bearbeiten.</string>
     <string name="error_create_shared_list">Fehler beim Erstellen der geteilten Liste.</string>
     <string name="error_username_cooldown">Du kannst deinen Namen nur einmal pro Woche ändern.</string>
     <string name="error_check_date">Fehler beim Prüfen des Datums.</string>

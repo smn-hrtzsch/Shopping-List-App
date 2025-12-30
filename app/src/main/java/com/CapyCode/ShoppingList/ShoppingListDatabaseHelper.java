@@ -221,7 +221,11 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         try {
             Cursor cursor = db.rawQuery("SELECT MAX(" + COLUMN_LIST_POSITION + ") FROM " + TABLE_LISTS, null);
             if (cursor.moveToFirst()) {
-                max = cursor.getInt(0);
+                if (cursor.isNull(0)) {
+                    max = -1;
+                } else {
+                    max = cursor.getInt(0);
+                }
             }
             cursor.close();
         } catch (Exception e) {
