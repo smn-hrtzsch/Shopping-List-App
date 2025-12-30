@@ -23,6 +23,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -90,15 +92,41 @@ public class AuthActivity extends AppCompatActivity {
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.isAnonymous()) {
-            showCustomDialog(
-                "Konto wechseln?",
-                "Du bist aktuell als Gast angemeldet. Wenn du dich in ein anderes bestehendes Konto einloggst, werden deine aktuellen Gast-Listen von diesem Gerät entfernt und durch die des anderen Kontos ersetzt.\n\nMöchtest du fortfahren?",
-                "Anmelden (Daten verwerfen)",
-                () -> performLogin(email, password)
-            );
+            verifyCredentialsAndLogin(email, password);
         } else {
             performLogin(email, password);
         }
+    }
+
+    private void verifyCredentialsAndLogin(String email, String password) {
+        showLoading(true);
+        
+        // Use a secondary Firebase app to verify credentials without switching the main user yet
+        FirebaseOptions options = FirebaseApp.getInstance().getOptions();
+        FirebaseApp secondaryApp;
+        try {
+            secondaryApp = FirebaseApp.getInstance("secondary");
+        } catch (IllegalStateException e) {
+            secondaryApp = FirebaseApp.initializeApp(this, options, "secondary");
+        }
+        
+        FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
+        secondaryAuth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener(task -> {
+                showLoading(false);
+                if (task.isSuccessful()) {
+                    // Credentials are correct. Now show the warning.
+                    showCustomDialog(
+                        "Konto wechseln?",
+                        "Du bist aktuell als Gast angemeldet. Wenn du dich in ein anderes bestehendes Konto einloggst, werden deine aktuellen Gast-Listen von diesem Gerät entfernt und durch die des anderen Kontos ersetzt.\n\nMöchtest du fortfahren?",
+                        "Anmelden (Daten verwerfen)",
+                        () -> performLogin(email, password)
+                    );
+                } else {
+                    // Verification failed (wrong password or user doesn't exist)
+                    handleLoginError(task);
+                }
+            });
     }
 
     private void performLogin(String email, String password) {
@@ -109,19 +137,23 @@ public class AuthActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         finishAuth(true);
                     } else {
-                        String errorMsg = "Login fehlgeschlagen.";
-                        try {
-                            throw task.getException();
-                        } catch(FirebaseAuthInvalidUserException e) {
-                            errorMsg = "Konto existiert nicht oder wurde deaktiviert.";
-                        } catch(FirebaseAuthInvalidCredentialsException e) {
-                            errorMsg = "Ungültige E-Mail oder falsches Passwort.";
-                        } catch(Exception e) {
-                            errorMsg = e.getMessage();
-                        }
-                        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                        handleLoginError(task);
                     }
                 });
+    }
+
+    private void handleLoginError(Task<?> task) {
+        String errorMsg = "Login fehlgeschlagen.";
+        try {
+            throw task.getException();
+        } catch(FirebaseAuthInvalidUserException e) {
+            errorMsg = "Konto existiert nicht oder wurde deaktiviert.";
+        } catch(FirebaseAuthInvalidCredentialsException e) {
+            errorMsg = "Ungültige E-Mail oder falsches Passwort.";
+        } catch(Exception e) {
+            errorMsg = e.getMessage();
+        }
+        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
     }
 
     private void registerUser() {
