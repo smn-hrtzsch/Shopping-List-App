@@ -40,6 +40,11 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.UserInfo;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
+import android.widget.EditText;
+import android.view.Gravity;
+import android.view.ViewGroup;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -52,7 +57,7 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView textViewCurrentUsername;
     private TextView textViewProfileInfo;
     private TextView textViewWarning;
-    private TextView textEmailDisplay;
+    private LinearLayout layoutLinkedMethods;
     private ImageView imageProfile;
     private ImageView iconEditImage;
     private LinearLayout layoutViewMode;
@@ -132,7 +137,7 @@ public class ProfileActivity extends AppCompatActivity {
         textViewCurrentUsername = findViewById(R.id.text_view_current_username);
         textViewProfileInfo = findViewById(R.id.text_view_profile_info);
         textViewWarning = findViewById(R.id.text_view_warning_anonymous);
-        textEmailDisplay = findViewById(R.id.text_email_display);
+        layoutLinkedMethods = findViewById(R.id.layout_linked_methods);
         imageProfile = findViewById(R.id.image_profile);
         iconEditImage = findViewById(R.id.icon_edit_image);
         layoutViewMode = findViewById(R.id.layout_view_mode);
@@ -176,8 +181,11 @@ public class ProfileActivity extends AppCompatActivity {
 
 
     private void signInWithGoogle() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        googleSignInLauncher.launch(signInIntent);
+        // Sign out first to force account chooser
+        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+            Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+            googleSignInLauncher.launch(signInIntent);
+        });
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
@@ -193,23 +201,19 @@ public class ProfileActivity extends AppCompatActivity {
                             Toast.makeText(ProfileActivity.this, "Google verknüpft", Toast.LENGTH_SHORT).show();
                             loadCurrentProfile();
                         } else {
-                             if (task.getException() != null && task.getException().getMessage().contains("already linked")) {
-                                 Toast.makeText(ProfileActivity.this, "Konto ist bereits verknüpft", Toast.LENGTH_SHORT).show();
-                                 loadCurrentProfile();
+                             if (task.getException() instanceof FirebaseAuthUserCollisionException) {
+                                 // Link failed because credential already exists on another user
+                                 progressBarLoading.setVisibility(View.GONE);
+                                 showCustomDialog(
+                                     "Konto wechseln?",
+                                     "Ein Konto mit diesem Google-Account existiert bereits.\n\nMöchtest du dich in dieses Konto einloggen? Deine aktuellen Gast-Listen werden dabei durch die des anderen Kontos ersetzt.",
+                                     "Wechseln (Daten verwerfen)",
+                                     () -> performGoogleSignIn(credential)
+                                 );
                              } else {
-                                 // Link failed, ask user if they want to switch
-                                 if (task.getException() != null && task.getException().getMessage().contains("already in use")) {
-                                     progressBarLoading.setVisibility(View.GONE);
-                                     showCustomDialog(
-                                         "Konto wechseln?",
-                                         "Ein Konto mit diesem Google-Account existiert bereits.\n\nMöchtest du dich in dieses Konto einloggen? Deine aktuellen Gast-Listen werden dabei durch die des anderen Kontos ersetzt.",
-                                         "Wechseln (Daten verwerfen)",
-                                         () -> performGoogleSignIn(credential)
-                                     );
-                                 } else {
-                                     progressBarLoading.setVisibility(View.GONE);
-                                     Toast.makeText(ProfileActivity.this, "Verknüpfung fehlgeschlagen: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                                 }
+                                 progressBarLoading.setVisibility(View.GONE);
+                                 String msg = task.getException() != null ? task.getException().getMessage() : "Fehler beim Verknüpfen";
+                                 Toast.makeText(ProfileActivity.this, "Verknüpfung fehlgeschlagen: " + msg, Toast.LENGTH_LONG).show();
                              }
                         }
                     });
@@ -288,6 +292,7 @@ public class ProfileActivity extends AppCompatActivity {
                         showViewMode();
                     } else {
                         isInitialProfileCreation = true;
+                        editTextUsername.setText(""); // Clear potentially old data
                         showEditMode();
                     }
                     invalidateOptionsMenu();
@@ -324,10 +329,79 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void updateAuthUI() {
         FirebaseUser user = mAuth.getCurrentUser();
-        if (user != null && !user.isAnonymous()) {
+        
+        boolean isEffectivelyAnonymous = user == null || user.isAnonymous();
+        if (!isEffectivelyAnonymous) {
+             boolean hasProvider = false;
+             for (UserInfo profile : user.getProviderData()) {
+                 if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) || 
+                     EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                     hasProvider = true;
+                     break;
+                 }
+             }
+             if (!hasProvider) isEffectivelyAnonymous = true;
+        }
+
+        if (user != null && !isEffectivelyAnonymous) {
             textViewWarning.setVisibility(View.GONE);
-            textEmailDisplay.setVisibility(View.VISIBLE);
-            textEmailDisplay.setText(user.getEmail());
+            
+            // Populate Linked Methods
+            layoutLinkedMethods.setVisibility(View.VISIBLE);
+            // Keep the first child (the label) and remove others
+            if (layoutLinkedMethods.getChildCount() > 1) {
+                layoutLinkedMethods.removeViews(1, layoutLinkedMethods.getChildCount() - 1);
+            }
+            
+            for (UserInfo profile : user.getProviderData()) {
+                if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                    LinearLayout googleRow = new LinearLayout(this);
+                    googleRow.setOrientation(LinearLayout.HORIZONTAL);
+                    googleRow.setGravity(Gravity.CENTER_VERTICAL);
+                    googleRow.setPadding(0, 8, 0, 8);
+                    
+                    ImageView icon = new ImageView(this);
+                    int size = (int) (24 * getResources().getDisplayMetrics().density);
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+                    lp.setMarginEnd((int) (8 * getResources().getDisplayMetrics().density));
+                    icon.setLayoutParams(lp);
+                    
+                    if (profile.getPhotoUrl() != null) {
+                         Glide.with(this).load(profile.getPhotoUrl()).apply(RequestOptions.circleCropTransform()).into(icon);
+                    } else {
+                         icon.setImageResource(R.drawable.ic_google_logo);
+                    }
+                    
+                    TextView text = new TextView(this);
+                    text.setText("Google: " + profile.getEmail());
+                    text.setTextColor(ContextCompat.getColor(this, R.color.text_primary_adaptive)); // Use dynamic color if possible or resolve attr
+                    
+                    googleRow.addView(icon);
+                    googleRow.addView(text);
+                    layoutLinkedMethods.addView(googleRow);
+                } else if (EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                    LinearLayout emailRow = new LinearLayout(this);
+                    emailRow.setOrientation(LinearLayout.HORIZONTAL);
+                    emailRow.setGravity(Gravity.CENTER_VERTICAL);
+                    emailRow.setPadding(0, 8, 0, 8);
+                    
+                    ImageView icon = new ImageView(this);
+                    int size = (int) (24 * getResources().getDisplayMetrics().density);
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+                    lp.setMarginEnd((int) (8 * getResources().getDisplayMetrics().density));
+                    icon.setLayoutParams(lp);
+                    icon.setImageResource(R.drawable.ic_email);
+                    icon.setColorFilter(ContextCompat.getColor(this, R.color.text_primary_adaptive)); // Tint to text color
+                    
+                    TextView text = new TextView(this);
+                    text.setText("E-Mail: " + profile.getEmail());
+                    text.setTextColor(ContextCompat.getColor(this, R.color.text_primary_adaptive));
+                    
+                    emailRow.addView(icon);
+                    emailRow.addView(text);
+                    layoutLinkedMethods.addView(emailRow);
+                }
+            }
             
             buttonSignOut.setVisibility(View.VISIBLE);
             layoutAuthButtons.setVisibility(View.VISIBLE);
@@ -381,9 +455,9 @@ public class ProfileActivity extends AppCompatActivity {
             
             iconEditImage.setVisibility(View.VISIBLE);
         } else {
-            // Anonymous
+            // Anonymous or Effectively Anonymous
             textViewWarning.setVisibility(View.VISIBLE);
-            textEmailDisplay.setVisibility(View.GONE);
+            layoutLinkedMethods.setVisibility(View.GONE);
             
             layoutAuthButtons.setVisibility(View.VISIBLE);
             
@@ -421,11 +495,66 @@ public class ProfileActivity extends AppCompatActivity {
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
                             Toast.makeText(this, "Verknüpfung aufgehoben", Toast.LENGTH_SHORT).show();
+                            
+                            // If we unlinked Google, sign out of the Google Client to force account chooser next time
+                            if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) {
+                                mGoogleSignInClient.signOut();
+                            }
+
+                            // If no providers left, user is effectively anonymous/unsecured
+                            if (user.getProviderData().isEmpty()) {
+                                Toast.makeText(this, "Warnung: Dein Konto hat keine Anmeldemethoden mehr.", Toast.LENGTH_LONG).show();
+                            }
                             loadCurrentProfile();
                         } else {
-                            Toast.makeText(this, "Fehler beim Trennen: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                            if (task.getException() instanceof FirebaseAuthRecentLoginRequiredException) {
+                                // Re-auth required
+                                if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) {
+                                    Toast.makeText(this, "Bitte melde dich erneut mit Google an, um die Verknüpfung zu trennen.", Toast.LENGTH_LONG).show();
+                                    signInWithGoogle(); // Will trigger re-auth logic if we handle it
+                                } else if (EmailAuthProvider.PROVIDER_ID.equals(providerId)) {
+                                    showReauthDialog(providerId);
+                                }
+                            } else {
+                                String msg = task.getException() != null ? task.getException().getMessage() : "Unbekannter Fehler";
+                                Toast.makeText(this, "Fehler beim Trennen: " + msg, Toast.LENGTH_LONG).show();
+                            }
                         }
                     });
+        }
+    }
+
+    private void showReauthDialog(String providerId) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Sicherheitsprüfung");
+        builder.setMessage("Bitte gib dein Passwort ein, um die Verknüpfung zu entfernen.");
+
+        final EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        builder.setPositiveButton("Bestätigen", (dialog, which) -> {
+            String password = input.getText().toString();
+            if (!password.isEmpty()) {
+                reauthenticateAndUnlink(password, providerId);
+            }
+        });
+        builder.setNegativeButton("Abbrechen", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void reauthenticateAndUnlink(String password, String providerId) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && user.getEmail() != null) {
+            AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), password);
+            user.reauthenticate(credential).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    unlinkProvider(providerId); // Retry unlink
+                } else {
+                    Toast.makeText(this, "Passwort falsch.", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
     

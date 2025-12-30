@@ -140,36 +140,41 @@ public class AuthActivity extends AppCompatActivity {
         showLoading(true);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null && currentUser.isAnonymous()) {
-            // Link the new credential to the existing anonymous user
-            AuthCredential credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, password);
-            currentUser.linkWithCredential(credential)
-                    .addOnCompleteListener(this, task -> {
-                        showLoading(false);
-                        if (task.isSuccessful()) {
-                            finishAuth(true);
-                        } else {
-                            // Linking failed (maybe email already in use), try standard create
-                            if (task.getException() != null && task.getException().getMessage().contains("already in use")) {
-                                Toast.makeText(AuthActivity.this, "Email already in use. Please sign in.", Toast.LENGTH_LONG).show();
-                            } else {
-                                // Try creating fresh
-                                createAccount(email, password);
-                            }
-                        }
-                    });
+        // Allow linking if ANY user is logged in (Anonymous OR Google)
+        if (currentUser != null) {
+            linkEmailCredential(currentUser, email, password);
         } else {
-            createAccount(email, password);
+            createNewAccount(email, password);
         }
     }
+
+    private void linkEmailCredential(FirebaseUser user, String email, String password) {
+        AuthCredential credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, password);
+        user.linkWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        // Success: Account is now linked. Start verification.
+                        // Pass 'true' because this is a linking operation (revert = unlink)
+                        startVerificationFlow(user, true);
+                    } else {
+                        showLoading(false);
+                        if (task.getException() instanceof FirebaseAuthUserCollisionException) {
+                            Toast.makeText(AuthActivity.this, "Ein Konto mit dieser E-Mail existiert bereits als separater Account.", Toast.LENGTH_LONG).show();
+                        } else {
+                            String msg = task.getException() != null ? task.getException().getMessage() : "Fehler beim Verknüpfen.";
+                            Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
+    }
     
-    private void createAccount(String email, String password) {
+    private void createNewAccount(String email, String password) {
          mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
-                    showLoading(false);
                     if (task.isSuccessful()) {
-                        finishAuth(true);
+                        startVerificationFlow(task.getResult().getUser(), false);
                     } else {
+                        showLoading(false);
                         String errorMsg = "Registrierung fehlgeschlagen.";
                         try {
                             throw task.getException();
@@ -183,6 +188,88 @@ public class AuthActivity extends AppCompatActivity {
                 });
     }
 
+    private void startVerificationFlow(FirebaseUser user, boolean isLinkedAccount) {
+        user.sendEmailVerification()
+                .addOnCompleteListener(task -> {
+                    showLoading(false);
+                    if (task.isSuccessful()) {
+                        showVerificationDialog(user, isLinkedAccount);
+                    } else {
+                        // Email sending failed. Revert changes immediately.
+                        Toast.makeText(this, "Konnte Bestätigungs-Email nicht senden: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        revertRegistration(user, isLinkedAccount);
+                    }
+                });
+    }
+
+    private void showVerificationDialog(FirebaseUser user, boolean isLinkedAccount) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("E-Mail bestätigen");
+        builder.setMessage("Wir haben eine Bestätigungs-E-Mail an " + user.getEmail() + " gesendet.\n\nBitte klicke auf den Link in der E-Mail und bestätige anschließend hier.");
+        builder.setCancelable(false); // Prevent dismissal by clicking outside
+
+        builder.setPositiveButton("Ich habe bestätigt", null); // Override later to prevent closing
+        builder.setNegativeButton("Abbrechen (Account löschen)", null); // Override later
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Override buttons to handle logic without auto-dismissal
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            // Reload user to get fresh data
+            user.reload().addOnCompleteListener(reloadTask -> {
+                if (reloadTask.isSuccessful()) {
+                    if (user.isEmailVerified()) {
+                        dialog.dismiss();
+                        finishAuth(true);
+                    } else {
+                        Toast.makeText(AuthActivity.this, "E-Mail noch nicht bestätigt. Bitte überprüfe dein Postfach.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(AuthActivity.this, "Fehler beim Prüfen: " + reloadTask.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                .setTitle("Abbrechen?")
+                .setMessage("Wenn du abbrichst, wird der Registrierungsprozess rückgängig gemacht.")
+                .setPositiveButton("Ja, abbrechen", (d, w) -> {
+                    dialog.dismiss();
+                    revertRegistration(user, isLinkedAccount);
+                })
+                .setNegativeButton("Nein, warten", null)
+                .show();
+        });
+    }
+
+    private void revertRegistration(FirebaseUser user, boolean isLinkedAccount) {
+        showLoading(true);
+        if (isLinkedAccount) {
+            // User was anonymous and we linked email. Unlink email to revert.
+            user.unlink(com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID)
+                    .addOnCompleteListener(task -> {
+                        showLoading(false);
+                        if (task.isSuccessful()) {
+                            Toast.makeText(AuthActivity.this, "Verknüpfung abgebrochen.", Toast.LENGTH_SHORT).show();
+                        } else {
+                            // If unlink fails (rare), maybe sign out or show error
+                            Toast.makeText(AuthActivity.this, "Fehler beim Rückgängigmachen. Bitte melde dich ab.", Toast.LENGTH_LONG).show();
+                        }
+                    });
+        } else {
+            // User was newly created. Delete user.
+            user.delete()
+                    .addOnCompleteListener(task -> {
+                        showLoading(false);
+                        if (task.isSuccessful()) {
+                            Toast.makeText(AuthActivity.this, "Registrierung abgebrochen.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
+    }
+
     private void resetPassword() {
         String email = editTextEmail.getText().toString().trim();
         if (TextUtils.isEmpty(email)) {
@@ -191,30 +278,55 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        
+
         mAuth.fetchSignInMethodsForEmail(email)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
-                     if (task.getResult().getSignInMethods() != null && task.getResult().getSignInMethods().isEmpty()) {
-                         showLoading(false);
-                         Toast.makeText(AuthActivity.this, "Kein Konto mit dieser E-Mail gefunden.", Toast.LENGTH_LONG).show();
-                         return;
-                     }
-                }
-                
-                mAuth.sendPasswordResetEmail(email)
-                    .addOnCompleteListener(resetTask -> {
+                    java.util.List<String> methods = task.getResult().getSignInMethods();
+                    
+                    if (methods == null || methods.isEmpty()) {
                         showLoading(false);
-                        if (resetTask.isSuccessful()) {
-                            Toast.makeText(AuthActivity.this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
-                        } else {
-                             String msg = resetTask.getException() != null ? resetTask.getException().getMessage() : "Fehler";
-                             if (resetTask.getException() instanceof FirebaseAuthInvalidUserException) {
-                                 msg = "Kein Konto mit dieser E-Mail gefunden.";
-                             }
-                             Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                        Toast.makeText(AuthActivity.this, "Kein Konto mit dieser E-Mail gefunden.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // Check if the user has a password provider setup
+                    if (methods.contains(com.google.firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
+                        // User has a password, send reset email
+                        sendResetEmail(email);
+                    } else if (methods.contains(com.google.firebase.auth.GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD)) {
+                        // User only has Google (or other providers), warn them
+                        showLoading(false);
+                        showCustomDialog(
+                            "Google Konto",
+                            "Diese E-Mail Adresse ist mit einem Google Konto verknüpft. Bitte melde dich über den 'Mit Google anmelden' Button an.\n\nDu hast für dieses Konto kein Passwort festgelegt.",
+                            "OK",
+                            () -> {}
+                        );
+                    } else {
+                        // Fallback
+                        sendResetEmail(email);
+                    }
+                } else {
+                    // If fetch fails (e.g. strict security settings), try sending anyway
+                    sendResetEmail(email);
+                }
+            });
+    }
+
+    private void sendResetEmail(String email) {
+        mAuth.sendPasswordResetEmail(email)
+            .addOnCompleteListener(resetTask -> {
+                showLoading(false);
+                if (resetTask.isSuccessful()) {
+                    Toast.makeText(AuthActivity.this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
+                } else {
+                     String msg = resetTask.getException() != null ? resetTask.getException().getMessage() : "Fehler";
+                     if (resetTask.getException() instanceof FirebaseAuthInvalidUserException) {
+                         msg = "Kein Konto mit dieser E-Mail gefunden.";
+                     }
+                     Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_SHORT).show();
+                }
             });
     }
 
