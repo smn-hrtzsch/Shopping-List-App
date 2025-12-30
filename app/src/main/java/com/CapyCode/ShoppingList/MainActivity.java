@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             createSharedListInFirestore(listName);
         } else {
             int nextPosition = shoppingListRepository.getNextPosition();
-            long newId = shoppingListManager.addShoppingList(listName, nextPosition);
+            long newId = shoppingListManager.addShoppingList(listName, nextPosition, false);
             if (newId != -1) {
                 loadShoppingLists();
                 Toast.makeText(MainActivity.this, getString(R.string.local_list_created, listName), Toast.LENGTH_SHORT).show();
@@ -306,6 +306,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                         Map<String, Object> shoppingList = new HashMap<>();
                         shoppingList.put("name", listName);
                         shoppingList.put("ownerId", userId);
+                        shoppingList.put("isShared", true);
                         shoppingList.put("members", Arrays.asList(userId));
 
                         db.collection("shopping_lists")

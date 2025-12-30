@@ -332,8 +332,6 @@ public class ProfileActivity extends AppCompatActivity {
         containerContent.setVisibility(View.GONE);
 
         Runnable fetchProfileData = () -> {
-            updateAuthUI();
-            
             userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
                 @Override
                 public void onLoaded(String username, String imageUrl) {
@@ -365,6 +363,9 @@ public class ProfileActivity extends AppCompatActivity {
                         editTextUsername.setText(""); // Clear potentially old data
                         showEditMode();
                     }
+                    
+                    // Update Auth UI NOW that we have the username
+                    updateAuthUI();
                     invalidateOptionsMenu();
                 }
 

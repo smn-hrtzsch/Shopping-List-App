@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "shopping_list.db";
-    private static final int DATABASE_VERSION = 6; // Version 6: Owner username
+    private static final int DATABASE_VERSION = 7; // Version 7: is_shared flag
 
     // Tabellen- und Spaltennamen
     public static final String TABLE_LISTS = "shopping_lists";
@@ -29,6 +29,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_OWNER_USERNAME = "owner_username"; // Neu: Username des Besitzers
     public static final String COLUMN_MEMBERS = "members";
     public static final String COLUMN_PENDING_MEMBERS = "pending_members";
+    public static final String COLUMN_IS_SHARED = "is_shared";
 
     // Spalten für die Artikeltabelle
     public static final String COLUMN_ITEM_NAME = "name";
@@ -47,86 +48,99 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                     COLUMN_LIST_POSITION + " INTEGER DEFAULT 0," +
                     COLUMN_FIREBASE_ID + " TEXT," +
                     COLUMN_OWNER_ID + " TEXT," +
-                    COLUMN_OWNER_USERNAME + " TEXT," +
-                    COLUMN_MEMBERS + " TEXT," +
-                    COLUMN_PENDING_MEMBERS + " TEXT);";
-
-    private static final String SQL_CREATE_TABLE_ITEMS =
-            "CREATE TABLE " + TABLE_ITEMS + " (" +
-                    COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    COLUMN_ITEM_NAME + " TEXT NOT NULL," +
-                    COLUMN_ITEM_QUANTITY + " TEXT," +
-                    COLUMN_ITEM_UNIT + " TEXT," +
-                    COLUMN_ITEM_IS_DONE + " INTEGER DEFAULT 0," +
-                    COLUMN_ITEM_LIST_ID + " INTEGER," +
-                    COLUMN_ITEM_NOTES + " TEXT," +
-                    COLUMN_ITEM_POSITION + " INTEGER DEFAULT 0," +
-                    "FOREIGN KEY(" + COLUMN_ITEM_LIST_ID + ") REFERENCES " +
-                    TABLE_LISTS + "(" + COLUMN_ID + ") ON DELETE CASCADE);";
-
-
-    public ShoppingListDatabaseHelper(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
-    }
-
-    @Override
-    public void onCreate(SQLiteDatabase db) {
-        db.execSQL(SQL_CREATE_TABLE_LISTS);
-        db.execSQL(SQL_CREATE_TABLE_ITEMS);
-    }
-
-    @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 2) {
-            try {
-                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_LIST_ITEM_COUNT + " INTEGER DEFAULT 0;");
-            } catch (SQLiteException e) {
-                Log.w("DBUpgrade", "Spalte " + COLUMN_LIST_ITEM_COUNT + " existiert vermutlich bereits.", e);
-            }
-        }
-        if (oldVersion < 3) {
-            try {
-                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_LIST_POSITION + " INTEGER DEFAULT 0;");
-                // Initialisiere die Positionen für bestehende Listen, falls nötig
-                Cursor cursor = db.rawQuery("SELECT " + COLUMN_ID + " FROM " + TABLE_LISTS, null);
-                if (cursor != null) {
-                    int i = 0;
-                    while (cursor.moveToNext()) {
-                        long listId = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID));
-                        ContentValues values = new ContentValues();
-                        values.put(COLUMN_LIST_POSITION, i++);
-                        db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
-                    }
-                    cursor.close();
-                }
-            } catch (SQLiteException e) {
-                Log.w("DBUpgrade", "Spalte " + COLUMN_LIST_POSITION + " existiert vermutlich bereits.", e);
-            }
-        }
-        if (oldVersion < 4) {
-            try {
-                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_FIREBASE_ID + " TEXT;");
-                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_OWNER_ID + " TEXT;");
-            } catch (SQLiteException e) {
-                Log.w("DBUpgrade", "Spalten für Cloud-Listen existieren vermutlich bereits.", e);
-            }
-        }
-        if (oldVersion < 5) {
-            try {
-                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_MEMBERS + " TEXT;");
-                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_PENDING_MEMBERS + " TEXT;");
-            } catch (SQLiteException e) {
-                Log.w("DBUpgrade", "Spalten für Mitglieder existieren vermutlich bereits.", e);
-            }
-        }
-        if (oldVersion < 6) {
-            try {
-                db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_OWNER_USERNAME + " TEXT;");
-            } catch (SQLiteException e) {
-                Log.w("DBUpgrade", "Spalte owner_username existiert vermutlich bereits.", e);
-            }
-        }
-    }
+                                        COLUMN_OWNER_USERNAME + " TEXT," +
+                                        COLUMN_MEMBERS + " TEXT," +
+                                        COLUMN_PENDING_MEMBERS + " TEXT," +
+                                        COLUMN_IS_SHARED + " INTEGER DEFAULT 0);";
+                    
+                        private static final String SQL_CREATE_TABLE_ITEMS =
+                                "CREATE TABLE " + TABLE_ITEMS + " (" +
+                                        COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                                        COLUMN_ITEM_NAME + " TEXT NOT NULL," +
+                                        COLUMN_ITEM_QUANTITY + " TEXT," +
+                                        COLUMN_ITEM_UNIT + " TEXT," +
+                                        COLUMN_ITEM_IS_DONE + " INTEGER DEFAULT 0," +
+                                        COLUMN_ITEM_LIST_ID + " INTEGER," +
+                                        COLUMN_ITEM_NOTES + " TEXT," +
+                                        COLUMN_ITEM_POSITION + " INTEGER DEFAULT 0," +
+                                        "FOREIGN KEY(" + COLUMN_ITEM_LIST_ID + ") REFERENCES " +
+                                        TABLE_LISTS + "(" + COLUMN_ID + ") ON DELETE CASCADE);";
+                    
+                    
+                        public ShoppingListDatabaseHelper(Context context) {
+                            super(context, DATABASE_NAME, null, DATABASE_VERSION);
+                        }
+                    
+                        @Override
+                        public void onCreate(SQLiteDatabase db) {
+                            db.execSQL(SQL_CREATE_TABLE_LISTS);
+                            db.execSQL(SQL_CREATE_TABLE_ITEMS);
+                        }
+                    
+                        @Override
+                        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+                            if (oldVersion < 2) {
+                                try {
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_LIST_ITEM_COUNT + " INTEGER DEFAULT 0;");
+                                }
+                                catch (SQLiteException e) {
+                                    Log.w("DBUpgrade", "Spalte " + COLUMN_LIST_ITEM_COUNT + " existiert vermutlich bereits.", e);
+                                }
+                            }
+                            if (oldVersion < 3) {
+                                try {
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_LIST_POSITION + " INTEGER DEFAULT 0;");
+                                    // Initialisiere die Positionen für bestehende Listen, falls nötig
+                                    Cursor cursor = db.rawQuery("SELECT " + COLUMN_ID + " FROM " + TABLE_LISTS, null);
+                                    if (cursor != null) {
+                                        int i = 0;
+                                        while (cursor.moveToNext()) {
+                                            long listId = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID));
+                                            ContentValues values = new ContentValues();
+                                            values.put(COLUMN_LIST_POSITION, i++);
+                                            db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
+                                        }
+                                        cursor.close();
+                                    }
+                                }
+                                catch (SQLiteException e) {
+                                    Log.w("DBUpgrade", "Spalte " + COLUMN_LIST_POSITION + " existiert vermutlich bereits.", e);
+                                }
+                            }
+                            if (oldVersion < 4) {
+                                try {
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_FIREBASE_ID + " TEXT;");
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_OWNER_ID + " TEXT;");
+                                }
+                                catch (SQLiteException e) {
+                                    Log.w("DBUpgrade", "Spalten für Cloud-Listen existieren vermutlich bereits.", e);
+                                }
+                            }
+                            if (oldVersion < 5) {
+                                try {
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_MEMBERS + " TEXT;");
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_PENDING_MEMBERS + " TEXT;");
+                                }
+                                catch (SQLiteException e) {
+                                    Log.w("DBUpgrade", "Spalten für Mitglieder existieren vermutlich bereits.", e);
+                                }
+                            }
+                            if (oldVersion < 6) {
+                                try {
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_OWNER_USERNAME + " TEXT;");
+                                }
+                                catch (SQLiteException e) {
+                                    Log.w("DBUpgrade", "Spalte owner_username existiert vermutlich bereits.", e);
+                                }
+                            }
+                            if (oldVersion < 7) {
+                                try {
+                                    db.execSQL("ALTER TABLE " + TABLE_LISTS + " ADD COLUMN " + COLUMN_IS_SHARED + " INTEGER DEFAULT 0;");
+                                } catch (SQLiteException e) {
+                                    Log.w("DBUpgrade", "Spalte is_shared existiert vermutlich bereits.", e);
+                                }
+                            }
+                        }
 
 
     @Override
@@ -137,11 +151,16 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
 
     // --- Listen-Methoden ---
     public long addShoppingList(String name, int position) {
+        return addShoppingList(name, position, false);
+    }
+
+    public long addShoppingList(String name, int position, boolean isShared) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_LIST_NAME, name);
         values.put(COLUMN_LIST_ITEM_COUNT, 0);
-        values.put(COLUMN_LIST_POSITION, position); // NEU: Position wird gesetzt
+        values.put(COLUMN_LIST_POSITION, position);
+        values.put(COLUMN_IS_SHARED, isShared ? 1 : 0);
         long id = -1;
         try {
             id = db.insertOrThrow(TABLE_LISTS, null, values);
@@ -158,7 +177,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = null;
         try {
             cursor = db.query(TABLE_LISTS,
-                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT, COLUMN_LIST_POSITION, COLUMN_FIREBASE_ID, COLUMN_OWNER_ID, COLUMN_OWNER_USERNAME, COLUMN_MEMBERS, COLUMN_PENDING_MEMBERS},
+                    new String[]{COLUMN_ID, COLUMN_LIST_NAME, COLUMN_LIST_ITEM_COUNT, COLUMN_LIST_POSITION, COLUMN_FIREBASE_ID, COLUMN_OWNER_ID, COLUMN_OWNER_USERNAME, COLUMN_MEMBERS, COLUMN_PENDING_MEMBERS, COLUMN_IS_SHARED},
                     COLUMN_ID + "=?", new String[]{String.valueOf(listId)}, null, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
                 ShoppingList list = new ShoppingList(
@@ -172,6 +191,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                 list.setOwnerUsername(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_USERNAME)));
                 list.setMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEMBERS))));
                 list.setPendingMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PENDING_MEMBERS))));
+                list.setShared(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_SHARED)) == 1);
                 return list;
             }
         } finally {
@@ -229,6 +249,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
                     shoppingList.setOwnerUsername(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_OWNER_USERNAME)));
                     shoppingList.setMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEMBERS))));
                     shoppingList.setPendingMembers(csvToList(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PENDING_MEMBERS))));
+                    shoppingList.setShared(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_SHARED)) == 1);
                     shoppingLists.add(shoppingList);
                 } while (cursor.moveToNext());
             }
@@ -252,6 +273,7 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             values.put(COLUMN_OWNER_USERNAME, list.getOwnerUsername());
             values.put(COLUMN_MEMBERS, listToCsv(list.getMembers()));
             values.put(COLUMN_PENDING_MEMBERS, listToCsv(list.getPendingMembers()));
+            values.put(COLUMN_IS_SHARED, list.isShared() ? 1 : 0);
             // Position wird nicht überschrieben, um lokale Sortierung zu erhalten,
             // es sei denn, wir wollen Server-Position übernehmen (nicht implementiert).
 

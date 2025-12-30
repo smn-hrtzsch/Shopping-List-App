@@ -241,7 +241,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             checkBox.setOnCheckedChangeListener(null);
             checkBox.setChecked(item.isDone());
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (editingItemPosition != -1 && editingItemPosition != getBindingAdapterAdapterPosition()) {
+                if (editingItemPosition != -1 && editingItemPosition != getBindingAdapterPosition()) {
                     Toast.makeText(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;

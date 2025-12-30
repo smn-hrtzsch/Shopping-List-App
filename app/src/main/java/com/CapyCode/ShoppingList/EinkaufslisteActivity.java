@@ -39,6 +39,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private MyRecyclerViewAdapter adapter;
     private List<ShoppingItem> shoppingItems;
     private ShoppingListRepository shoppingListRepository;
+    private ShoppingList currentShoppingList;
     private long currentShoppingListId = -1L;
     private String firebaseListId;
     private TextView toolbarTitleTextView;
@@ -89,6 +90,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         shoppingListRepository = new ShoppingListRepository(this);
         currentShoppingListId = getIntent().getLongExtra("LIST_ID", -1L);
         firebaseListId = getIntent().getStringExtra("FIREBASE_LIST_ID");
+        currentShoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
 
         String listName = getIntent().getStringExtra("LIST_NAME");
         if (toolbarTitleTextView != null) {
@@ -101,13 +103,19 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
             }
             
-            // Listen for list deletion
+            // Listen for list deletion and updates
             listSnapshotListener = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     .collection("shopping_lists")
                     .document(firebaseListId)
                     .addSnapshotListener((documentSnapshot, e) -> {
                         if (e != null) return;
-                        if (documentSnapshot != null && !documentSnapshot.exists()) {
+                        if (documentSnapshot != null && documentSnapshot.exists()) {
+                            Boolean sharedOnServer = documentSnapshot.getBoolean("isShared");
+                            if (currentShoppingList != null && sharedOnServer != null) {
+                                currentShoppingList.setShared(sharedOnServer);
+                                invalidateOptionsMenu();
+                            }
+                        } else if (documentSnapshot != null && !documentSnapshot.exists()) {
                             Toast.makeText(this, R.string.error_list_deleted_by_owner, Toast.LENGTH_LONG).show();
                             finish();
                         }
@@ -131,10 +139,14 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private void updateSyncIcon(int drawableId) {
         if (toolbarCloudIcon != null && firebaseListId != null) {
             toolbarCloudIcon.setImageResource(drawableId);
-            // If it's a transient state (upload/download), set a timer to return to "synced"
+            // Revert to "synced" icon after a delay to ensure visibility
             if (drawableId != R.drawable.ic_cloud_synced_24) {
                 syncIconHandler.removeCallbacksAndMessages(null);
-                syncIconHandler.postDelayed(() -> toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24), 1500);
+                syncIconHandler.postDelayed(() -> {
+                    if (toolbarCloudIcon != null) {
+                        toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
+                    }
+                }, 1000); // 1 second minimum visibility
             }
         }
     }
@@ -155,12 +167,14 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.einkaufsliste_menu, menu);
-        if (firebaseListId != null) {
-            menu.findItem(R.id.action_share_list).setVisible(false);
-            menu.findItem(R.id.action_view_members).setVisible(true);
-        } else {
-            menu.findItem(R.id.action_view_members).setVisible(false);
-        }
+        
+        boolean isShared = currentShoppingList != null && currentShoppingList.isShared();
+        
+        // JSON share is visible for local lists AND private cloud lists
+        menu.findItem(R.id.action_share_list).setVisible(!isShared);
+        // Members list is ONLY visible for shared cloud lists
+        menu.findItem(R.id.action_view_members).setVisible(isShared);
+        
         return true;
     }
 

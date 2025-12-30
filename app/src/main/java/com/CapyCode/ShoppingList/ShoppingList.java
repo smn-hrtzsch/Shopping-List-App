@@ -17,6 +17,8 @@ public class ShoppingList {
     private List<String> members;
     private List<String> pendingMembers;
 
+    private boolean isShared;
+
     public ShoppingList(long id, String name) {
         this.id = id;
         this.name = name;
@@ -25,6 +27,7 @@ public class ShoppingList {
         this.position = 0; // NEU
         this.members = new ArrayList<>();
         this.pendingMembers = new ArrayList<>();
+        this.isShared = false;
     }
 
     public ShoppingList(String name) {
@@ -33,9 +36,12 @@ public class ShoppingList {
         this.itemCount = 0;
         this.members = new ArrayList<>();
         this.pendingMembers = new ArrayList<>();
+        this.isShared = false;
     }
 
     // --- Getter und Setter ---
+    public boolean isShared() { return isShared; }
+    public void setShared(boolean shared) { isShared = shared; }
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
     public String getName() { return name; }

@@ -84,6 +84,10 @@ public class ShoppingListManager {
         return repository.addShoppingList(name, position);
     }
 
+    public long addShoppingList(String name, int position, boolean isShared) {
+        return repository.getShoppingListDatabaseHelper().addShoppingList(name, position, isShared);
+    }
+
     public void updateShoppingList(ShoppingList list) {
         repository.updateShoppingList(list);
     }

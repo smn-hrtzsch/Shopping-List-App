@@ -38,6 +38,10 @@ public class ShoppingListRepository {
         this.context = context;
     }
 
+    public ShoppingListDatabaseHelper getShoppingListDatabaseHelper() {
+        return dbHelper;
+    }
+
     public int getLocalListCount() {
         return dbHelper.getShoppingListCount();
     }
@@ -94,6 +98,7 @@ public class ShoppingListRepository {
             String id = doc.getId();
             String name = doc.getString("name");
             String ownerId = doc.getString("ownerId");
+            Boolean isShared = doc.getBoolean("isShared");
             @SuppressWarnings("unchecked")
             List<String> members = (List<String>) doc.get("members");
             @SuppressWarnings("unchecked")
@@ -102,6 +107,7 @@ public class ShoppingListRepository {
             ShoppingList list = new ShoppingList(name);
             list.setFirebaseId(id);
             list.setOwnerId(ownerId);
+            list.setShared(isShared != null ? isShared : false);
             list.setMembers(members != null ? members : new ArrayList<>());
             list.setPendingMembers(pendingMembers != null ? pendingMembers : new ArrayList<>());
             
@@ -454,6 +460,7 @@ public class ShoppingListRepository {
         Map<String, Object> listData = new HashMap<>();
         listData.put("name", list.getName());
         listData.put("ownerId", user.getUid());
+        listData.put("isShared", false);
         listData.put("members", java.util.Collections.singletonList(user.getUid()));
         listData.put("pending_members", new ArrayList<>());
         listData.put("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp());
