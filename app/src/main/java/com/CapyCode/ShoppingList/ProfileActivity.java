@@ -283,10 +283,14 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void performGoogleSignIn(AuthCredential credential) {
         progressBarLoading.setVisibility(View.VISIBLE);
+        
+        // Clear local data before switching account to prevent duplication/merging of guest data
+        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+        repo.clearLocalDatabase();
+
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        triggerSync();
                         loadCurrentProfile();
                     } else {
                         progressBarLoading.setVisibility(View.GONE);
@@ -521,7 +525,7 @@ public class ProfileActivity extends AppCompatActivity {
             
             layoutAuthButtons.setVisibility(View.VISIBLE);
             
-            buttonRegisterEmail.setText(R.string.action_sign_in_email);
+            buttonRegisterEmail.setText(R.string.action_link_email);
             buttonRegisterEmail.setIconResource(R.drawable.ic_email);
             buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.text_primary_adaptive));
             buttonRegisterEmail.setOnClickListener(v -> {
@@ -529,7 +533,7 @@ public class ProfileActivity extends AppCompatActivity {
                 authActivityLauncher.launch(intent);
             });
 
-            buttonRegisterGoogle.setText(R.string.sign_in_google);
+            buttonRegisterGoogle.setText(R.string.action_link_google);
             buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
             buttonRegisterGoogle.setIconTint(null);
             buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());

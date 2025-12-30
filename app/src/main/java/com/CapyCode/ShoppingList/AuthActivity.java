@@ -188,11 +188,16 @@ public class AuthActivity extends AppCompatActivity {
 
     private void performLogin(String email, String password) {
         showLoading(true);
+        
+        // Clear local data BEFORE login (Switch scenario)
+        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+        repo.clearLocalDatabase();
+
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     showLoading(false);
                     if (task.isSuccessful()) {
-                        finishAuth(true);
+                        finishAuth(true, false);
                     } else {
                         handleLoginError(task);
                     }
@@ -319,7 +324,7 @@ public class AuthActivity extends AppCompatActivity {
                 if (reloadTask.isSuccessful()) {
                     if (user.isEmailVerified()) {
                         dialog.dismiss();
-                        finishAuth(true);
+                        finishAuth(true, true);
                     } else {
                         Toast.makeText(AuthActivity.this, "E-Mail noch nicht bestätigt. Bitte überprüfe dein Postfach.", Toast.LENGTH_SHORT).show();
                     }
@@ -457,16 +462,18 @@ public class AuthActivity extends AppCompatActivity {
         buttonRegister.setEnabled(!show);
     }
 
-    private void finishAuth(boolean success) {
+    private void finishAuth(boolean success, boolean shouldSync) {
         if (success) {
             Toast.makeText(AuthActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
             
-            // Trigger Sync of local lists to cloud
-            Toast.makeText(AuthActivity.this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
-            ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
-            repository.migrateLocalListsToCloud(() -> {
-                android.util.Log.d("Auth", "Local lists migrated to cloud.");
-            });
+            if (shouldSync) {
+                // Trigger Sync of local lists to cloud
+                Toast.makeText(AuthActivity.this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
+                ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
+                repository.migrateLocalListsToCloud(() -> {
+                    android.util.Log.d("Auth", "Local lists migrated to cloud.");
+                });
+            }
 
             setResult(RESULT_OK);
             finish();

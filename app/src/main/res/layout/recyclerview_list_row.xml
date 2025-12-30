@@ -40,7 +40,7 @@
             android:id="@+id/cloud_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_cloud_24"
+            android:src="@drawable/ic_members_group"
             android:visibility="gone"
             app:tint="?attr/colorControlNormal"
             app:layout_constraintEnd_toStartOf="@id/button_edit_list_name_inline"

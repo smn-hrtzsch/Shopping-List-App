@@ -182,4 +182,6 @@
     <string name="dialog_switch_account_title">Konto wechseln?</string>
     <string name="dialog_switch_account_message">Ein Konto mit der E-Mail dieses Google-Accounts existiert bereits.\n\nMöchtest du dich stattdessen in dieses Konto einloggen? Dabei wird dein Google-Konto mit dem bestehenden Account verknüpft (und deine aktuellen Gast-Daten ersetzt).</string>
     <string name="button_switch_and_link">Wechseln &amp; Verknüpfen</string>
+    <string name="action_link_email">Mit E-Mail verknüpfen</string>
+    <string name="action_link_google">Mit Google verknüpfen</string>
 </resources>

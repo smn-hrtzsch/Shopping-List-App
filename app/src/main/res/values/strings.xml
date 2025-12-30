@@ -161,4 +161,6 @@
     <string name="dialog_switch_account_title">Switch Account?</string>
     <string name="dialog_switch_account_message">An account with the email of this Google account already exists.\n\nDo you want to sign in to that account instead? This will link your Google account to the existing account (and replace your current guest data).</string>
     <string name="button_switch_and_link">Switch &amp; Link</string>
+    <string name="action_link_email">Link with Email</string>
+    <string name="action_link_google">Link with Google</string>
 </resources>
