@@ -248,18 +248,27 @@ public class AuthActivity extends AppCompatActivity {
 
     private void showVerificationDialog(FirebaseUser user, boolean isLinkedAccount) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("E-Mail bestätigen");
-        builder.setMessage("Wir haben eine Bestätigungs-E-Mail an " + user.getEmail() + " gesendet.\n\nBitte klicke auf den Link in der E-Mail und bestätige anschließend hier.");
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        builder.setView(dialogView);
         builder.setCancelable(false); // Prevent dismissal by clicking outside
-
-        builder.setPositiveButton("Ich habe bestätigt", null); // Override later to prevent closing
-        builder.setNegativeButton("Abbrechen (Account löschen)", null); // Override later
-
+        
         AlertDialog dialog = builder.create();
-        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
 
-        // Override buttons to handle logic without auto-dismissal
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
+        textTitle.setText("E-Mail bestätigen");
+        textMessage.setText("Wir haben eine Bestätigungs-E-Mail an " + user.getEmail() + " gesendet.\n\nBitte klicke auf den Link in der E-Mail und bestätige anschließend hier.");
+        
+        btnPositive.setText("Ich habe bestätigt");
+        btnNegative.setText("Abbrechen (Löschen)");
+
+        btnPositive.setOnClickListener(v -> {
             // Reload user to get fresh data
             user.reload().addOnCompleteListener(reloadTask -> {
                 if (reloadTask.isSuccessful()) {
@@ -275,17 +284,40 @@ public class AuthActivity extends AppCompatActivity {
             });
         });
 
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
-            new AlertDialog.Builder(this)
-                .setTitle("Abbrechen?")
-                .setMessage("Wenn du abbrichst, wird der Registrierungsprozess rückgängig gemacht.")
-                .setPositiveButton("Ja, abbrechen", (d, w) -> {
-                    dialog.dismiss();
-                    revertRegistration(user, isLinkedAccount);
-                })
-                .setNegativeButton("Nein, warten", null)
-                .show();
+        btnNegative.setOnClickListener(v -> {
+            // Show confirmation dialog to abort
+            AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
+            View confirmView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+            confirmBuilder.setView(confirmView);
+            AlertDialog confirmDialog = confirmBuilder.create();
+            
+            if (confirmDialog.getWindow() != null) {
+                confirmDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            }
+
+            TextView confirmTitle = confirmView.findViewById(R.id.dialog_title);
+            TextView confirmMessage = confirmView.findViewById(R.id.dialog_message);
+            MaterialButton confirmBtnPositive = confirmView.findViewById(R.id.dialog_button_positive);
+            MaterialButton confirmBtnNegative = confirmView.findViewById(R.id.dialog_button_negative);
+
+            confirmTitle.setText("Abbrechen?");
+            confirmMessage.setText("Wenn du abbrichst, wird der Registrierungsprozess rückgängig gemacht.");
+            
+            confirmBtnPositive.setText("Ja, abbrechen");
+            confirmBtnNegative.setText("Nein, warten");
+
+            confirmBtnPositive.setOnClickListener(confirmV -> {
+                confirmDialog.dismiss();
+                dialog.dismiss();
+                revertRegistration(user, isLinkedAccount);
+            });
+
+            confirmBtnNegative.setOnClickListener(confirmV -> confirmDialog.dismiss());
+
+            confirmDialog.show();
         });
+
+        dialog.show();
     }
 
     private void revertRegistration(FirebaseUser user, boolean isLinkedAccount) {
