@@ -199,6 +199,10 @@ public class ShoppingListRepository {
         db.collection("shopping_lists").document(firebaseListId).delete();
     }
 
+    public void clearLocalDatabase() {
+        dbHelper.deleteAllLists();
+    }
+
     public long addItemToShoppingList(long listId, ShoppingItem item) {
         item.setListId(listId);
         return dbHelper.addItem(item);

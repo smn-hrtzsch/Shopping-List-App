@@ -376,6 +376,15 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public void deleteAllLists() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            db.delete(TABLE_LISTS, null, null);
+        } finally {
+            db.close();
+        }
+    }
+
     // --- Item-Methoden ---
     public long addItem(ShoppingItem item) {
         SQLiteDatabase db = this.getWritableDatabase();

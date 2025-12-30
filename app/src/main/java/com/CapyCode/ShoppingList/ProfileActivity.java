@@ -621,9 +621,12 @@ public class ProfileActivity extends AppCompatActivity {
     private void confirmSignOut() {
         showCustomDialog(
             getString(R.string.button_sign_out),
-            "Wenn du dich abmeldest, sind deine geteilten Listen nicht mehr sichtbar, bis du dich wieder anmeldest.",
+            "Wenn du dich abmeldest, werden alle Listen von diesem Gerät entfernt (aber bleiben in deinem Konto gespeichert).",
             getString(R.string.button_sign_out),
             () -> {
+                 ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+                 repo.clearLocalDatabase();
+
                  mAuth.signOut();
                  mGoogleSignInClient.signOut();
                  Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
