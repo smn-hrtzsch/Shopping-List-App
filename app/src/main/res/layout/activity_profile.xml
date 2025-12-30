@@ -152,10 +152,11 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/button_save_profile"
-                        style="@style/ButtonStyle.Solid"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
                         android:text="@string/button_save"
+                        android:textColor="?attr/colorOnSurface"
                         android:layout_marginTop="16dp"
                         app:cornerRadius="28dp"/>
                 </LinearLayout>

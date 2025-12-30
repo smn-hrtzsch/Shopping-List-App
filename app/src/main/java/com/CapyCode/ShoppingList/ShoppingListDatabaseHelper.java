@@ -195,6 +195,21 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return count;
     }
 
+    public int getMaxPosition() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        int max = -1;
+        try {
+            Cursor cursor = db.rawQuery("SELECT MAX(" + COLUMN_LIST_POSITION + ") FROM " + TABLE_LISTS, null);
+            if (cursor.moveToFirst()) {
+                max = cursor.getInt(0);
+            }
+            cursor.close();
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error getting max position", e);
+        }
+        return max;
+    }
+
     public List<ShoppingList> getAllShoppingLists() {
         List<ShoppingList> shoppingLists = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();

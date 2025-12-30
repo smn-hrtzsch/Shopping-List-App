@@ -11,17 +11,20 @@ public class ShoppingListApplication extends Application {
     public void onCreate() {
         super.onCreate();
         
-        FirebaseApp.initializeApp(this);
+        android.util.Log.d("ShoppingListApp", "Application onCreate called");
+
+        // FirebaseApp.initializeApp(this); // Automatically handled by Firebase Content Provider
 
         FirebaseAppCheck firebaseAppCheck = FirebaseAppCheck.getInstance();
         
         if (BuildConfig.DEBUG) {
+            android.util.Log.d("ShoppingListApp", "Running in DEBUG mode. Installing DebugAppCheckProviderFactory.");
             // Use Debug provider for local development (Emulator/Test Device)
-            // This prints a debug token to Logcat which you can add to Firebase Console
             firebaseAppCheck.installAppCheckProviderFactory(
                 DebugAppCheckProviderFactory.getInstance()
             );
         } else {
+            android.util.Log.d("ShoppingListApp", "Running in RELEASE mode. Installing PlayIntegrityAppCheckProviderFactory.");
             // Use Play Integrity for Production (Release)
             firebaseAppCheck.installAppCheckProviderFactory(
                 PlayIntegrityAppCheckProviderFactory.getInstance()
