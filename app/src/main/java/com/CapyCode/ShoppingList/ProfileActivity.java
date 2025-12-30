@@ -194,6 +194,16 @@ public class ProfileActivity extends AppCompatActivity {
         
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
+            // Check if ALREADY linked to Google to prevent overwriting/double linking confusion
+            for (UserInfo profile : currentUser.getProviderData()) {
+                if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                     progressBarLoading.setVisibility(View.GONE);
+                     Toast.makeText(this, "Es ist bereits ein Google-Konto verknüpft. Bitte trenne es zuerst.", Toast.LENGTH_LONG).show();
+                     mGoogleSignInClient.signOut(); // Ensure clean state
+                     return;
+                }
+            }
+
             // Try to link first
             currentUser.linkWithCredential(credential)
                     .addOnCompleteListener(this, task -> {
