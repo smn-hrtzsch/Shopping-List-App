@@ -216,8 +216,8 @@ public class ProfileActivity extends AppCompatActivity {
                                  progressBarLoading.setVisibility(View.GONE);
                                  showCustomDialog(
                                      "Konto wechseln?",
-                                     "Ein Konto mit diesem Google-Account existiert bereits.\n\nMöchtest du dich in dieses Konto einloggen? Deine aktuellen Gast-Listen werden dabei durch die des anderen Kontos ersetzt.",
-                                     "Wechseln (Daten verwerfen)",
+                                     "Ein Konto mit der E-Mail dieses Google-Accounts existiert bereits.\n\nMöchtest du dich stattdessen in dieses Konto einloggen? Dabei wird dein Google-Konto mit dem bestehenden Account verknüpft (und deine aktuellen Gast-Daten ersetzt).",
+                                     "Wechseln & Verknüpfen",
                                      () -> performGoogleSignIn(credential)
                                  );
                              } else {
