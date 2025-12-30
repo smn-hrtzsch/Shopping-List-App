@@ -109,6 +109,18 @@ public class AuthActivity extends AppCompatActivity {
         } catch (IllegalStateException e) {
             secondaryApp = FirebaseApp.initializeApp(this, options, "secondary");
         }
+
+        // Install App Check on the secondary app as well
+        com.google.firebase.appcheck.FirebaseAppCheck secondaryAppCheck = com.google.firebase.appcheck.FirebaseAppCheck.getInstance(secondaryApp);
+        if (BuildConfig.DEBUG) {
+            secondaryAppCheck.installAppCheckProviderFactory(
+                com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
+            );
+        } else {
+            secondaryAppCheck.installAppCheckProviderFactory(
+                com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance()
+            );
+        }
         
         FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
         secondaryAuth.signInWithEmailAndPassword(email, password)
@@ -143,15 +155,15 @@ public class AuthActivity extends AppCompatActivity {
     }
 
     private void handleLoginError(Task<?> task) {
-        String errorMsg = "Login fehlgeschlagen.";
+        String errorMsg;
         try {
             throw task.getException();
         } catch(FirebaseAuthInvalidUserException e) {
-            errorMsg = "Konto existiert nicht oder wurde deaktiviert.";
+            errorMsg = getString(R.string.error_login_user_not_found);
         } catch(FirebaseAuthInvalidCredentialsException e) {
-            errorMsg = "Ungültige E-Mail oder falsches Passwort.";
+            errorMsg = getString(R.string.error_login_wrong_password);
         } catch(Exception e) {
-            errorMsg = e.getMessage();
+            errorMsg = "Login fehlgeschlagen: " + e.getMessage();
         }
         Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
     }

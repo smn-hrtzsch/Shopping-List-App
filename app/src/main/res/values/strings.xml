@@ -155,5 +155,6 @@
     <string name="change_profile_picture">Change Picture</string>
     <string name="action_register_email">Register with Email</string>
     <string name="action_sign_in_email">Sign in with Email</string>
-    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID</string>
+    <string name="error_login_user_not_found">No account found with this email. Please register first.</string>
+    <string name="error_login_wrong_password">The password you entered is incorrect.</string>
 </resources>

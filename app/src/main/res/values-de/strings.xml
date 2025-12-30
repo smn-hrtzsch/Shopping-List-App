@@ -176,4 +176,6 @@
     <string name="change_profile_picture">Bild ändern</string>
     <string name="action_register_email">Mit E-Mail registrieren</string>
     <string name="action_sign_in_email">Mit E-Mail anmelden</string>
+    <string name="error_login_user_not_found">Noch kein Konto mit dieser E-Mail vorhanden. Bitte erst registrieren.</string>
+    <string name="error_login_wrong_password">Das eingegebene Passwort ist nicht korrekt.</string>
 </resources>
