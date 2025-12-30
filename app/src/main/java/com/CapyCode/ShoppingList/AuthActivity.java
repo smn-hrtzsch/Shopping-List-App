@@ -368,7 +368,7 @@ public class AuthActivity extends AppCompatActivity {
                     .addOnCompleteListener(task -> {
                         showLoading(false);
                         if (task.isSuccessful()) {
-                            Toast.makeText(AuthActivity.this, "Registrierung abgebrochen.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(AuthActivity.this, R.string.toast_registration_aborted, Toast.LENGTH_SHORT).show();
                         }
                     });
         }

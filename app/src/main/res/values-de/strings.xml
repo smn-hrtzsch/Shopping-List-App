@@ -167,7 +167,9 @@
     <string name="auth_failed">Anmeldung fehlgeschlagen</string>
     <string name="email_sent">E-Mail zum Zurücksetzen gesendet</string>
     <string name="error_email_required">E-Mail ist erforderlich</string>
+    <string name="error_invalid_email">Bitte gib eine gültige E-Mail Adresse ein.</string>
     <string name="error_password_required">Passwort ist erforderlich</string>
+    <string name="error_password_short">Passwort muss mindestens 6 Zeichen lang sein.</string>
     <string name="dialog_create_account_title">Konto erstellen?</string>
     <string name="dialog_create_account_message">Erstelle ein Konto, um all deine Listen (auch private) sicher in der Cloud zu speichern und von anderen Geräten darauf zuzugreifen.</string>
     <string name="syncing_data">Listen werden gesichert...</string>
@@ -241,4 +243,15 @@
     <string name="error_profile_check">Fehler beim Profil-Check: %s</string>
     <string name="error_parsing_shared">Fehler beim Lesen der geteilten Datei.</string>
     <string name="error_reading_file">Fehler beim Lesen der Datei.</string>
+    <string name="toast_finish_editing_status">Bitte Bearbeitung abschließen, um Status zu ändern.</string>
+    <string name="toast_finish_editing_delete">Bitte Bearbeitung abschließen vor dem Löschen.</string>
+    <string name="error_google_sign_in">Google Anmeldung fehlgeschlagen: %s</string>
+    <string name="error_google_already_linked">Es ist bereits ein Google-Konto verknüpft. Bitte trenne es zuerst.</string>
+    <string name="toast_items_cleared_done">Erledigte Artikel entfernt</string>
+    <string name="toast_items_cleared_all">Alle Artikel entfernt</string>
+    <string name="error_list_deleted_by_owner">Diese Liste wurde vom Eigentümer gelöscht.</string>
+    <string name="error_cannot_share_shared">Geteilte Listen können nicht erneut geteilt werden.</string>
+    <string name="error_create_share_data">Fehler beim Erstellen der Export-Daten.</string>
+    <string name="toast_registration_aborted">Registrierung abgebrochen.</string>
+    <string name="error_generic_message">Fehler: %s</string>
 </resources>

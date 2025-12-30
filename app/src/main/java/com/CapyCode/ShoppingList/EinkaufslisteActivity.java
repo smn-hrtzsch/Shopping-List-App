@@ -108,7 +108,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     .addSnapshotListener((documentSnapshot, e) -> {
                         if (e != null) return;
                         if (documentSnapshot != null && !documentSnapshot.exists()) {
-                            Toast.makeText(this, "Diese Liste wurde vom Eigentümer gelöscht.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, R.string.error_list_deleted_by_owner, Toast.LENGTH_LONG).show();
                             finish();
                         }
                     });
@@ -318,7 +318,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void shareShoppingList() {
         if (firebaseListId != null) {
-            Toast.makeText(this, "Cannot share a shared list.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_cannot_share_shared, Toast.LENGTH_SHORT).show();
             return;
         }
         ShoppingList shoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
@@ -365,7 +365,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
             } catch (org.json.JSONException | java.io.IOException e) {
                 e.printStackTrace();
-                Toast.makeText(this, "Error creating share data.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.error_create_share_data, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -450,7 +450,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                         shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
                     }
                     refreshItemList();
-                    Toast.makeText(this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.toast_items_cleared_done, Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
                     if (firebaseListId != null) {
@@ -464,7 +464,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                         shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
                     }
                     refreshItemList();
-                    Toast.makeText(this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.toast_items_cleared_all, Toast.LENGTH_SHORT).show();
                 })
                 .setNeutralButton(R.string.dialog_option_cancel, (dialog, which) -> dialog.dismiss())
                 .show();

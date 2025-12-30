@@ -93,7 +93,7 @@ public class ProfileActivity extends AppCompatActivity {
                         GoogleSignInAccount account = task.getResult(ApiException.class);
                         firebaseAuthWithGoogle(account.getIdToken());
                     } catch (ApiException e) {
-                        Toast.makeText(ProfileActivity.this, "Google Sign-In failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ProfileActivity.this, getString(R.string.error_google_sign_in, e.getMessage()), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -199,7 +199,7 @@ public class ProfileActivity extends AppCompatActivity {
             for (UserInfo profile : currentUser.getProviderData()) {
                 if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
                      progressBarLoading.setVisibility(View.GONE);
-                     Toast.makeText(this, "Es ist bereits ein Google-Konto verknüpft. Bitte trenne es zuerst.", Toast.LENGTH_LONG).show();
+                     Toast.makeText(this, R.string.error_google_already_linked, Toast.LENGTH_LONG).show();
                      mGoogleSignInClient.signOut(); // Ensure clean state
                      return;
                 }
@@ -653,7 +653,7 @@ public class ProfileActivity extends AppCompatActivity {
              mGoogleSignInClient.signOut();
              
              progressBarLoading.setVisibility(View.GONE);
-             Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
+             Toast.makeText(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
              loadCurrentProfile(); 
         });
     }

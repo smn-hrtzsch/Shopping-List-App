@@ -241,13 +241,13 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             checkBox.setOnCheckedChangeListener(null);
             checkBox.setChecked(item.isDone());
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (editingItemPosition != -1 && editingItemPosition != getBindingAdapterPosition()) {
-                    Toast.makeText(context, "Bitte zuerst die andere Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
+                if (editingItemPosition != -1 && editingItemPosition != getBindingAdapterAdapterPosition()) {
+                    Toast.makeText(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
                 if (editingItemPosition != -1 && editingItemPosition == getBindingAdapterPosition()) {
-                    Toast.makeText(context, "Bitte Bearbeitung abschließen, um Status zu ändern.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
@@ -266,14 +266,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
             buttonEdit.setOnClickListener(v -> {
                 if (item.isDone()) {
-                    Toast.makeText(context, "Erledigte Artikel können nicht bearbeitet werden.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 int currentPos = getBindingAdapterPosition();
                 if (currentPos == RecyclerView.NO_POSITION) return;
 
                 if (editingItemPosition != -1 && editingItemPosition != currentPos) {
-                    Toast.makeText(context, "Bitte zuerst die andere Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -299,7 +299,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int currentPos = getBindingAdapterPosition();
                 if (currentPos != RecyclerView.NO_POSITION) {
                     if (editingItemPosition == currentPos) {
-                        Toast.makeText(context, "Bitte Bearbeitung abschließen vor dem Löschen.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, R.string.toast_finish_editing_delete, Toast.LENGTH_SHORT).show();
                         return;
                     }
                     onItemDismiss(currentPos);

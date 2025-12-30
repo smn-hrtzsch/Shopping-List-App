@@ -557,7 +557,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
             @Override
             public void onError(String message) {
-                Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -574,7 +574,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
             @Override
             public void onError(String message) {
-                Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -598,7 +598,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
                         @Override
                         public void onError(String message) {
-                            Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
                         }
                     });
                 },

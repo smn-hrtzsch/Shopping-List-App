@@ -146,7 +146,9 @@
     <string name="auth_failed">Authentication failed</string>
     <string name="email_sent">Password reset email sent</string>
     <string name="error_email_required">Email is required</string>
+    <string name="error_invalid_email">Please enter a valid email address.</string>
     <string name="error_password_required">Password is required</string>
+    <string name="error_password_short">Password must be at least 6 characters long.</string>
     <string name="dialog_create_account_title">Create Account?</string>
     <string name="dialog_create_account_message">Create an account to securely back up all your lists (including private ones) and access them from other devices.</string>
     <string name="syncing_data">Syncing data...</string>
@@ -220,4 +222,15 @@
     <string name="error_profile_check">Error checking profile: %s</string>
     <string name="error_parsing_shared">Error parsing shared file.</string>
     <string name="error_reading_file">Error reading file.</string>
+    <string name="toast_finish_editing_status">Please finish editing first to change status.</string>
+    <string name="toast_finish_editing_delete">Please finish editing first before deleting.</string>
+    <string name="error_google_sign_in">Google sign-in failed: %s</string>
+    <string name="error_google_already_linked">A Google account is already linked. Please disconnect it first.</string>
+    <string name="toast_items_cleared_done">Checked items removed</string>
+    <string name="toast_items_cleared_all">All items removed</string>
+    <string name="error_list_deleted_by_owner">This list has been deleted by the owner.</string>
+    <string name="error_cannot_share_shared">Shared lists cannot be shared again.</string>
+    <string name="error_create_share_data">Error creating export data.</string>
+    <string name="toast_registration_aborted">Registration aborted.</string>
+    <string name="error_generic_message">Error: %s</string>
 </resources>
