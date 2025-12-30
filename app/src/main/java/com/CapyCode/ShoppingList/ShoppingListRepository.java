@@ -472,7 +472,7 @@ public class ShoppingListRepository {
                 list.setOwnerId(user.getUid());
                 list.setMembers(java.util.Collections.singletonList(user.getUid()));
                 
-                dbHelper.upsertCloudList(list);
+                dbHelper.updateLocalListAfterMigration(list);
 
                 if (items.isEmpty()) {
                      uploadNextList(lists, index + 1, user, onComplete);

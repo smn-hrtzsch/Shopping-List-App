@@ -404,6 +404,21 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public void updateLocalListAfterMigration(ShoppingList list) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_FIREBASE_ID, list.getFirebaseId());
+        values.put(COLUMN_OWNER_ID, list.getOwnerId());
+        values.put(COLUMN_MEMBERS, listToCsv(list.getMembers()));
+        values.put(COLUMN_PENDING_MEMBERS, listToCsv(list.getPendingMembers()));
+        values.put(COLUMN_IS_SHARED, list.isShared() ? 1 : 0);
+        try {
+            db.update(TABLE_LISTS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(list.getId())});
+        } finally {
+            db.close();
+        }
+    }
+
     public void deleteShoppingList(long listId) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {

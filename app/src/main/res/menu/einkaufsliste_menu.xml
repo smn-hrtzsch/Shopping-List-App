@@ -10,6 +10,13 @@
         app:iconTint="?attr/colorOnSurface" />
 
     <item
+        android:id="@+id/action_sync_switch"
+        android:title="@string/pref_sync_private_title"
+        app:actionViewClass="com.google.android.material.switchmaterial.SwitchMaterial"
+        app:showAsAction="always"
+        android:visible="false" />
+
+    <item
         android:id="@+id/action_clear_list"
         android:title="@string/clear_entire_list"
         android:icon="@drawable/ic_delete_24"
