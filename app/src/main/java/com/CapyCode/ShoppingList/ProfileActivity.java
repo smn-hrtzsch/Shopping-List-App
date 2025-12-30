@@ -621,18 +621,29 @@ public class ProfileActivity extends AppCompatActivity {
     private void confirmSignOut() {
         showCustomDialog(
             getString(R.string.button_sign_out),
-            "Wenn du dich abmeldest, werden alle Listen von diesem Gerät entfernt (aber bleiben in deinem Konto gespeichert).",
+            "Möchtest du dich wirklich abmelden? Wir sichern vorher noch alle deine Listen in der Cloud. Danach werden die Daten von diesem Gerät entfernt.",
             getString(R.string.button_sign_out),
-            () -> {
-                 ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
-                 repo.clearLocalDatabase();
-
-                 mAuth.signOut();
-                 mGoogleSignInClient.signOut();
-                 Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
-                 loadCurrentProfile(); 
-            }
+            this::performSafeSignOut
         );
+    }
+
+    private void performSafeSignOut() {
+        progressBarLoading.setVisibility(View.VISIBLE);
+        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+        
+        // 1. Sync local lists to cloud
+        repo.migrateLocalListsToCloud(() -> {
+             // 2. Clear local database (only after sync attempt finished)
+             repo.clearLocalDatabase();
+
+             // 3. Sign out
+             mAuth.signOut();
+             mGoogleSignInClient.signOut();
+             
+             progressBarLoading.setVisibility(View.GONE);
+             Toast.makeText(this, "Abgemeldet", Toast.LENGTH_SHORT).show();
+             loadCurrentProfile(); 
+        });
     }
 
     private void removeImage() {
