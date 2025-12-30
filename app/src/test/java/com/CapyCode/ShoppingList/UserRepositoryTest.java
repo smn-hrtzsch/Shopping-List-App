@@ -52,4 +52,14 @@ public class UserRepositoryTest {
         when(mockAuth.getUid()).thenReturn(uid);
         assertEquals(uid, userRepository.getCurrentUserId());
     }
+
+    @Test
+    public void testGetUserProfile_NotAuthenticated() {
+        when(mockAuth.getCurrentUser()).thenReturn(null);
+        UserRepository.OnUserProfileLoadedListener listener = mock(UserRepository.OnUserProfileLoadedListener.class);
+        
+        userRepository.getUserProfile(listener);
+        
+        verify(listener).onLoaded(null, null);
+    }
 }

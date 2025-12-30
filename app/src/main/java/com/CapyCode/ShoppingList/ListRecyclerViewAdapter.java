@@ -71,6 +71,15 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
         if (list.getFirebaseId() != null && !isPending) {
             viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+            // Differentiate between shared and private cloud lists
+            boolean isShared = (list.getMembers() != null && list.getMembers().size() > 1) || 
+                               (list.getPendingMembers() != null && !list.getPendingMembers().isEmpty());
+            
+            if (isShared) {
+                viewHolder.cloudIcon.setImageResource(R.drawable.ic_members_group);
+            } else {
+                viewHolder.cloudIcon.setImageResource(R.drawable.ic_cloud_24);
+            }
         } else {
             viewHolder.cloudIcon.setVisibility(View.GONE);
         }

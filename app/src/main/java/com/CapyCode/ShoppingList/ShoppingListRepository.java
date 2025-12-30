@@ -28,9 +28,13 @@ public class ShoppingListRepository {
     }
 
     public ShoppingListRepository(Context context) {
+        this(context, FirebaseFirestore.getInstance(), FirebaseAuth.getInstance());
+    }
+
+    public ShoppingListRepository(Context context, FirebaseFirestore db, FirebaseAuth mAuth) {
         this.dbHelper = new ShoppingListDatabaseHelper(context);
-        this.db = FirebaseFirestore.getInstance();
-        this.mAuth = FirebaseAuth.getInstance();
+        this.db = db;
+        this.mAuth = mAuth;
         this.context = context;
     }
 
