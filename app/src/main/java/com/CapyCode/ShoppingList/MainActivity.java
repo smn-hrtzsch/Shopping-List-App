@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                             // If sign in fails, display a message to the user.
                             Log.w("Auth", "signInAnonymously:failure", task.getException());
                             String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                            Toast.makeText(MainActivity.this, "Authentication failed: " + errorMsg,
+                            Toast.makeText(MainActivity.this, getString(R.string.error_auth_failed, errorMsg),
                                     Toast.LENGTH_LONG).show();
                         }
                     });
@@ -273,7 +273,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 } else {
                     Log.w("Auth", "signInAnonymously:failure (retry)", task.getException());
                     String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                    Toast.makeText(MainActivity.this, "Authentication failed: " + errorMsg, Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, getString(R.string.error_auth_failed, errorMsg), Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -324,7 +324,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
                 @Override
                 public void onError(String error) {
-                    Toast.makeText(MainActivity.this, "Fehler beim Profil-Check: " + error, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, getString(R.string.error_profile_check, error), Toast.LENGTH_SHORT).show();
                     pendingListName = null;
                 }
             });
@@ -385,7 +385,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 }
             } catch (java.io.IOException e) {
                 e.printStackTrace();
-                Toast.makeText(this, "Error reading file.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.error_reading_file, Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -407,7 +407,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             org.json.JSONObject jsonList = new org.json.JSONObject(jsonString);
 
             if (!"com.CapyCode.ShoppingList".equals(jsonList.optString("app_id"))) {
-                Toast.makeText(this, "Incompatible file.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.incompatible_file, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -437,7 +437,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             }
         } catch (org.json.JSONException e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error parsing shared data.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.error_parsing_shared, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -551,7 +551,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         shoppingListRepository.acceptInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(MainActivity.this, "Einladung angenommen", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, R.string.toast_invitation_accepted, Toast.LENGTH_SHORT).show();
                 loadShoppingLists();
             }
 
@@ -568,7 +568,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         shoppingListRepository.declineInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(MainActivity.this, "Einladung abgelehnt", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, R.string.toast_invitation_declined, Toast.LENGTH_SHORT).show();
                 loadShoppingLists();
             }
 
@@ -584,15 +584,15 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         if (list.getFirebaseId() == null) return;
 
         showCustomDialog(
-                "Liste verlassen?",
-                "Möchtest du die Liste \"" + list.getName() + "\" wirklich verlassen?",
-                "Verlassen",
-                "Abbrechen",
+                getString(R.string.dialog_leave_list_title),
+                getString(R.string.dialog_leave_list_message, list.getName()),
+                getString(R.string.button_leave_confirm),
+                getString(R.string.button_cancel),
                 () -> {
                     shoppingListRepository.leaveList(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
                         @Override
                         public void onSuccess() {
-                            Toast.makeText(MainActivity.this, "Liste verlassen", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, R.string.toast_list_left, Toast.LENGTH_SHORT).show();
                             loadShoppingLists();
                         }
 
@@ -629,7 +629,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
         positiveButton.setOnClickListener(v -> {
             shoppingListManager.deleteShoppingList(listToDelete);
-            Toast.makeText(MainActivity.this, "Liste \"" + listToDelete.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, getString(R.string.toast_list_deleted_named, listToDelete.getName()), Toast.LENGTH_SHORT).show();
             loadShoppingLists();
             dialog.dismiss();
         });

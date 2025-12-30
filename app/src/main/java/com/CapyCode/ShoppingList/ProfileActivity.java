@@ -166,9 +166,9 @@ public class ProfileActivity extends AppCompatActivity {
     }
     
     private void showImageOptions() {
-        String[] options = {"Neues Bild wählen", "Bild entfernen", "Abbrechen"};
+        String[] options = {getString(R.string.option_new_image), getString(R.string.option_remove_image), getString(R.string.button_cancel)};
         new AlertDialog.Builder(this)
-                .setTitle("Profilbild")
+                .setTitle(R.string.dialog_profile_pic_title)
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         pickImageLauncher.launch("image/*");
@@ -208,7 +208,7 @@ public class ProfileActivity extends AppCompatActivity {
             currentUser.linkWithCredential(credential)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(ProfileActivity.this, "Google verknüpft", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ProfileActivity.this, R.string.toast_google_linked, Toast.LENGTH_SHORT).show();
                             triggerSync();
                             loadCurrentProfile();
                         } else {
@@ -229,8 +229,8 @@ public class ProfileActivity extends AppCompatActivity {
                                  });
                              } else {
                                  progressBarLoading.setVisibility(View.GONE);
-                                 String msg = task.getException() != null ? task.getException().getMessage() : "Fehler beim Verknüpfen";
-                                 Toast.makeText(ProfileActivity.this, "Verknüpfung fehlgeschlagen: " + msg, Toast.LENGTH_LONG).show();
+                                 String msg = task.getException() != null ? task.getException().getMessage() : "Error";
+                                 Toast.makeText(ProfileActivity.this, getString(R.string.error_link_failed, msg), Toast.LENGTH_LONG).show();
                              }
                         }
                     });
@@ -291,10 +291,13 @@ public class ProfileActivity extends AppCompatActivity {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        // DO NOT triggerSync here. We just switched to an existing account.
+                        // We will load that account's lists.
+                        // triggerSync(); // REMOVED
                         loadCurrentProfile();
                     } else {
                         progressBarLoading.setVisibility(View.GONE);
-                        Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ProfileActivity.this, getString(R.string.error_auth_failed, "Authentication failed"), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -437,7 +440,7 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                     
                     TextView text = new TextView(this);
-                    text.setText("Google: " + profile.getEmail());
+                    text.setText(getString(R.string.linked_google, profile.getEmail()));
                     text.setTextColor(ContextCompat.getColor(this, R.color.text_primary_adaptive)); // Use dynamic color if possible or resolve attr
                     
                     googleRow.addView(icon);
@@ -458,7 +461,7 @@ public class ProfileActivity extends AppCompatActivity {
                     icon.setColorFilter(ContextCompat.getColor(this, R.color.text_primary_adaptive)); // Tint to text color
                     
                     TextView text = new TextView(this);
-                    text.setText("E-Mail: " + profile.getEmail());
+                    text.setText(getString(R.string.linked_email, profile.getEmail()));
                     text.setTextColor(ContextCompat.getColor(this, R.color.text_primary_adaptive));
                     
                     emailRow.addView(icon);
@@ -480,7 +483,7 @@ public class ProfileActivity extends AppCompatActivity {
             
             // Configure Google Button
             if (isGoogleLinked) {
-                buttonRegisterGoogle.setText("Google verknüpft (Trennen)");
+                buttonRegisterGoogle.setText(R.string.google_linked_disconnect);
                 buttonRegisterGoogle.setIconResource(R.drawable.ic_unlink);
                 buttonRegisterGoogle.setIconTint(ContextCompat.getColorStateList(this, android.R.color.black));
                 if ((getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
@@ -489,7 +492,7 @@ public class ProfileActivity extends AppCompatActivity {
                 
                 buttonRegisterGoogle.setOnClickListener(v -> confirmUnlink(GoogleAuthProvider.PROVIDER_ID));
             } else {
-                buttonRegisterGoogle.setText("Mit Google verknüpfen");
+                buttonRegisterGoogle.setText(R.string.action_link_google);
                 buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
                 buttonRegisterGoogle.setIconTint(null);
                 buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
@@ -497,7 +500,7 @@ public class ProfileActivity extends AppCompatActivity {
 
             // Configure Email Button
             if (isEmailLinked) {
-                buttonRegisterEmail.setText("E-Mail Verknüpfung entfernen");
+                buttonRegisterEmail.setText(R.string.email_linked_disconnect);
                 buttonRegisterEmail.setIconResource(R.drawable.ic_unlink);
                 
                 if ((getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
@@ -508,7 +511,7 @@ public class ProfileActivity extends AppCompatActivity {
 
                 buttonRegisterEmail.setOnClickListener(v -> confirmUnlink(EmailAuthProvider.PROVIDER_ID));
             } else {
-                buttonRegisterEmail.setText("Mit E-Mail verknüpfen");
+                buttonRegisterEmail.setText(R.string.action_link_email);
                 buttonRegisterEmail.setIconResource(R.drawable.ic_email); 
                 buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.text_primary_adaptive)); // Use text color
                 buttonRegisterEmail.setOnClickListener(v -> {
@@ -545,9 +548,9 @@ public class ProfileActivity extends AppCompatActivity {
     
     private void confirmUnlink(String providerId) {
         showCustomDialog(
-                "Verknüpfung aufheben?",
-                "Möchtest du diese Anmelde-Methode wirklich entfernen? Wenn du keine anderen Methoden hast, verlierst du den Zugriff auf dein Konto.",
-                "Trennen",
+                getString(R.string.dialog_unlink_title),
+                getString(R.string.dialog_unlink_message),
+                getString(R.string.button_unlink),
                 () -> unlinkProvider(providerId)
         );
     }
@@ -558,7 +561,7 @@ public class ProfileActivity extends AppCompatActivity {
             user.unlink(providerId)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(this, "Verknüpfung aufgehoben", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.toast_unlinked, Toast.LENGTH_SHORT).show();
                             
                             // If we unlinked Google, sign out of the Google Client to force account chooser next time
                             if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) {
@@ -567,21 +570,21 @@ public class ProfileActivity extends AppCompatActivity {
 
                             // If no providers left, user is effectively anonymous/unsecured
                             if (user.getProviderData().isEmpty()) {
-                                Toast.makeText(this, "Warnung: Dein Konto hat keine Anmeldemethoden mehr.", Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, R.string.warning_no_providers, Toast.LENGTH_LONG).show();
                             }
                             loadCurrentProfile();
                         } else {
                             if (task.getException() instanceof FirebaseAuthRecentLoginRequiredException) {
                                 // Re-auth required
                                 if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) {
-                                    Toast.makeText(this, "Bitte melde dich erneut mit Google an, um die Verknüpfung zu trennen.", Toast.LENGTH_LONG).show();
+                                    Toast.makeText(this, R.string.toast_reauth_google, Toast.LENGTH_LONG).show();
                                     signInWithGoogle(); // Will trigger re-auth logic if we handle it
                                 } else if (EmailAuthProvider.PROVIDER_ID.equals(providerId)) {
                                     showReauthDialog(providerId);
                                 }
                             } else {
-                                String msg = task.getException() != null ? task.getException().getMessage() : "Unbekannter Fehler";
-                                Toast.makeText(this, "Fehler beim Trennen: " + msg, Toast.LENGTH_LONG).show();
+                                String msg = task.getException() != null ? task.getException().getMessage() : "Error";
+                                Toast.makeText(this, getString(R.string.error_unlink_failed, msg), Toast.LENGTH_LONG).show();
                             }
                         }
                     });
@@ -590,20 +593,20 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void showReauthDialog(String providerId) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Sicherheitsprüfung");
-        builder.setMessage("Bitte gib dein Passwort ein, um die Verknüpfung zu entfernen.");
+        builder.setTitle(R.string.dialog_security_check_title);
+        builder.setMessage(R.string.dialog_security_check_message);
 
         final EditText input = new EditText(this);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         builder.setView(input);
 
-        builder.setPositiveButton("Bestätigen", (dialog, which) -> {
+        builder.setPositiveButton(R.string.button_confirm, (dialog, which) -> {
             String password = input.getText().toString();
             if (!password.isEmpty()) {
                 reauthenticateAndUnlink(password, providerId);
             }
         });
-        builder.setNegativeButton("Abbrechen", (dialog, which) -> dialog.cancel());
+        builder.setNegativeButton(R.string.button_cancel, (dialog, which) -> dialog.cancel());
 
         builder.show();
     }
@@ -616,7 +619,7 @@ public class ProfileActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                     unlinkProvider(providerId); // Retry unlink
                 } else {
-                    Toast.makeText(this, "Passwort falsch.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.error_password_wrong, Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -657,7 +660,7 @@ public class ProfileActivity extends AppCompatActivity {
             public void onSuccess() {
                  progressBarLoading.setVisibility(View.GONE);
                  loadCurrentProfile();
-                 Toast.makeText(ProfileActivity.this, "Bild entfernt", Toast.LENGTH_SHORT).show();
+                 Toast.makeText(ProfileActivity.this, R.string.toast_image_removed, Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -680,7 +683,7 @@ public class ProfileActivity extends AppCompatActivity {
                         .into(imageProfile);
                 imageProfile.setPadding(0,0,0,0);
                  imageProfile.setBackgroundResource(0);
-                Toast.makeText(ProfileActivity.this, "Image uploaded!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ProfileActivity.this, R.string.toast_image_uploaded, Toast.LENGTH_SHORT).show();
             }
 
             @Override

@@ -213,7 +213,7 @@ public class AuthActivity extends AppCompatActivity {
         } catch(FirebaseAuthInvalidCredentialsException e) {
             errorMsg = getString(R.string.error_login_wrong_password);
         } catch(Exception e) {
-            errorMsg = "Login fehlgeschlagen: " + e.getMessage();
+            errorMsg = getString(R.string.error_auth_failed, e.getMessage());
         }
         Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
     }
@@ -253,9 +253,9 @@ public class AuthActivity extends AppCompatActivity {
                     } else {
                         showLoading(false);
                         if (task.getException() instanceof FirebaseAuthUserCollisionException) {
-                            Toast.makeText(AuthActivity.this, "Ein Konto mit dieser E-Mail existiert bereits als separater Account.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(AuthActivity.this, R.string.error_email_collision_link, Toast.LENGTH_LONG).show();
                         } else {
-                            String msg = task.getException() != null ? task.getException().getMessage() : "Fehler beim Verknüpfen.";
+                            String msg = task.getException() != null ? task.getException().getMessage() : getString(R.string.error_link_general);
                             Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_LONG).show();
                         }
                     }
@@ -269,11 +269,11 @@ public class AuthActivity extends AppCompatActivity {
                         startVerificationFlow(task.getResult().getUser(), false);
                     } else {
                         showLoading(false);
-                        String errorMsg = "Registrierung fehlgeschlagen.";
+                        String errorMsg = getString(R.string.error_registration_failed);
                         try {
                             throw task.getException();
                         } catch(FirebaseAuthUserCollisionException e) {
-                            errorMsg = "Ein Konto mit dieser E-Mail existiert bereits.";
+                            errorMsg = getString(R.string.error_email_collision);
                         } catch(Exception e) {
                             errorMsg = e.getMessage();
                         }
@@ -290,7 +290,7 @@ public class AuthActivity extends AppCompatActivity {
                         showVerificationDialog(user, isLinkedAccount);
                     } else {
                         // Email sending failed. Revert changes immediately.
-                        Toast.makeText(this, "Konnte Bestätigungs-Email nicht senden: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, getString(R.string.error_send_email_failed, task.getException().getMessage()), Toast.LENGTH_LONG).show();
                         revertRegistration(user, isLinkedAccount);
                     }
                 });
@@ -312,11 +312,11 @@ public class AuthActivity extends AppCompatActivity {
         MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
         MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
 
-        textTitle.setText("E-Mail bestätigen");
-        textMessage.setText("Wir haben eine Bestätigungs-E-Mail an " + user.getEmail() + " gesendet.\n\nBitte klicke auf den Link in der E-Mail und bestätige anschließend hier.");
+        textTitle.setText(R.string.dialog_verify_email_title);
+        textMessage.setText(getString(R.string.dialog_verify_email_message, user.getEmail()));
         
-        btnPositive.setText("Ich habe bestätigt");
-        btnNegative.setText("Abbrechen (Löschen)");
+        btnPositive.setText(R.string.button_confirmed);
+        btnNegative.setText(R.string.button_cancel_delete);
 
         btnPositive.setOnClickListener(v -> {
             // Reload user to get fresh data
@@ -326,10 +326,10 @@ public class AuthActivity extends AppCompatActivity {
                         dialog.dismiss();
                         finishAuth(true, true);
                     } else {
-                        Toast.makeText(AuthActivity.this, "E-Mail noch nicht bestätigt. Bitte überprüfe dein Postfach.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(AuthActivity.this, R.string.toast_email_not_verified, Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(AuthActivity.this, "Fehler beim Prüfen: " + reloadTask.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AuthActivity.this, getString(R.string.error_check_failed, reloadTask.getException().getMessage()), Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -350,11 +350,11 @@ public class AuthActivity extends AppCompatActivity {
             MaterialButton confirmBtnPositive = confirmView.findViewById(R.id.dialog_button_positive);
             MaterialButton confirmBtnNegative = confirmView.findViewById(R.id.dialog_button_negative);
 
-            confirmTitle.setText("Abbrechen?");
-            confirmMessage.setText("Wenn du abbrichst, wird der Registrierungsprozess rückgängig gemacht.");
+            confirmTitle.setText(R.string.dialog_abort_title);
+            confirmMessage.setText(R.string.dialog_abort_message);
             
-            confirmBtnPositive.setText("Ja, abbrechen");
-            confirmBtnNegative.setText("Nein, warten");
+            confirmBtnPositive.setText(R.string.button_yes_abort);
+            confirmBtnNegative.setText(R.string.button_no_wait);
 
             confirmBtnPositive.setOnClickListener(confirmV -> {
                 confirmDialog.dismiss();
@@ -378,10 +378,10 @@ public class AuthActivity extends AppCompatActivity {
                     .addOnCompleteListener(task -> {
                         showLoading(false);
                         if (task.isSuccessful()) {
-                            Toast.makeText(AuthActivity.this, "Verknüpfung abgebrochen.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(AuthActivity.this, R.string.toast_link_cancelled, Toast.LENGTH_SHORT).show();
                         } else {
                             // If unlink fails (rare), maybe sign out or show error
-                            Toast.makeText(AuthActivity.this, "Fehler beim Rückgängigmachen. Bitte melde dich ab.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(AuthActivity.this, R.string.error_revert_failed, Toast.LENGTH_LONG).show();
                         }
                     });
         } else {
@@ -412,7 +412,7 @@ public class AuthActivity extends AppCompatActivity {
                     
                     if (methods == null || methods.isEmpty()) {
                         showLoading(false);
-                        Toast.makeText(AuthActivity.this, "Kein Konto mit dieser E-Mail gefunden.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(AuthActivity.this, R.string.error_login_user_not_found, Toast.LENGTH_LONG).show();
                         return;
                     }
 
@@ -424,9 +424,9 @@ public class AuthActivity extends AppCompatActivity {
                         // User only has Google (or other providers), warn them
                         showLoading(false);
                         showCustomDialog(
-                            "Google Konto",
-                            "Diese E-Mail Adresse ist mit einem Google Konto verknüpft. Bitte melde dich über den 'Mit Google anmelden' Button an.\n\nDu hast für dieses Konto kein Passwort festgelegt.",
-                            "OK",
+                            getString(R.string.dialog_google_account_title),
+                            getString(R.string.dialog_google_account_message),
+                            getString(R.string.ok),
                             () -> {}
                         );
                     } else {
