@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -35,42 +36,32 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.UserInfo;
-import com.google.firebase.auth.FirebaseAuthUserCollisionException;
-import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
-import android.widget.EditText;
-import android.view.Gravity;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    private TextInputEditText editTextUsername;
-    private MaterialButton buttonSave;
     private MaterialButton buttonDelete;
     private MaterialButton buttonRegisterEmail;
     private MaterialButton buttonRegisterGoogle;
     private MaterialButton buttonSignOut;
     private TextView textViewCurrentUsername;
-    private TextView textViewProfileInfo;
     private TextView textViewWarning;
     private LinearLayout layoutLinkedMethods;
     private ImageView imageProfile;
-    private ImageView iconEditImage;
-    private LinearLayout layoutViewMode;
-    private LinearLayout layoutEditMode;
-    private LinearLayout layoutAuthButtons;
     private View containerContent;
     private ProgressBar progressBarLoading;
     private View cardSyncPreferences;
+    private View cardLinkedMethods;
     private com.google.android.material.switchmaterial.SwitchMaterial switchSyncPrivate;
     private UserRepository userRepository;
     private String currentLoadedUsername = null;
@@ -133,29 +124,22 @@ public class ProfileActivity extends AppCompatActivity {
         });
 
         userRepository = new UserRepository(this);
-        editTextUsername = findViewById(R.id.edit_text_username);
-        buttonSave = findViewById(R.id.button_save_profile);
         buttonDelete = findViewById(R.id.button_delete_account);
         buttonRegisterEmail = findViewById(R.id.button_register_email);
         buttonRegisterGoogle = findViewById(R.id.button_register_google);
         buttonSignOut = findViewById(R.id.button_sign_out);
         textViewCurrentUsername = findViewById(R.id.text_view_current_username);
-        textViewProfileInfo = findViewById(R.id.text_view_profile_info);
         textViewWarning = findViewById(R.id.text_view_warning_anonymous);
         layoutLinkedMethods = findViewById(R.id.layout_linked_methods);
         imageProfile = findViewById(R.id.image_profile);
-        iconEditImage = findViewById(R.id.icon_edit_image);
-        layoutViewMode = findViewById(R.id.layout_view_mode);
-        layoutEditMode = findViewById(R.id.layout_edit_mode);
-        layoutAuthButtons = findViewById(R.id.layout_auth_buttons);
         cardSyncPreferences = findViewById(R.id.card_sync_preferences);
+        cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
         containerContent = findViewById(R.id.container_content);
         progressBarLoading = findViewById(R.id.progress_bar_loading);
 
         loadCurrentProfile();
 
-        buttonSave.setOnClickListener(v -> saveProfile());
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
         buttonRegisterEmail.setOnClickListener(v -> {
             Intent intent = new Intent(this, AuthActivity.class);
@@ -165,9 +149,6 @@ public class ProfileActivity extends AppCompatActivity {
         buttonSignOut.setOnClickListener(v -> confirmSignOut());
         
         setupSyncSwitch();
-        View.OnClickListener imageClickListener = v -> showImageOptions();
-        imageProfile.setOnClickListener(imageClickListener);
-        iconEditImage.setOnClickListener(imageClickListener);
     }
 
     private void setupSyncSwitch() {
@@ -178,16 +159,20 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
-    private void showImageOptions() {
+    private void showEditProfileDialog() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_profile_image_options, null);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_profile, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
 
+        EditText editText = dialogView.findViewById(R.id.edit_text_username_dialog);
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
         View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
+        View btnSave = dialogView.findViewById(R.id.button_save_profile_dialog);
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
+
+        editText.setText(currentLoadedUsername != null ? currentLoadedUsername : "");
 
         btnNew.setOnClickListener(v -> {
             pickImageLauncher.launch("image/*");
@@ -197,9 +182,31 @@ public class ProfileActivity extends AppCompatActivity {
             removeImage();
             dialog.dismiss();
         });
+        btnSave.setOnClickListener(v -> {
+            saveUsername(editText.getText().toString().trim(), dialog);
+        });
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+
+    private void saveUsername(String username, androidx.appcompat.app.AlertDialog dialog) {
+        if (username.isEmpty()) { Toast.makeText(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show(); return; }
+        if (username.length() < 3) { Toast.makeText(this, R.string.profile_error_short, Toast.LENGTH_SHORT).show(); return; }
+        if (username.contains(" ")) { Toast.makeText(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
+        
+        userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
+                currentLoadedUsername = username;
+                textViewCurrentUsername.setText(username);
+                dialog.dismiss();
+                if (isInitialProfileCreation) { loadCurrentProfile(); }
+            }
+            @Override
+            public void onError(String message) { Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); }
+        });
     }
 
     private void signInWithGoogle() {
@@ -336,19 +343,13 @@ public class ProfileActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_profile, menu);
-        MenuItem editItem = menu.findItem(R.id.action_edit_profile);
-        if (isInitialProfileCreation || layoutEditMode.getVisibility() == View.VISIBLE) {
-            editItem.setVisible(false);
-        } else {
-            editItem.setVisible(true);
-        }
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_edit_profile) {
-            enableEditModeWithCheck();
+            showEditProfileDialog();
             return true;
         } else if (item.getItemId() == android.R.id.home) {
             getOnBackPressedDispatcher().onBackPressed();
@@ -377,7 +378,6 @@ public class ProfileActivity extends AppCompatActivity {
                     } else {
                         imageProfile.setImageResource(R.drawable.ic_account_circle_24);
                         imageProfile.setPadding(0,0,0,0);
-                        // Apply adaptive tint ONLY to the placeholder icon
                         int tintColor = ContextCompat.getColor(ProfileActivity.this, R.color.icon_tint_adaptive);
                         imageProfile.setColorFilter(tintColor);
                     }
@@ -386,16 +386,13 @@ public class ProfileActivity extends AppCompatActivity {
                         isInitialProfileCreation = false;
                         currentLoadedUsername = username;
                         textViewCurrentUsername.setText(username);
-                        editTextUsername.setText(username);
-                        showViewMode();
                     } else {
                         isInitialProfileCreation = true;
                         currentLoadedUsername = null;
-                        editTextUsername.setText("");
-                        showEditMode();
+                        textViewCurrentUsername.setText("...");
+                        showEditProfileDialog();
                     }
                     updateAuthUI();
-                    invalidateOptionsMenu();
                 }
                 @Override
                 public void onError(String error) {
@@ -403,7 +400,7 @@ public class ProfileActivity extends AppCompatActivity {
                     containerContent.setVisibility(View.VISIBLE);
                     Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
                     isInitialProfileCreation = true;
-                    showEditMode();
+                    showEditProfileDialog();
                 }
             });
         };
@@ -413,10 +410,7 @@ public class ProfileActivity extends AppCompatActivity {
                 else {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
-                    String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                    Toast.makeText(ProfileActivity.this, getString(R.string.error_auth_failed, errorMsg), Toast.LENGTH_LONG).show();
-                    isInitialProfileCreation = true;
-                    showEditMode();
+                    Toast.makeText(ProfileActivity.this, "Auth failed", Toast.LENGTH_LONG).show();
                 }
             });
         } else fetchProfileData.run();
@@ -437,25 +431,21 @@ public class ProfileActivity extends AppCompatActivity {
              if (!hasProvider) isEffectivelyAnonymous = true;
         }
 
-        View cardLinkedMethods = findViewById(R.id.card_linked_methods);
-
         if (user != null && !isEffectivelyAnonymous) {
             textViewWarning.setVisibility(View.GONE);
             cardSyncPreferences.setVisibility(View.VISIBLE);
             if (cardLinkedMethods != null) cardLinkedMethods.setVisibility(View.VISIBLE);
             
-            if (layoutLinkedMethods.getChildCount() > 0) {
-                layoutLinkedMethods.removeAllViews();
-            }
+            layoutLinkedMethods.removeAllViews();
             for (UserInfo profile : user.getProviderData()) {
                 if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) || EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
-                    android.widget.LinearLayout row = new android.widget.LinearLayout(this);
-                    row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+                    LinearLayout row = new LinearLayout(this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
                     row.setGravity(android.view.Gravity.CENTER_VERTICAL);
                     row.setPadding(0, 8, 0, 8);
                     ImageView icon = new ImageView(this);
                     int size = (int) (24 * getResources().getDisplayMetrics().density);
-                    android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(size, size);
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
                     lp.setMarginEnd((int) (16 * getResources().getDisplayMetrics().density));
                     icon.setLayoutParams(lp);
                     TextView text = new TextView(this);
@@ -475,7 +465,7 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             }
             buttonSignOut.setVisibility(View.VISIBLE);
-            layoutAuthButtons.setVisibility(View.VISIBLE);
+            findViewById(R.id.layout_auth_buttons).setVisibility(View.VISIBLE);
             boolean isGoogleLinked = false; boolean isEmailLinked = false;
             for (UserInfo profile : user.getProviderData()) {
                 if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) isGoogleLinked = true;
@@ -510,26 +500,20 @@ public class ProfileActivity extends AppCompatActivity {
                     authActivityLauncher.launch(intent);
                 });
             }
-            iconEditImage.setVisibility(View.VISIBLE);
         } else {
             textViewWarning.setVisibility(View.VISIBLE);
             cardSyncPreferences.setVisibility(View.GONE);
             if (cardLinkedMethods != null) cardLinkedMethods.setVisibility(View.GONE);
-            layoutAuthButtons.setVisibility(View.VISIBLE);
+            findViewById(R.id.layout_auth_buttons).setVisibility(View.VISIBLE);
             boolean shouldShowLinkText = currentLoadedUsername != null && !currentLoadedUsername.isEmpty();
             buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
-            buttonRegisterEmail.setIconResource(R.drawable.ic_email);
-            buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.text_primary_adaptive));
             buttonRegisterEmail.setOnClickListener(v -> {
                 Intent intent = new Intent(this, AuthActivity.class);
                 authActivityLauncher.launch(intent);
             });
             buttonRegisterGoogle.setText(shouldShowLinkText ? R.string.action_link_google : R.string.sign_in_google);
-            buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
-            buttonRegisterGoogle.setIconTint(null);
             buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
             buttonSignOut.setVisibility(View.GONE);
-            iconEditImage.setVisibility(View.VISIBLE);
         }
     }
 
@@ -544,17 +528,14 @@ public class ProfileActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                     Toast.makeText(this, R.string.toast_unlinked, Toast.LENGTH_SHORT).show();
                     if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) mGoogleSignInClient.signOut();
-                    if (user.getProviderData().isEmpty()) Toast.makeText(this, R.string.warning_no_providers, Toast.LENGTH_LONG).show();
                     loadCurrentProfile();
                 } else {
                     if (task.getException() instanceof FirebaseAuthRecentLoginRequiredException) {
                         if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) {
-                            Toast.makeText(this, R.string.toast_reauth_google, Toast.LENGTH_LONG).show();
                             signInWithGoogle();
                         } else if (EmailAuthProvider.PROVIDER_ID.equals(providerId)) showReauthDialog(providerId);
                     } else {
-                        String msg = task.getException() != null ? task.getException().getMessage() : "Error";
-                        Toast.makeText(this, getString(R.string.error_unlink_failed, msg), Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "Unlink failed", Toast.LENGTH_LONG).show();
                     }
                 }
             });
@@ -638,68 +619,6 @@ public class ProfileActivity extends AppCompatActivity {
                 Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });
-    }
-
-    private void showViewMode() {
-        layoutViewMode.setVisibility(View.VISIBLE);
-        layoutEditMode.setVisibility(View.GONE);
-        buttonDelete.setVisibility(View.VISIBLE);
-        textViewProfileInfo.setVisibility(View.GONE);
-        invalidateOptionsMenu();
-    }
-
-    private void showEditMode() {
-        layoutViewMode.setVisibility(View.GONE);
-        layoutEditMode.setVisibility(View.VISIBLE);
-        if (isInitialProfileCreation) {
-            buttonDelete.setVisibility(View.GONE);
-            textViewProfileInfo.setVisibility(View.VISIBLE);
-        } else {
-            buttonDelete.setVisibility(View.VISIBLE);
-            textViewProfileInfo.setVisibility(View.GONE);
-        }
-        invalidateOptionsMenu();
-    }
-
-    private void enableEditModeWithCheck() {
-        userRepository.checkUsernameChangeAllowed(new UserRepository.OnProfileActionListener() {
-            @Override
-            public void onSuccess() { showEditMode(); }
-            @Override
-            public void onError(String message) { Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); }
-        });
-    }
-
-    private void saveProfile() {
-        String username = editTextUsername.getText().toString().trim();
-        if (username.isEmpty()) { editTextUsername.setError(getString(R.string.profile_error_empty)); return; }
-        if (username.length() < 3) { editTextUsername.setError(getString(R.string.profile_error_short)); return; }
-        if (username.contains(" ")) { editTextUsername.setError(getString(R.string.profile_error_whitespace)); return; }
-        buttonSave.setEnabled(false);
-        Runnable saveAction = () -> userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
-            @Override
-            public void onSuccess() {
-                Toast.makeText(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
-                buttonSave.setEnabled(true);
-                if (isInitialProfileCreation) { setResult(RESULT_OK); finish(); }
-                else { textViewCurrentUsername.setText(username); showViewMode(); }
-            }
-            @Override
-            public void onError(String message) {
-                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
-                buttonSave.setEnabled(true);
-            }
-        });
-        if (mAuth.getCurrentUser() == null) {
-            mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
-                if (task.isSuccessful()) saveAction.run();
-                else {
-                    String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                    Toast.makeText(ProfileActivity.this, getString(R.string.error_auth_failed, errorMsg), Toast.LENGTH_LONG).show();
-                    buttonSave.setEnabled(true);
-                }
-            });
-        } else saveAction.run();
     }
 
     private void confirmDeleteAccount() {

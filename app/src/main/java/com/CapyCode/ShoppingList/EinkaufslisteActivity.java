@@ -314,7 +314,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         com.google.android.material.textfield.TextInputEditText editText = dialogView.findViewById(R.id.edit_text_invite_username);
         View btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
-        View btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
         btnPositive.setOnClickListener(v -> {
             String username = editText.getText().toString().trim();
             if (!username.isEmpty()) {
@@ -336,7 +336,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 });
             }
         });
-        btnNegative.setOnClickListener(v -> dialog.dismiss());
+        btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
 
@@ -416,7 +416,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
         View btnRemoveChecked = dialogView.findViewById(R.id.button_remove_checked);
         View btnRemoveAll = dialogView.findViewById(R.id.button_remove_all);
-        View btnCancel = dialogView.findViewById(R.id.button_dialog_cancel);
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         btnRemoveChecked.setOnClickListener(v -> {
             if (firebaseListId != null) {
@@ -436,7 +436,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             dialog.dismiss();
         });
 
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
 
