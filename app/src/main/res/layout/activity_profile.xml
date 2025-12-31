@@ -21,7 +21,6 @@
             app:navigationIcon="?attr/homeAsUpIndicator"
             app:title="@string/account_info"
             app:titleTextColor="?attr/colorOnSurface"/>
-            
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout
@@ -68,21 +67,28 @@
                         android:background="@android:color/transparent"
                         android:scaleType="centerCrop"/>
                     
-                    <ImageView
-                        android:id="@+id/icon_edit_image"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:layout_gravity="bottom|end"
-                        android:layout_marginEnd="4dp"
-                        android:layout_marginBottom="4dp"
-                        android:background="@drawable/ic_account_circle_24"
-                        android:backgroundTint="?attr/colorSurface"
-                        android:padding="6dp"
-                        android:src="@drawable/ic_edit_24"
-                        app:tint="?attr/colorOnSurface"
-                        android:elevation="4dp"
-                        android:visibility="visible"
-                        tools:visibility="visible"/>
+                        android:layout_marginEnd="-8dp"
+                        android:layout_marginBottom="-8dp"
+                        app:cardCornerRadius="18dp"
+                        app:cardElevation="4dp"
+                        app:cardBackgroundColor="?attr/colorSurface"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOnSurface">
+
+                        <ImageView
+                            android:id="@+id/icon_edit_image"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_edit_24"
+                            app:tint="?attr/colorOnSurface"
+                            android:visibility="visible"
+                            tools:visibility="visible"/>
+                    </com.google.android.material.card.MaterialCardView>
                 </FrameLayout>
                 
                 <!-- View Mode -->
@@ -150,7 +156,6 @@
                             android:inputType="textPersonName"
                             android:textColor="?attr/colorOnSurface"
                             android:maxLines="1"/>
-
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.button.MaterialButton
@@ -213,268 +218,130 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                                <com.google.android.material.card.MaterialCardView
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_linked_methods"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="?attr/colorOnSurfaceSecondary">
 
-                                    android:id="@+id/card_linked_methods"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-                                    android:layout_width="match_parent"
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Verknüpfte Anmelde-Methoden:"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"
+                            android:textColor="?attr/colorOnSurfaceVariant"/>
 
-                                    android:layout_height="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/layout_linked_methods"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp">
+                            <!-- Items will be added dynamically here -->
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                                    android:layout_marginTop="12dp"
+                <!-- Auth Buttons -->
+                <LinearLayout
+                    android:id="@+id/layout_auth_buttons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    tools:visibility="visible">
 
-                                    android:visibility="gone"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/button_register_email"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_marginBottom="8dp"
+                        android:text="@string/action_sign_in_email"
+                        app:icon="@drawable/ic_email"
+                        app:iconGravity="textStart"
+                        app:iconPadding="16dp"
+                        app:cornerRadius="30dp"
+                        android:textAllCaps="false"
+                        android:textSize="16sp"
+                        android:textColor="?attr/colorOnSurface"/>
 
-                                    tools:visibility="visible"
-
-                                    app:cardCornerRadius="12dp"
-
-                                    app:cardElevation="0dp"
-
-                                    app:strokeWidth="1dp"
-
-                                    app:strokeColor="?attr/colorOnSurfaceSecondary">
-
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/button_register_google"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_marginBottom="8dp"
+                        android:text="@string/sign_in_google"
+                        app:icon="@drawable/ic_google_logo"
+                        app:iconGravity="textStart"
+                        app:iconPadding="16dp"
+                        app:iconTint="@null"
+                        app:cornerRadius="30dp"
+                        android:textAllCaps="false"
+                        android:textSize="16sp"
+                        android:textColor="?attr/colorOnSurface"/>
+                </LinearLayout>
                 
-
-                                    <LinearLayout
-
-                                        android:layout_width="match_parent"
-
-                                        android:layout_height="wrap_content"
-
-                                        android:orientation="vertical"
-
-                                        android:padding="16dp">
-
-                
-
-                                        <TextView
-
-                                            android:layout_width="wrap_content"
-
-                                            android:layout_height="wrap_content"
-
-                                            android:text="Verknüpfte Anmelde-Methoden:"
-
-                                            android:textStyle="bold"
-
-                                            android:layout_marginBottom="8dp"
-
-                                            android:textColor="?attr/colorOnSurfaceVariant"/>
-
-                
-
-                                        <LinearLayout
-
-                                            android:id="@+id/layout_linked_methods"
-
-                                            android:layout_width="match_parent"
-
-                                            android:layout_height="wrap_content"
-
-                                            android:orientation="vertical"
-
-                                            android:paddingStart="8dp"
-
-                                            android:paddingEnd="8dp">
-
-                                            <!-- Items will be added dynamically here -->
-
-                                        </LinearLayout>
-
-                                    </LinearLayout>
-
-                                </com.google.android.material.card.MaterialCardView>
-
-                
-
-                                <!-- SPACER -->
-
-                                <View
-
-                                    android:layout_width="match_parent"
-
-                                    android:layout_height="0dp"
-
-                                    android:layout_weight="1"
-
-                                    android:minHeight="24dp"/>
-
-                
-
-                                <!-- Warning -->
-
-                                <TextView
-
-                                    android:id="@+id/text_view_warning_anonymous"
-
-                                    android:layout_width="match_parent"
-
-                                    android:layout_height="wrap_content"
-
-                                    android:layout_marginBottom="12dp"
-
-                                    android:padding="12dp"
-
-                                    android:text="@string/profile_warning_anonymous"
-
-                                    android:textAlignment="center"
-
-                                    android:textColor="?attr/colorError"
-
-                                    android:textSize="12sp"
-
-                                    android:visibility="gone" />
-
-                
-
-                                <!-- Auth Buttons -->
-
-                                <LinearLayout
-
-                                    android:id="@+id/layout_auth_buttons"
-
-                                    android:layout_width="match_parent"
-
-                                    android:layout_height="wrap_content"
-
-                                    android:orientation="vertical"
-
-                                    android:visibility="gone"
-
-                                    tools:visibility="visible">
-
-                
-
-                                    <com.google.android.material.button.MaterialButton
-
-                                        android:id="@+id/button_register_email"
-
-                                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-
-                                        android:layout_width="match_parent"
-
-                                        android:layout_height="60dp"
-
-                                        android:layout_marginBottom="8dp"
-
-                                        android:text="@string/action_sign_in_email"
-
-                                        app:icon="@drawable/ic_email"
-
-                                        app:iconGravity="textStart"
-
-                                        app:iconPadding="16dp"
-
-                                        app:cornerRadius="30dp"
-
-                                        android:textAllCaps="false"
-
-                                        android:textSize="16sp"
-
-                                        android:textColor="?attr/colorOnSurface"/>
-
-                
-
-                                    <com.google.android.material.button.MaterialButton
-
-                                        android:id="@+id/button_register_google"
-
-                                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-
-                                        android:layout_width="match_parent"
-
-                                        android:layout_height="60dp"
-
-                                        android:layout_marginBottom="8dp"
-
-                                        android:text="@string/sign_in_google"
-
-                                        app:icon="@drawable/ic_google_logo"
-
-                                        app:iconGravity="textStart"
-
-                                        app:iconPadding="16dp"
-
-                                        app:iconTint="@null"
-
-                                        app:cornerRadius="30dp"
-
-                                        android:textAllCaps="false"
-
-                                        android:textSize="16sp"
-
-                                        android:textColor="?attr/colorOnSurface"/>
-
-                                        
-
-                                </LinearLayout>
-
-                                
-
-                                <com.google.android.material.button.MaterialButton
-
-                                    android:id="@+id/button_sign_out"
-
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-
-                                    android:layout_width="match_parent"
-
-                                    android:layout_height="60dp"
-
-                                    android:layout_marginBottom="8dp"
-
-                                    android:text="@string/button_sign_out"
-
-                                    app:icon="@drawable/ic_logout_24"
-
-                                    app:iconGravity="textStart"
-
-                                    app:iconPadding="16dp"
-
-                                    app:iconTint="?attr/colorOnSurface"
-
-                                    app:cornerRadius="30dp"
-
-                                    android:textAllCaps="false"
-
-                                    android:textSize="16sp"
-
-                                    android:textColor="?attr/colorOnSurface"
-
-                                    android:visibility="gone" />
-
-                
-
-                                <com.google.android.material.button.MaterialButton
-
-                                    android:id="@+id/button_delete_account"
-
-                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-
-                                    android:layout_width="match_parent"
-
-                                    android:layout_height="60dp"
-
-                                    android:text="@string/profile_delete_account"
-
-                                    app:icon="@drawable/ic_delete_24"
-
-                                    app:iconGravity="textStart"
-
-                                    app:iconPadding="16dp"
-
-                                    app:iconTint="?attr/colorError"
-
-                                    android:textColor="?attr/colorError"
-
-                                    app:strokeColor="?attr/colorError"
-
-                                    app:cornerRadius="30dp"
-
-                                    android:layout_marginBottom="12dp"/>
-
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_sign_out"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/button_sign_out"
+                    app:icon="@drawable/ic_logout_24"
+                    app:iconGravity="textStart"
+                    app:iconPadding="16dp"
+                    app:iconTint="?attr/colorOnSurface"
+                    app:cornerRadius="30dp"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:textColor="?attr/colorOnSurface"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_delete_account"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="@string/profile_delete_account"
+                    app:icon="@drawable/ic_delete_24"
+                    app:iconGravity="textStart"
+                    app:iconPadding="16dp"
+                    app:iconTint="?attr/colorError"
+                    android:textColor="?attr/colorError"
+                    app:strokeColor="?attr/colorError"
+                    app:cornerRadius="30dp"
+                    android:layout_marginBottom="12dp"/>
+
+                <!-- Warning -->
+                <TextView
+                    android:id="@+id/text_view_warning_anonymous"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:padding="12dp"
+                    android:text="@string/profile_warning_anonymous"
+                    android:textAlignment="center"
+                    android:textColor="?attr/colorError"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
         </ScrollView>
     </LinearLayout>

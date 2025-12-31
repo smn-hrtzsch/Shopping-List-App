@@ -437,12 +437,15 @@ public class ProfileActivity extends AppCompatActivity {
              if (!hasProvider) isEffectivelyAnonymous = true;
         }
 
+        View cardLinkedMethods = findViewById(R.id.card_linked_methods);
+
         if (user != null && !isEffectivelyAnonymous) {
             textViewWarning.setVisibility(View.GONE);
             cardSyncPreferences.setVisibility(View.VISIBLE);
-            layoutLinkedMethods.setVisibility(View.VISIBLE);
-            if (layoutLinkedMethods.getChildCount() > 1) {
-                layoutLinkedMethods.removeViews(1, layoutLinkedMethods.getChildCount() - 1);
+            if (cardLinkedMethods != null) cardLinkedMethods.setVisibility(View.VISIBLE);
+            
+            if (layoutLinkedMethods.getChildCount() > 0) {
+                layoutLinkedMethods.removeAllViews();
             }
             for (UserInfo profile : user.getProviderData()) {
                 if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) || EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
@@ -453,7 +456,7 @@ public class ProfileActivity extends AppCompatActivity {
                     ImageView icon = new ImageView(this);
                     int size = (int) (24 * getResources().getDisplayMetrics().density);
                     android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(size, size);
-                    lp.setMarginEnd((int) (8 * getResources().getDisplayMetrics().density));
+                    lp.setMarginEnd((int) (16 * getResources().getDisplayMetrics().density));
                     icon.setLayoutParams(lp);
                     TextView text = new TextView(this);
                     text.setTextColor(ContextCompat.getColor(this, R.color.text_primary_adaptive));
@@ -511,7 +514,7 @@ public class ProfileActivity extends AppCompatActivity {
         } else {
             textViewWarning.setVisibility(View.VISIBLE);
             cardSyncPreferences.setVisibility(View.GONE);
-            layoutLinkedMethods.setVisibility(View.GONE);
+            if (cardLinkedMethods != null) cardLinkedMethods.setVisibility(View.GONE);
             layoutAuthButtons.setVisibility(View.VISIBLE);
             boolean shouldShowLinkText = currentLoadedUsername != null && !currentLoadedUsername.isEmpty();
             buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);

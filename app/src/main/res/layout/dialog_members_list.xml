@@ -36,6 +36,23 @@
             app:iconGravity="textStart"
             app:iconPadding="0dp"
             android:padding="0dp"
+            android:layout_marginEnd="8dp"
+            app:strokeColor="@color/dialog_action_text_adaptive"
+            app:iconTint="@color/dialog_action_text_adaptive"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_close_dialog"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            app:icon="@drawable/ic_decline_list"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            android:padding="0dp"
             app:strokeColor="@color/dialog_action_text_adaptive"
             app:iconTint="@color/dialog_action_text_adaptive"/>
 
@@ -43,8 +60,7 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp">
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:id="@+id/container_members_list"
@@ -53,20 +69,5 @@
             android:orientation="vertical"/>
 
     </ScrollView>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="end">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/button_close_dialog"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/ok"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:textColor="@color/dialog_action_text_adaptive"
-            app:strokeColor="@color/dialog_action_text_adaptive"/>
-    </LinearLayout>
 
 </LinearLayout>

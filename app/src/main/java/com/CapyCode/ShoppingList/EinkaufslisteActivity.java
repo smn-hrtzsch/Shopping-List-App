@@ -408,24 +408,36 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void showClearListOptionsDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.dialog_clear_list_title)
-                .setMessage(R.string.dialog_clear_list_message)
-                .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
-                    if (firebaseListId != null) {
-                        updateSyncIcon(R.drawable.ic_cloud_upload_24);
-                        shoppingListRepository.clearCheckedItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
-                    } else shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
-                    refreshItemList(); Toast.makeText(this, R.string.toast_items_cleared_done, Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
-                    if (firebaseListId != null) {
-                        updateSyncIcon(R.drawable.ic_cloud_upload_24);
-                        shoppingListRepository.clearAllItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
-                    } else shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
-                    refreshItemList(); Toast.makeText(this, R.string.toast_items_cleared_all, Toast.LENGTH_SHORT).show();
-                })
-                .setNeutralButton(R.string.dialog_option_cancel, (dialog, which) -> dialog.dismiss()).show();
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_clear, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        View btnRemoveChecked = dialogView.findViewById(R.id.button_remove_checked);
+        View btnRemoveAll = dialogView.findViewById(R.id.button_remove_all);
+        View btnCancel = dialogView.findViewById(R.id.button_dialog_cancel);
+
+        btnRemoveChecked.setOnClickListener(v -> {
+            if (firebaseListId != null) {
+                updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                shoppingListRepository.clearCheckedItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
+            } else shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
+            refreshItemList(); Toast.makeText(this, R.string.toast_items_cleared_done, Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        btnRemoveAll.setOnClickListener(v -> {
+            if (firebaseListId != null) {
+                updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                shoppingListRepository.clearAllItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
+            } else shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
+            refreshItemList(); Toast.makeText(this, R.string.toast_items_cleared_all, Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     private void refreshItemList() {
