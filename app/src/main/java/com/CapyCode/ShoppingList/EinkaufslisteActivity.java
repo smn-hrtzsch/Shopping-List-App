@@ -183,6 +183,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             });
         } else if (!enable && firebaseListId != null) {
             showCustomDialog(getString(R.string.dialog_stop_sync_title), getString(R.string.dialog_stop_sync_message), getString(R.string.button_stop_sync), () -> {
+                isUnsyncing = true; // Set early here!
                 performSafeUnsync();
             }, () -> {
                 syncSwitch.setOnCheckedChangeListener(null);
@@ -194,7 +195,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void performSafeUnsync() {
         if (firebaseListId == null) return;
-        isUnsyncing = true; // Block listener from finishing activity
+        // isUnsyncing = true; // No longer needed here as it's set in the dialog callback
         Toast.makeText(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
         // 1. Fetch items from cloud (One-Time) to ensure we have latest state
