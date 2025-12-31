@@ -178,17 +178,22 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void showImageOptions() {
-        String[] options = {getString(R.string.option_new_image), getString(R.string.option_remove_image), getString(R.string.button_cancel)};
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.dialog_profile_pic_title)
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        pickImageLauncher.launch("image/*");
-                    } else if (which == 1) {
-                        removeImage();
-                    }
-                })
-                .show();
+        String[] options = {getString(R.string.option_new_image), getString(R.string.option_remove_image)};
+        int[] icons = {R.drawable.ic_cloud_upload_24, R.drawable.ic_delete_24};
+        
+        com.google.android.material.dialog.MaterialAlertDialogBuilder builder = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this);
+        builder.setTitle(R.string.dialog_profile_pic_title);
+        
+        // Use a more custom approach for the items to look consistent
+        builder.setItems(options, (dialog, which) -> {
+            if (which == 0) {
+                pickImageLauncher.launch("image/*");
+            } else if (which == 1) {
+                removeImage();
+            }
+        });
+        builder.setNegativeButton(R.string.button_cancel, (dialog, which) -> dialog.dismiss());
+        builder.show();
     }
 
     private void signInWithGoogle() {
@@ -332,15 +337,36 @@ public class ProfileActivity extends AppCompatActivity {
                 public void onLoaded(String username, String imageUrl) {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
-                    if (imageUrl != null && !imageUrl.isEmpty()) {
-                        Glide.with(ProfileActivity.this).load(imageUrl).apply(RequestOptions.circleCropTransform()).into(imageProfile);
+                    
+                    String finalImageUrl = imageUrl;
+                    
+                    // Fallback to Google photo if no custom image exists
+                    if ((finalImageUrl == null || finalImageUrl.isEmpty()) && mAuth.getCurrentUser() != null) {
+                        for (UserInfo profile : mAuth.getCurrentUser().getProviderData()) {
+                            if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                                if (profile.getPhotoUrl() != null) {
+                                    finalImageUrl = profile.getPhotoUrl().toString();
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    if (finalImageUrl != null && !finalImageUrl.isEmpty()) {
+                        Glide.with(ProfileActivity.this)
+                             .load(finalImageUrl)
+                             .apply(RequestOptions.circleCropTransform())
+                             .into(imageProfile);
                         imageProfile.setPadding(0,0,0,0);
-                        imageProfile.setBackgroundResource(0);
+                        imageProfile.clearColorFilter();
                     } else {
                         imageProfile.setImageResource(R.drawable.ic_account_circle_24);
                         imageProfile.setPadding(0,0,0,0);
-                        imageProfile.setBackgroundResource(android.R.color.transparent);
+                        // Apply adaptive tint ONLY to the placeholder icon
+                        int tintColor = ContextCompat.getColor(ProfileActivity.this, R.color.icon_tint_adaptive);
+                        imageProfile.setColorFilter(tintColor);
                     }
+                    
                     if (username != null) {
                         isInitialProfileCreation = false;
                         currentLoadedUsername = username;
@@ -585,7 +611,7 @@ public class ProfileActivity extends AppCompatActivity {
                 progressBarLoading.setVisibility(View.GONE);
                 Glide.with(ProfileActivity.this).load(downloadUrl).apply(RequestOptions.circleCropTransform()).into(imageProfile);
                 imageProfile.setPadding(0,0,0,0);
-                imageProfile.setBackgroundResource(0);
+                imageProfile.clearColorFilter();
                 Toast.makeText(ProfileActivity.this, R.string.toast_image_uploaded, Toast.LENGTH_SHORT).show();
             }
             @Override
