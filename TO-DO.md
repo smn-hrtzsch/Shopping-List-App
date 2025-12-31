@@ -6,10 +6,10 @@
 
 ## Accounts
 
-- [ ] Erstellen eines Accounts mit E-Mail und Passwort
-- [ ] Verknüpfung mit Google Account
+- [x] Erstellen eines Accounts mit E-Mail und Passwort
+- [x] Verknüpfung mit Google Account
 - [ ] Verknüpfung mit Apple-Account
-- [ ] Zurücksetzen des Passworts via E-Mail
+- [x] Zurücksetzen des Passworts via E-Mail
 - [ ] 2FA (Two-Factor Authentication) implementieren
 - [ ] Profilbild hochladen und ändern
 
