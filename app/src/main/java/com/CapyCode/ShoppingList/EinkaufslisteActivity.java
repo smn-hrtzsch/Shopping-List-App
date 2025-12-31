@@ -348,7 +348,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             Toast.makeText(this, R.string.error_cannot_share_shared, Toast.LENGTH_SHORT).show();
             return;
         }
-        shoppingListRepository.getItemsForListId(currentShoppingListId, (items, hasPendingWrites) -> {
+
+        ShoppingListRepository.OnItemsLoadedListener shareAction = (items, hasPendingWrites) -> {
             try {
                 org.json.JSONObject jsonList = new org.json.JSONObject();
                 jsonList.put("app_id", "com.CapyCode.ShoppingList");
@@ -356,22 +357,42 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 org.json.JSONArray jsonItems = new org.json.JSONArray();
                 for (ShoppingItem item : items) {
                     org.json.JSONObject jsonItem = new org.json.JSONObject();
-                    jsonItem.put("name", item.getName()); jsonItem.put("quantity", item.getQuantity()); jsonItem.put("unit", item.getUnit()); jsonItem.put("done", item.isDone()); jsonItem.put("notes", item.getNotes()); jsonItem.put("position", item.getPosition());
+                    jsonItem.put("name", item.getName());
+                    jsonItem.put("quantity", item.getQuantity());
+                    jsonItem.put("unit", item.getUnit());
+                    jsonItem.put("done", item.isDone());
+                    jsonItem.put("notes", item.getNotes());
+                    jsonItem.put("position", item.getPosition());
                     jsonItems.put(jsonItem);
                 }
                 jsonList.put("items", jsonItems);
                 String jsonString = jsonList.toString(2);
-                
+
                 String safeName = currentShoppingList.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
                 java.io.File file = new java.io.File(getCacheDir(), safeName + ".json");
-                
-                try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) { fos.write(jsonString.getBytes()); }
+
+                try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+                    fos.write(jsonString.getBytes());
+                }
                 android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.CapyCode.ShoppingList.provider", file);
                 android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
-                shareIntent.setType("application/json"); shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, fileUri); shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                shareIntent.setType("application/json");
+                shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, fileUri);
+                shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_list)));
-            } catch (org.json.JSONException | java.io.IOException e) { e.printStackTrace(); Toast.makeText(this, R.string.error_create_share_data, Toast.LENGTH_SHORT).show(); }
-        });
+            } catch (org.json.JSONException | java.io.IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, R.string.error_create_share_data, Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        if (firebaseListId != null) {
+            // Fetch latest from cloud for sharing
+            shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, shareAction);
+        } else {
+            // Fetch from local DB
+            shoppingListRepository.getItemsForListId(currentShoppingListId, shareAction);
+        }
     }
 
     private void setupAddItemBar() {
