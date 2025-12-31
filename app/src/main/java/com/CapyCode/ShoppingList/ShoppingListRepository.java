@@ -24,7 +24,7 @@ public class ShoppingListRepository {
     }
 
     public interface OnItemsLoadedListener {
-        void onItemsLoaded(List<ShoppingItem> shoppingItems);
+        void onItemsLoaded(List<ShoppingItem> shoppingItems, boolean hasPendingWrites);
     }
 
     public ShoppingListRepository(Context context) {
@@ -158,7 +158,7 @@ public class ShoppingListRepository {
     }
 
     public void getItemsForListId(long listId, OnItemsLoadedListener listener) {
-        listener.onItemsLoaded(dbHelper.getAllItems(listId));
+        listener.onItemsLoaded(dbHelper.getAllItems(listId), false);
     }
 
     public void fetchItemsFromCloudOneTime(String firebaseListId, OnItemsLoadedListener listener) {
@@ -173,25 +173,27 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
-                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
+                    // Manual sorting by position only to respect user's drag-and-drop order
                     items.sort((a, b) -> {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
                         return Integer.compare(a.getPosition(), b.getPosition());
                     });
-                    listener.onItemsLoaded(items);
+                    listener.onItemsLoaded(items, false);
                 })
-                .addOnFailureListener(e -> listener.onItemsLoaded(new ArrayList<>()));
+                .addOnFailureListener(e -> listener.onItemsLoaded(new ArrayList<>(), false));
     }
 
     public com.google.firebase.firestore.ListenerRegistration getItemsForListId(String firebaseListId, OnItemsLoadedListener listener) {
         return db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .addSnapshotListener((value, e) -> {
                     if (e != null) {
-                        listener.onItemsLoaded(new ArrayList<>());
+                        listener.onItemsLoaded(new ArrayList<>(), false);
                         return;
                     }
                     List<ShoppingItem> items = new ArrayList<>();
+                    boolean hasPendingWrites = false;
                     if (value != null) {
+                        hasPendingWrites = value.getMetadata().hasPendingWrites();
                         for (QueryDocumentSnapshot doc : value) {
                             ShoppingItem item = doc.toObject(ShoppingItem.class);
                             item.setFirebaseId(doc.getId());
@@ -203,7 +205,7 @@ public class ShoppingListRepository {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
                         return Integer.compare(a.getPosition(), b.getPosition());
                     });
-                    listener.onItemsLoaded(items);
+                    listener.onItemsLoaded(items, hasPendingWrites);
                 });
     }
 
@@ -331,6 +333,10 @@ public class ShoppingListRepository {
                 });
     }
 
+    public void decoupleListAndReplaceItems(long listId, List<ShoppingItem> newItems) {
+        dbHelper.decoupleListAndReplaceItems(listId, newItems);
+    }
+
     public interface OnMemberAddListener {
         void onMemberAdded();
         void onMemberAlreadyExists();
@@ -450,6 +456,47 @@ public class ShoppingListRepository {
             });
     }
 
+    public void deleteAllUserData(Runnable onComplete) {
+         FirebaseUser user = mAuth.getCurrentUser();
+         if (user == null) {
+             onComplete.run();
+             return;
+         }
+         
+         db.collection("shopping_lists").whereEqualTo("ownerId", user.getUid()).get()
+             .addOnSuccessListener(snaps -> {
+                 List<com.google.firebase.firestore.DocumentSnapshot> docs = snaps.getDocuments();
+                 deleteNextListRecursive(docs, 0, onComplete);
+             })
+             .addOnFailureListener(e -> onComplete.run());
+    }
+
+    private void deleteNextListRecursive(List<com.google.firebase.firestore.DocumentSnapshot> docs, int index, Runnable onComplete) {
+        if (index >= docs.size()) {
+            onComplete.run();
+            return;
+        }
+        
+        com.google.firebase.firestore.DocumentReference listRef = docs.get(index).getReference();
+        
+        listRef.collection("items").get().addOnSuccessListener(itemSnaps -> {
+            com.google.firebase.firestore.WriteBatch batch = db.batch();
+            for(com.google.firebase.firestore.DocumentSnapshot item : itemSnaps) {
+                batch.delete(item.getReference());
+            }
+            batch.commit().addOnCompleteListener(t -> {
+                listRef.delete().addOnCompleteListener(t2 -> {
+                     deleteNextListRecursive(docs, index + 1, onComplete);
+                });
+            });
+        }).addOnFailureListener(e -> {
+             // If items fetch fails, try deleting list anyway
+             listRef.delete().addOnCompleteListener(t2 -> {
+                  deleteNextListRecursive(docs, index + 1, onComplete);
+             });
+        });
+    }
+
     public void migrateLocalListsToCloud(Runnable onComplete) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null) {
@@ -522,17 +569,6 @@ public class ShoppingListRepository {
                          batch.set(itemRef, itemData);
                      }
                      batch.commit().addOnCompleteListener(t -> {
-                         // Update items locally with their new firebaseIds
-                         // This is optional as listeners might catch it, but good for consistency
-                         for(ShoppingItem item : items) {
-                             dbHelper.updateItem(item); // Needs a method to update firebaseId on item? ShoppingItem doesn't store firebaseId in SQLite by default unless column added?
-                             // Wait, dbHelper.updateItem updates standard fields. Does it update firebaseId?
-                             // ShoppingListDatabaseHelper doesn't seem to have a column for item firebase_id in updateItem?
-                             // Let's check ShoppingItem.java and ShoppingListDatabaseHelper.java
-                             // ShoppingItem has firebaseId field. 
-                             // ShoppingListDatabaseHelper TABLE_ITEMS doesn't seem to have firebase_id column based on previous read_file?
-                             // Wait, let me check the read_file output of ShoppingListDatabaseHelper again.
-                         }
                          uploadNextList(lists, index + 1, user, onComplete);
                      });
                 }
@@ -577,48 +613,22 @@ public class ShoppingListRepository {
             });
     }
 
-    public void decoupleListAndReplaceItems(long listId, List<ShoppingItem> newItems) {
-        dbHelper.decoupleListAndReplaceItems(listId, newItems);
-    }
-
-    public void deleteAllUserData(Runnable onComplete) {
-         FirebaseUser user = mAuth.getCurrentUser();
-         if (user == null) {
-             onComplete.run();
-             return;
-         }
-         
-         db.collection("shopping_lists").whereEqualTo("ownerId", user.getUid()).get()
-             .addOnSuccessListener(snaps -> {
-                 List<com.google.firebase.firestore.DocumentSnapshot> docs = snaps.getDocuments();
-                 deleteNextListRecursive(docs, 0, onComplete);
-             })
-             .addOnFailureListener(e -> onComplete.run());
-    }
-
-    private void deleteNextListRecursive(List<com.google.firebase.firestore.DocumentSnapshot> docs, int index, Runnable onComplete) {
-        if (index >= docs.size()) {
-            onComplete.run();
-            return;
+    public void updateProfileImage(String url, UserRepository.OnProfileActionListener listener) {
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("profileImageUrl", url);
+        
+        if (url == null) {
+             Map<String, Object> deleteData = new HashMap<>();
+             deleteData.put("profileImageUrl", com.google.firebase.firestore.FieldValue.delete());
+             db.collection("users").document(mAuth.getUid())
+                .update(deleteData)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+        } else {
+            db.collection("users").document(mAuth.getUid())
+                    .set(updateData, com.google.firebase.firestore.SetOptions.merge())
+                    .addOnSuccessListener(aVoid -> listener.onSuccess())
+                    .addOnFailureListener(e -> listener.onError(e.getMessage()));
         }
-        
-        com.google.firebase.firestore.DocumentReference listRef = docs.get(index).getReference();
-        
-        listRef.collection("items").get().addOnSuccessListener(itemSnaps -> {
-            com.google.firebase.firestore.WriteBatch batch = db.batch();
-            for(com.google.firebase.firestore.DocumentSnapshot item : itemSnaps) {
-                batch.delete(item.getReference());
-            }
-            batch.commit().addOnCompleteListener(t -> {
-                listRef.delete().addOnCompleteListener(t2 -> {
-                     deleteNextListRecursive(docs, index + 1, onComplete);
-                });
-            });
-        }).addOnFailureListener(e -> {
-             // If items fetch fails, try deleting list anyway
-             listRef.delete().addOnCompleteListener(t2 -> {
-                  deleteNextListRecursive(docs, index + 1, onComplete);
-             });
-        });
     }
 }

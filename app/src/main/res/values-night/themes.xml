@@ -16,6 +16,7 @@
         <item name="colorError">@color/orange2</item>
         <item name="colorOnError">@color/black</item>
 
+        <item name="alertDialogTheme">@style/AppMaterialAlertDialogTheme</item>
         <item name="materialAlertDialogTheme">@style/AppMaterialAlertDialogTheme</item>
         <item name="snackbarStyle">@style/AppSnackbarStyle</item>
 

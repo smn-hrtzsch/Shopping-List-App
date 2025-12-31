@@ -160,11 +160,13 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void showEditProfileDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_profile, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
 
         EditText editText = dialogView.findViewById(R.id.edit_text_username_dialog);
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);

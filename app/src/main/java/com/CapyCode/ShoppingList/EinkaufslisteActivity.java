@@ -195,11 +195,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void performSafeUnsync() {
         if (firebaseListId == null) return;
-        // isUnsyncing = true; // No longer needed here as it's set in the dialog callback
+        isUnsyncing = true; // Set early here!
         Toast.makeText(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
         // 1. Fetch items from cloud (One-Time) to ensure we have latest state
-        shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, cloudItems -> {
+        shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, (cloudItems, hasPendingWrites) -> {
             // 2. Remove listeners immediately
             if (listSnapshotListener != null) { listSnapshotListener.remove(); listSnapshotListener = null; }
             if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
@@ -217,7 +217,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             firebaseListId = null;
 
             // 5. Update UI immediately
-            updateSyncIcon(R.drawable.ic_cloud_24);
+            updateSyncIcon(R.drawable.ic_cloud_unsynced_24);
             Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
             refreshItemList(); // Reloads items from DB (which are now the decoupled ones)
 
@@ -343,15 +343,16 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void shareShoppingList() {
-        if (currentShoppingList != null && currentShoppingList.isShared()) {
+        if (currentShoppingList == null) return;
+        if (currentShoppingList.isShared()) {
             Toast.makeText(this, R.string.error_cannot_share_shared, Toast.LENGTH_SHORT).show();
             return;
         }
-        shoppingListRepository.getItemsForListId(currentShoppingListId, items -> {
+        shoppingListRepository.getItemsForListId(currentShoppingListId, (items, hasPendingWrites) -> {
             try {
                 org.json.JSONObject jsonList = new org.json.JSONObject();
                 jsonList.put("app_id", "com.CapyCode.ShoppingList");
-                jsonList.put("name", currentShoppingList != null ? currentShoppingList.getName() : "List");
+                jsonList.put("name", currentShoppingList.getName());
                 org.json.JSONArray jsonItems = new org.json.JSONArray();
                 for (ShoppingItem item : items) {
                     org.json.JSONObject jsonItem = new org.json.JSONObject();
@@ -360,7 +361,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 }
                 jsonList.put("items", jsonItems);
                 String jsonString = jsonList.toString(2);
-                java.io.File file = new java.io.File(getCacheDir(), "list.json");
+                
+                String safeName = currentShoppingList.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
+                java.io.File file = new java.io.File(getCacheDir(), safeName + ".json");
+                
                 try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) { fos.write(jsonString.getBytes()); }
                 android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.CapyCode.ShoppingList.provider", file);
                 android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
@@ -449,12 +453,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         adapter.resetEditingPosition();
         if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
         if (firebaseListId != null) {
-            itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, loadedItems -> {
-                updateSyncIcon(R.drawable.ic_cloud_download_24);
+            itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
+                updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
                 this.shoppingItems = loadedItems; adapter.setItems(shoppingItems); checkEmptyViewItems(shoppingItems.isEmpty());
             });
         } else {
-            shoppingListRepository.getItemsForListId(currentShoppingListId, loadedItems -> {
+            shoppingListRepository.getItemsForListId(currentShoppingListId, (loadedItems, hasPendingWrites) -> {
                 this.shoppingItems = loadedItems; adapter.setItems(shoppingItems); checkEmptyViewItems(shoppingItems.isEmpty());
             });
         }
