@@ -27,6 +27,13 @@
 - [ ] Verwaltung von Nutzerrechten (Admin, Editor, Viewer)
 - [ ] Benachrichtigungen bei Änderungen in geteilten Listen
 
+## Members & Einladungen
+
+- [ ] Benachrichtigungen bei Einladung zu einer geteilten Liste (Shortcuts zum Akzeptieren/Ablehnen)
+- [ ] Teilen von Listen via Link (ohne Account)
+- [ ] Profilbilder der Member in der Member-Liste anzeigen
+- [ ] Einladungen blockieren (z.B. Spam-Einladungen verhindern), auch von spezifischen Nutzern
+
 ## Einkaufserlebnis & Item-Features
 
 - [ ] **Kategorien:** Artikel kategorisieren (z.B. Obst, Drogerie) und Liste danach gruppieren
