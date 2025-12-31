@@ -7,15 +7,32 @@
     android:padding="24dp"
     android:background="@drawable/bg_dialog_rounded">
 
-    <TextView
-        android:id="@+id/dialog_title"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/dialog_profile_pic_title"
-        android:textAppearance="?attr/textAppearanceHeadline6"
-        android:textColor="?attr/colorOnSurface"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:id="@+id/dialog_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="@string/dialog_profile_pic_title"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/button_dialog_close"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_decline_list"
+            app:tint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/button_cancel" />
+    </RelativeLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_option_new_image"
@@ -39,7 +56,6 @@
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_marginBottom="24dp"
         android:text="@string/option_remove_image"
         app:icon="@drawable/ic_delete_24"
         app:iconGravity="textStart"
@@ -50,14 +66,5 @@
         android:textColor="?attr/colorError"
         app:iconTint="?attr/colorError"
         app:strokeColor="?attr/colorError"/>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/button_dialog_cancel"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:text="@string/button_cancel"
-        android:textColor="@color/dialog_action_text_adaptive"/>
 
 </LinearLayout>

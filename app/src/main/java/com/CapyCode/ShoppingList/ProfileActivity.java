@@ -187,7 +187,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
         View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
-        View btnCancel = dialogView.findViewById(R.id.button_dialog_cancel);
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         btnNew.setOnClickListener(v -> {
             pickImageLauncher.launch("image/*");
@@ -197,7 +197,7 @@ public class ProfileActivity extends AppCompatActivity {
             removeImage();
             dialog.dismiss();
         });
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
