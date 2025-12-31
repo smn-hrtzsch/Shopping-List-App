@@ -193,40 +193,44 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void performSafeUnsync() {
         if (firebaseListId == null) return;
+        Toast.makeText(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
-        // 1. Fetch items from cloud first
-        shoppingListRepository.getItemsForListId(firebaseListId, cloudItems -> {
-            // 2. Remove listeners immediately to prevent "Activity finish" trigger
-            if (listSnapshotListener != null) {
-                listSnapshotListener.remove();
-                listSnapshotListener = null;
-            }
-            if (itemsSnapshotListener != null) {
-                itemsSnapshotListener.remove();
-                itemsSnapshotListener = null;
+        // 1. Fetch items from cloud (One-Time)
+        shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, cloudItems -> {
+            
+            // 2. Create NEW private list
+            String listName = currentShoppingList.getName();
+            int position = shoppingListRepository.getNextPosition();
+            long newListId = shoppingListRepository.addShoppingList(listName, position);
+            
+            if (newListId == -1) {
+                Toast.makeText(this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
+                return;
             }
 
-            // 3. Save items locally
-            shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
+            // 3. Add items to NEW list
             for (ShoppingItem item : cloudItems) {
-                ShoppingItem localItem = new ShoppingItem(item.getName(), item.getQuantity(), item.getUnit(), item.isDone(), currentShoppingListId, item.getNotes(), item.getPosition());
-                shoppingListRepository.addItemToShoppingList(currentShoppingListId, localItem);
+                // Create clean copy without firebaseId
+                ShoppingItem newItem = new ShoppingItem(item.getName(), item.getQuantity(), item.getUnit(), item.isDone(), newListId, item.getNotes(), item.getPosition());
+                shoppingListRepository.addItemToShoppingList(newListId, newItem);
             }
 
-            // 4. Decouple local list from cloud (set firebaseId to null) BEFORE deleting from cloud
-            String listToDeleteId = firebaseListId; // Keep ID for deletion
-            
-            currentShoppingList.setFirebaseId(null);
-            firebaseListId = null;
-            shoppingListRepository.getShoppingListDatabaseHelper().updateShoppingListFirebaseId(currentShoppingList.getId(), null);
-            
-            // Update UI to local state immediately
-            if (toolbarCloudIcon != null) toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
-            Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
-            refreshItemList();
+            // 4. Trigger cloud deletion of OLD list
+            // We do NOT decouple the old list locally. We let the sync listener in MainActivity 
+            // handle the cleanup (deleteObsoleteCloudLists) when it notices the cloud list is gone.
+            // This prevents "Ghost List" recreation.
+            String oldFirebaseId = firebaseListId;
+            shoppingListRepository.deleteSingleListFromCloud(oldFirebaseId, null);
 
-            // 5. Delete from cloud safely
-            shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, null);
+            // 5. Switch to NEW list
+            Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
+            
+            android.content.Intent intent = new android.content.Intent(this, EinkaufslisteActivity.class);
+            intent.putExtra("LIST_ID", newListId);
+            intent.putExtra("LIST_NAME", listName);
+            // No FIREBASE_LIST_ID extra -> Private list
+            startActivity(intent);
+            finish(); // Close current activity (which shows the dying cloud list)
         });
     }
 

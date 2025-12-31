@@ -161,6 +161,24 @@ public class ShoppingListRepository {
         listener.onItemsLoaded(dbHelper.getAllItems(listId));
     }
 
+    public void fetchItemsFromCloudOneTime(String firebaseListId, OnItemsLoadedListener listener) {
+        db.collection("shopping_lists").document(firebaseListId).collection("items")
+                .orderBy("position")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<ShoppingItem> items = new ArrayList<>();
+                    if (queryDocumentSnapshots != null) {
+                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                            ShoppingItem item = doc.toObject(ShoppingItem.class);
+                            item.setFirebaseId(doc.getId());
+                            items.add(item);
+                        }
+                    }
+                    listener.onItemsLoaded(items);
+                })
+                .addOnFailureListener(e -> listener.onItemsLoaded(new ArrayList<>()));
+    }
+
     public com.google.firebase.firestore.ListenerRegistration getItemsForListId(String firebaseListId, OnItemsLoadedListener listener) {
         return db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .orderBy("position")
