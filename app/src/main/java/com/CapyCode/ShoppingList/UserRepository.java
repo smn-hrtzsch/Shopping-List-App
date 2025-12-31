@@ -220,7 +220,7 @@ public class UserRepository {
         });
     }
 
-    private void updateProfileImage(String url, OnProfileActionListener listener) {
+    public void updateProfileImage(String url, OnProfileActionListener listener) {
         Map<String, Object> updateData = new HashMap<>();
         updateData.put("profileImageUrl", url); // Firestore handles null correctly (sets to null or deletes field? update handles null as value)
         // Ideally we use FieldValue.delete() if url is null, but setting to null is fine for now if we check != null in code

@@ -34,6 +34,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
@@ -178,22 +179,27 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void showImageOptions() {
-        String[] options = {getString(R.string.option_new_image), getString(R.string.option_remove_image)};
-        int[] icons = {R.drawable.ic_cloud_upload_24, R.drawable.ic_delete_24};
-        
-        com.google.android.material.dialog.MaterialAlertDialogBuilder builder = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this);
-        builder.setTitle(R.string.dialog_profile_pic_title);
-        
-        // Use a more custom approach for the items to look consistent
-        builder.setItems(options, (dialog, which) -> {
-            if (which == 0) {
-                pickImageLauncher.launch("image/*");
-            } else if (which == 1) {
-                removeImage();
-            }
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_profile_image_options, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        View btnNew = dialogView.findViewById(R.id.button_option_new_image);
+        View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
+        View btnCancel = dialogView.findViewById(R.id.button_dialog_cancel);
+
+        btnNew.setOnClickListener(v -> {
+            pickImageLauncher.launch("image/*");
+            dialog.dismiss();
         });
-        builder.setNegativeButton(R.string.button_cancel, (dialog, which) -> dialog.dismiss());
-        builder.show();
+        btnRemove.setOnClickListener(v -> {
+            removeImage();
+            dialog.dismiss();
+        });
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     private void signInWithGoogle() {
@@ -220,6 +226,7 @@ public class ProfileActivity extends AppCompatActivity {
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
                             Toast.makeText(ProfileActivity.this, R.string.toast_google_linked, Toast.LENGTH_SHORT).show();
+                            syncGoogleProfilePicture();
                             triggerSync();
                             loadCurrentProfile();
                         } else {
@@ -295,6 +302,7 @@ public class ProfileActivity extends AppCompatActivity {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        syncGoogleProfilePicture();
                         loadCurrentProfile();
                     } else {
                         progressBarLoading.setVisibility(View.GONE);
@@ -302,6 +310,27 @@ public class ProfileActivity extends AppCompatActivity {
                         Toast.makeText(ProfileActivity.this, getString(R.string.error_auth_failed, msg), Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    private void syncGoogleProfilePicture() {
+        userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
+            @Override
+            public void onLoaded(String username, String imageUrl) {
+                if (imageUrl == null || imageUrl.isEmpty()) {
+                    // No image set, try to get from Google
+                    for (UserInfo profile : mAuth.getCurrentUser().getProviderData()) {
+                        if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) && profile.getPhotoUrl() != null) {
+                            userRepository.updateProfileImage(profile.getPhotoUrl().toString(), new UserRepository.OnProfileActionListener() {
+                                @Override public void onSuccess() { loadCurrentProfile(); }
+                                @Override public void onError(String message) {}
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+            @Override public void onError(String error) {}
+        });
     }
 
     @Override
@@ -338,23 +367,9 @@ public class ProfileActivity extends AppCompatActivity {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
                     
-                    String finalImageUrl = imageUrl;
-                    
-                    // Fallback to Google photo if no custom image exists
-                    if ((finalImageUrl == null || finalImageUrl.isEmpty()) && mAuth.getCurrentUser() != null) {
-                        for (UserInfo profile : mAuth.getCurrentUser().getProviderData()) {
-                            if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
-                                if (profile.getPhotoUrl() != null) {
-                                    finalImageUrl = profile.getPhotoUrl().toString();
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    if (finalImageUrl != null && !finalImageUrl.isEmpty()) {
+                    if (imageUrl != null && !imageUrl.isEmpty()) {
                         Glide.with(ProfileActivity.this)
-                             .load(finalImageUrl)
+                             .load(imageUrl)
                              .apply(RequestOptions.circleCropTransform())
                              .into(imageProfile);
                         imageProfile.setPadding(0,0,0,0);

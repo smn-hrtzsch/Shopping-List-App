@@ -496,9 +496,8 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = null;
         try {
-            // Sort by position ASC only to respect manual order
             cursor = db.query(TABLE_ITEMS, null, COLUMN_ITEM_LIST_ID + "=?", new String[]{String.valueOf(listId)},
-                    null, null, COLUMN_ITEM_POSITION + " ASC");
+                    null, null, COLUMN_ITEM_IS_DONE + " ASC, " + COLUMN_ITEM_POSITION + " ASC");
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     items.add(new ShoppingItem(
@@ -517,21 +516,6 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
             if (cursor != null) cursor.close();
         }
         return items;
-    }
-
-    public int getMaxItemPosition(long listId) {
-        SQLiteDatabase db = this.getReadableDatabase();
-        int max = -1;
-        try {
-            Cursor cursor = db.rawQuery("SELECT MAX(" + COLUMN_ITEM_POSITION + ") FROM " + TABLE_ITEMS + " WHERE " + COLUMN_ITEM_LIST_ID + " = ?", new String[]{String.valueOf(listId)});
-            if (cursor.moveToFirst()) {
-                max = cursor.getInt(0);
-            }
-            cursor.close();
-        } catch (Exception e) {
-            Log.e("DBHelper", "Error getting max item position", e);
-        }
-        return max;
     }
 
     public int updateItem(ShoppingItem item) {

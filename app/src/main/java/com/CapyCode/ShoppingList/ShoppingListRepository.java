@@ -173,8 +173,11 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
-                    // Manual sorting by position only to respect user's drag-and-drop order
-                    items.sort((a, b) -> Integer.compare(a.getPosition(), b.getPosition()));
+                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
+                    items.sort((a, b) -> {
+                        if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
+                        return Integer.compare(a.getPosition(), b.getPosition());
+                    });
                     listener.onItemsLoaded(items);
                 })
                 .addOnFailureListener(e -> listener.onItemsLoaded(new ArrayList<>()));
@@ -195,8 +198,11 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
-                    // Manual sorting by position only to respect user's drag-and-drop order
-                    items.sort((a, b) -> Integer.compare(a.getPosition(), b.getPosition()));
+                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
+                    items.sort((a, b) -> {
+                        if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
+                        return Integer.compare(a.getPosition(), b.getPosition());
+                    });
                     listener.onItemsLoaded(items);
                 });
     }
@@ -285,42 +291,14 @@ public class ShoppingListRepository {
         ShoppingItem item = dbHelper.getItem(itemId);
         if (item != null) {
             item.setDone(isChecked);
-            if (isChecked) {
-                // Move to end of list
-                item.setPosition(dbHelper.getMaxItemPosition(item.getListId()) + 1);
-            }
             dbHelper.updateItem(item);
         }
     }
 
     public void toggleItemChecked(String firebaseListId, String firebaseItemId, boolean isChecked, OnActionListener listener) {
-        // For firebase, we update done. The listener will refresh.
-        // We also want to move it to the end in Firebase.
-        db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).get()
-            .addOnSuccessListener(doc -> {
-                if (doc.exists()) {
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("done", isChecked);
-                    if (isChecked) {
-                        // Find max position in firebase (this is expensive but necessary for exact sorting)
-                        // Alternatively, we can just use a very large number or let the user re-drag.
-                        // Let's try to find max position.
-                        db.collection("shopping_lists").document(firebaseListId).collection("items")
-                            .orderBy("position", com.google.firebase.firestore.Query.Direction.DESCENDING).limit(1).get()
-                            .addOnSuccessListener(snaps -> {
-                                int maxPos = 0;
-                                if (!snaps.isEmpty()) {
-                                    maxPos = snaps.getDocuments().get(0).getLong("position").intValue();
-                                }
-                                updates.put("position", maxPos + 1);
-                                db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).update(updates)
-                                    .addOnCompleteListener(task -> { if (listener != null) listener.onActionComplete(); });
-                            });
-                    } else {
-                        db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).update(updates)
-                            .addOnCompleteListener(task -> { if (listener != null) listener.onActionComplete(); });
-                    }
-                }
+        db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).update("done", isChecked)
+            .addOnCompleteListener(task -> {
+                if (listener != null) listener.onActionComplete();
             });
     }
 
