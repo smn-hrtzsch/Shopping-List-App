@@ -58,6 +58,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private com.google.firebase.firestore.ListenerRegistration itemsSnapshotListener;
     private final android.os.Handler syncIconHandler = new android.os.Handler();
     private FirebaseAuth mAuth;
+    private boolean isUnsyncing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,12 +103,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         }
 
         if (toolbarCloudIcon != null) {
-            boolean canSync = mAuth.getCurrentUser() != null;
-            toolbarCloudIcon.setVisibility((firebaseListId != null || canSync) ? View.VISIBLE : View.GONE);
+            toolbarCloudIcon.setVisibility(firebaseListId != null ? View.VISIBLE : View.GONE);
             if (firebaseListId != null) {
                 toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
-            } else {
-                toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
             }
         }
 
@@ -117,6 +115,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     .document(firebaseListId)
                     .addSnapshotListener((documentSnapshot, e) -> {
                         if (e != null) return;
+                        if (isUnsyncing) return; // Prevent closing if we are currently unsyncing
                         if (documentSnapshot != null && documentSnapshot.exists()) {
                             Boolean sharedOnServer = documentSnapshot.getBoolean("isShared");
                             if (currentShoppingList != null && sharedOnServer != null) {
@@ -193,6 +192,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void performSafeUnsync() {
         if (firebaseListId == null) return;
+        isUnsyncing = true; // Block listener from finishing activity
         Toast.makeText(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
         // 1. Fetch items from cloud (One-Time) to ensure we have latest state
@@ -221,18 +221,15 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             // 6. Delete from Cloud
             // Even if MainActivity listener fires now, it won't find this list in "obsolete" check because it has no firebaseId locally.
             shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, null);
+            isUnsyncing = false;
         });
     }
 
     private void updateSyncIcon(int drawableId) {
         if (toolbarCloudIcon == null) return;
         
-        // Always show icon if user can sync (logged in)
-        boolean canSync = mAuth.getCurrentUser() != null;
-        toolbarCloudIcon.setVisibility((firebaseListId != null || canSync) ? View.VISIBLE : View.GONE);
-
         if (firebaseListId != null) {
-             // List is synced
+             toolbarCloudIcon.setVisibility(View.VISIBLE);
              toolbarCloudIcon.setImageResource(drawableId);
              if (drawableId != R.drawable.ic_cloud_synced_24) {
                  syncIconHandler.removeCallbacksAndMessages(null);
@@ -241,8 +238,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                  }, 1000);
              }
         } else {
-             // List is local
-             toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24); // Use outline/gray icon for local
+             // Local list -> Hide icon
+             toolbarCloudIcon.setVisibility(View.GONE);
         }
     }
 
