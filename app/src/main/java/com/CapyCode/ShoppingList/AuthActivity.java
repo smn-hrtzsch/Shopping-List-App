@@ -94,12 +94,46 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null && currentUser.isAnonymous()) {
-            verifyCredentialsAndLogin(email, password);
-        } else {
-            performLogin(email, password);
-        }
+        showLoading(true);
+        mAuth.fetchSignInMethodsForEmail(email)
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    java.util.List<String> methods = task.getResult().getSignInMethods();
+                    if (methods == null || methods.isEmpty()) {
+                        showLoading(false);
+                        Toast.makeText(AuthActivity.this, R.string.error_login_user_not_found, Toast.LENGTH_LONG).show();
+                    } else {
+                        // User exists. Check if they have a password method.
+                        if (methods.contains(com.google.firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
+                            FirebaseUser currentUser = mAuth.getCurrentUser();
+                            if (currentUser != null && currentUser.isAnonymous()) {
+                                verifyCredentialsAndLogin(email, password);
+                            } else {
+                                performLogin(email, password);
+                            }
+                        } else if (methods.contains(com.google.firebase.auth.GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD)) {
+                            showLoading(false);
+                            showCustomDialog(
+                                getString(R.string.dialog_google_account_title),
+                                getString(R.string.dialog_google_account_message),
+                                getString(R.string.ok),
+                                () -> {}
+                            );
+                        } else {
+                            // Some other method? Proceed with login attempt anyway.
+                            performLogin(email, password);
+                        }
+                    }
+                } else {
+                    // Check failed, maybe network error. Proceed anyway and handle errors later.
+                    FirebaseUser currentUser = mAuth.getCurrentUser();
+                    if (currentUser != null && currentUser.isAnonymous()) {
+                        verifyCredentialsAndLogin(email, password);
+                    } else {
+                        performLogin(email, password);
+                    }
+                }
+            });
     }
 
     private void verifyCredentialsAndLogin(String email, String password) {
