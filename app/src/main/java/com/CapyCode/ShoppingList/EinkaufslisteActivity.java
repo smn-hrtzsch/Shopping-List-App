@@ -272,7 +272,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
                 builder.setView(dialogView);
                 androidx.appcompat.app.AlertDialog dialog = builder.create();
-                if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+                if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                 android.widget.LinearLayout container = dialogView.findViewById(R.id.container_members_list);
                 View buttonAdd = dialogView.findViewById(R.id.button_add_member);
                 View buttonClose = dialogView.findViewById(R.id.button_close_dialog);
@@ -311,7 +311,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_invite_user, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
         com.google.android.material.textfield.TextInputEditText editText = dialogView.findViewById(R.id.edit_text_invite_username);
         View btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
@@ -412,7 +414,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_clear, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
 
         View btnRemoveChecked = dialogView.findViewById(R.id.button_remove_checked);
         View btnRemoveAll = dialogView.findViewById(R.id.button_remove_all);
@@ -488,7 +492,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
         TextView textTitle = dialogView.findViewById(R.id.dialog_title); TextView textMessage = dialogView.findViewById(R.id.dialog_message);
         com.google.android.material.button.MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive); com.google.android.material.button.MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
         textTitle.setText(title); textMessage.setText(message); btnPositive.setText(positiveButtonText);

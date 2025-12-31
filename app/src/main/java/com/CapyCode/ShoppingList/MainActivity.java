@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         View cardPrivate = dialogView.findViewById(R.id.card_private_list);
@@ -359,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         TextView textTitle = dialogView.findViewById(R.id.dialog_title);
@@ -635,7 +635,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         final AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         TextView dialogTitle = dialogView.findViewById(R.id.dialogTitle);

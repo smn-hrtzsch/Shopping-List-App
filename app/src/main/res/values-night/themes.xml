@@ -48,15 +48,15 @@
     </style>
 
     <style name="AccentInputTheme" parent="">
-        <item name="colorControlActivated">@color/white</item>
-        <item name="colorAccent">@color/white</item>
-        <item name="colorPrimary">@color/white</item>
+        <item name="colorControlActivated">?attr/colorOnSurface</item>
+        <item name="colorAccent">?attr/colorOnSurface</item>
+        <item name="colorPrimary">?attr/colorOnSurface</item>
     </style>
 
     <style name="ButtonStyle.Solid" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/white</item>
-        <item name="android:textColor">@color/black</item>
-        <item name="rippleColor">@color/light_gray</item>
+        <item name="backgroundTint">@color/button_background_adaptive</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="rippleColor">?attr/colorOnSurfaceSecondary</item>
     </style>
 
 </resources>

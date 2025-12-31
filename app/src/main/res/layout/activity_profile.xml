@@ -163,7 +163,7 @@
                             android:text="Verknüpfte Anmelde-Methoden:"
                             android:textStyle="bold"
                             android:layout_marginBottom="8dp"
-                            android:textColor="?attr/colorOnSurfaceVariant"/>
+                            android:textColor="?attr/colorOnSurface"/>
 
                         <LinearLayout
                             android:id="@+id/layout_linked_methods"

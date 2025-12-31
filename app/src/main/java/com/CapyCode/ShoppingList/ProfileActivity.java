@@ -164,7 +164,7 @@ public class ProfileActivity extends AppCompatActivity {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_profile, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
 
         EditText editText = dialogView.findViewById(R.id.edit_text_username_dialog);
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
@@ -630,7 +630,7 @@ public class ProfileActivity extends AppCompatActivity {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
         builder.setView(dialogView);
         AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         TextView textTitle = dialogView.findViewById(R.id.dialog_title);
         TextView textMessage = dialogView.findViewById(R.id.dialog_message);
         MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);

@@ -290,7 +290,7 @@ public class AuthActivity extends AppCompatActivity {
         
         AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         TextView textTitle = dialogView.findViewById(R.id.dialog_title);
@@ -325,7 +325,7 @@ public class AuthActivity extends AppCompatActivity {
             AlertDialog confirmDialog = confirmBuilder.create();
             
             if (confirmDialog.getWindow() != null) {
-                confirmDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+                confirmDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
             }
 
             TextView confirmTitle = confirmView.findViewById(R.id.dialog_title);
@@ -452,7 +452,7 @@ public class AuthActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         TextView textTitle = dialogView.findViewById(R.id.dialog_title);
