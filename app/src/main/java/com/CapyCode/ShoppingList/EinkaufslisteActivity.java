@@ -368,6 +368,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 jsonList.put("items", jsonItems);
                 String jsonString = jsonList.toString(2);
 
+                Toast.makeText(this, items.size() + " items exported", Toast.LENGTH_SHORT).show();
+
                 String safeName = currentShoppingList.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
                 java.io.File file = new java.io.File(getCacheDir(), safeName + ".json");
 

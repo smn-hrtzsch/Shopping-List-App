@@ -1,5 +1,8 @@
 package com.CapyCode.ShoppingList;
 
+import com.google.firebase.firestore.Exclude;
+import com.google.firebase.firestore.PropertyName;
+
 public class ShoppingItem {
     private long id;
     private String name;
@@ -41,30 +44,48 @@ public class ShoppingItem {
 
 
     // Getter und Setter
+    @Exclude
     public long getId() { return id; }
+    @Exclude
     public void setId(long id) { this.id = id; }
 
+    @PropertyName("name")
     public String getName() { return name; }
+    @PropertyName("name")
     public void setName(String name) { this.name = name; }
 
+    @PropertyName("quantity")
     public String getQuantity() { return quantity; }
+    @PropertyName("quantity")
     public void setQuantity(String quantity) { this.quantity = quantity; }
 
+    @PropertyName("unit")
     public String getUnit() { return unit; }
+    @PropertyName("unit")
     public void setUnit(String unit) { this.unit = unit; }
 
+    @PropertyName("done")
     public boolean isDone() { return isDone; }
+    @PropertyName("done")
     public void setDone(boolean done) { isDone = done; }
 
+    @Exclude
     public long getListId() { return listId; }
+    @Exclude
     public void setListId(long listId) { this.listId = listId; }
 
+    @PropertyName("notes")
     public String getNotes() { return notes; }
+    @PropertyName("notes")
     public void setNotes(String notes) { this.notes = notes; }
 
+    @PropertyName("position")
     public int getPosition() { return position; }
+    @PropertyName("position")
     public void setPosition(int position) { this.position = position; }
 
+    @Exclude
     public String getFirebaseId() { return firebaseId; }
+    @Exclude
     public void setFirebaseId(String firebaseId) { this.firebaseId = firebaseId; }
 }

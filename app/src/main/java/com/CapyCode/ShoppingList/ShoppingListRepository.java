@@ -168,12 +168,20 @@ public class ShoppingListRepository {
                     List<ShoppingItem> items = new ArrayList<>();
                     if (queryDocumentSnapshots != null) {
                         for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                            ShoppingItem item = doc.toObject(ShoppingItem.class);
+                            ShoppingItem item = new ShoppingItem();
+                            item.setName(doc.getString("name"));
+                            item.setQuantity(doc.getString("quantity"));
+                            item.setUnit(doc.getString("unit"));
+                            Boolean done = doc.getBoolean("done");
+                            item.setDone(done != null ? done : false);
+                            item.setNotes(doc.getString("notes"));
+                            Long pos = doc.getLong("position");
+                            item.setPosition(pos != null ? pos.intValue() : 0);
                             item.setFirebaseId(doc.getId());
                             items.add(item);
                         }
                     }
-                    // Manual sorting by position only to respect user's drag-and-drop order
+                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
                     items.sort((a, b) -> {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
                         return Integer.compare(a.getPosition(), b.getPosition());
@@ -195,7 +203,15 @@ public class ShoppingListRepository {
                     if (value != null) {
                         hasPendingWrites = value.getMetadata().hasPendingWrites();
                         for (QueryDocumentSnapshot doc : value) {
-                            ShoppingItem item = doc.toObject(ShoppingItem.class);
+                            ShoppingItem item = new ShoppingItem();
+                            item.setName(doc.getString("name"));
+                            item.setQuantity(doc.getString("quantity"));
+                            item.setUnit(doc.getString("unit"));
+                            Boolean done = doc.getBoolean("done");
+                            item.setDone(done != null ? done : false);
+                            item.setNotes(doc.getString("notes"));
+                            Long pos = doc.getLong("position");
+                            item.setPosition(pos != null ? pos.intValue() : 0);
                             item.setFirebaseId(doc.getId());
                             items.add(item);
                         }
