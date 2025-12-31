@@ -103,9 +103,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         }
 
         if (toolbarCloudIcon != null) {
-            toolbarCloudIcon.setVisibility(firebaseListId != null ? View.VISIBLE : View.GONE);
+            toolbarCloudIcon.setVisibility(View.VISIBLE); // Always visible now
             if (firebaseListId != null) {
                 toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
+            } else {
+                toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_unsynced_24);
             }
         }
 
@@ -228,8 +230,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private void updateSyncIcon(int drawableId) {
         if (toolbarCloudIcon == null) return;
         
+        toolbarCloudIcon.setVisibility(View.VISIBLE);
         if (firebaseListId != null) {
-             toolbarCloudIcon.setVisibility(View.VISIBLE);
+             // List is synced
              toolbarCloudIcon.setImageResource(drawableId);
              if (drawableId != R.drawable.ic_cloud_synced_24) {
                  syncIconHandler.removeCallbacksAndMessages(null);
@@ -238,8 +241,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                  }, 1000);
              }
         } else {
-             // Local list -> Hide icon
-             toolbarCloudIcon.setVisibility(View.GONE);
+             // List is local
+             toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_unsynced_24);
         }
     }
 

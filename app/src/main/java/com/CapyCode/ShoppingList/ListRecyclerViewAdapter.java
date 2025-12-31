@@ -69,16 +69,17 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
         viewHolder.textViewListName.setText(list.getName());
 
+        viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
         if (list.getFirebaseId() != null && !isPending) {
-            viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
             // Use explicit isShared flag
             if (list.isShared()) {
                 viewHolder.cloudIcon.setImageResource(R.drawable.ic_members_group);
             } else {
-                viewHolder.cloudIcon.setImageResource(R.drawable.ic_cloud_24);
+                viewHolder.cloudIcon.setImageResource(R.drawable.ic_cloud_synced_24); // Assuming this is the synced icon
             }
         } else {
-            viewHolder.cloudIcon.setVisibility(View.GONE);
+            // Local list
+            viewHolder.cloudIcon.setImageResource(R.drawable.ic_cloud_unsynced_24);
         }
 
         String itemCountText = String.format(Locale.getDefault(), "%d %s",
