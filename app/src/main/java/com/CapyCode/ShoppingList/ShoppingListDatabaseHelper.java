@@ -612,6 +612,50 @@ public class ShoppingListDatabaseHelper extends SQLiteOpenHelper {
         return deletedRows;
     }
 
+    public void decoupleListAndReplaceItems(long listId, List<ShoppingItem> newItems) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            // 1. Decouple List (remove Firebase ID, set shared to false, remove owner/members)
+            ContentValues listValues = new ContentValues();
+            listValues.putNull(COLUMN_FIREBASE_ID);
+            listValues.putNull(COLUMN_OWNER_ID);
+            listValues.put(COLUMN_IS_SHARED, 0);
+            listValues.put(COLUMN_MEMBERS, "");
+            listValues.put(COLUMN_PENDING_MEMBERS, "");
+            // We keep the name and position
+            db.update(TABLE_LISTS, listValues, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
+
+            // 2. Clear old items
+            db.delete(TABLE_ITEMS, COLUMN_ITEM_LIST_ID + " = ?", new String[]{String.valueOf(listId)});
+
+            // 3. Insert new items
+            for (ShoppingItem item : newItems) {
+                ContentValues itemValues = new ContentValues();
+                itemValues.put(COLUMN_ITEM_NAME, item.getName());
+                itemValues.put(COLUMN_ITEM_QUANTITY, item.getQuantity());
+                itemValues.put(COLUMN_ITEM_UNIT, item.getUnit());
+                itemValues.put(COLUMN_ITEM_IS_DONE, item.isDone() ? 1 : 0);
+                itemValues.put(COLUMN_ITEM_LIST_ID, listId);
+                itemValues.put(COLUMN_ITEM_NOTES, item.getNotes());
+                itemValues.put(COLUMN_ITEM_POSITION, item.getPosition());
+                db.insert(TABLE_ITEMS, null, itemValues);
+            }
+
+            // 4. Update item count
+            ContentValues countValues = new ContentValues();
+            countValues.put(COLUMN_LIST_ITEM_COUNT, newItems.size());
+            db.update(TABLE_LISTS, countValues, COLUMN_ID + " = ?", new String[]{String.valueOf(listId)});
+
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error decoupling list", e);
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
     private void updateListItemCount(SQLiteDatabase db, long listId, int change) {
         db.execSQL("UPDATE " + TABLE_LISTS + " SET " + COLUMN_LIST_ITEM_COUNT + " = " +
                 COLUMN_LIST_ITEM_COUNT + " + " + change + " WHERE " + COLUMN_ID + " = " + listId);

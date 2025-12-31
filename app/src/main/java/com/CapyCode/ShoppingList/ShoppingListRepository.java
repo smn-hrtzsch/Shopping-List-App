@@ -569,6 +569,10 @@ public class ShoppingListRepository {
             });
     }
 
+    public void decoupleListAndReplaceItems(long listId, List<ShoppingItem> newItems) {
+        dbHelper.decoupleListAndReplaceItems(listId, newItems);
+    }
+
     public void deleteAllUserData(Runnable onComplete) {
          FirebaseUser user = mAuth.getCurrentUser();
          if (user == null) {

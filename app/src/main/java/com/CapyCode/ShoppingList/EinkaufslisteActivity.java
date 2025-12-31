@@ -195,56 +195,54 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (firebaseListId == null) return;
         Toast.makeText(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
-        // 1. Fetch items from cloud (One-Time)
+        // 1. Fetch items from cloud (One-Time) to ensure we have latest state
         shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, cloudItems -> {
-            
-            // 2. Create NEW private list
-            String listName = currentShoppingList.getName();
-            int position = shoppingListRepository.getNextPosition();
-            long newListId = shoppingListRepository.addShoppingList(listName, position);
-            
-            if (newListId == -1) {
-                Toast.makeText(this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
-                return;
-            }
+            // 2. Remove listeners immediately
+            if (listSnapshotListener != null) { listSnapshotListener.remove(); listSnapshotListener = null; }
+            if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
 
-            // 3. Add items to NEW list
-            for (ShoppingItem item : cloudItems) {
-                // Create clean copy without firebaseId
-                ShoppingItem newItem = new ShoppingItem(item.getName(), item.getQuantity(), item.getUnit(), item.isDone(), newListId, item.getNotes(), item.getPosition());
-                shoppingListRepository.addItemToShoppingList(newListId, newItem);
-            }
+            // 3. Atomically decouple list and replace items locally
+            // This prevents "deleteObsoleteCloudLists" from deleting this list because firebaseId becomes NULL
+            shoppingListRepository.decoupleListAndReplaceItems(currentShoppingListId, cloudItems);
 
-            // 4. Trigger cloud deletion of OLD list
-            // We do NOT decouple the old list locally. We let the sync listener in MainActivity 
-            // handle the cleanup (deleteObsoleteCloudLists) when it notices the cloud list is gone.
-            // This prevents "Ghost List" recreation.
-            String oldFirebaseId = firebaseListId;
-            shoppingListRepository.deleteSingleListFromCloud(oldFirebaseId, null);
+            String listToDeleteId = firebaseListId;
 
-            // 5. Switch to NEW list
+            // 4. Update RAM objects
+            currentShoppingList.setFirebaseId(null);
+            currentShoppingList.setShared(false);
+            currentShoppingList.setOwnerId(null);
+            firebaseListId = null;
+
+            // 5. Update UI immediately
+            updateSyncIcon(R.drawable.ic_cloud_24);
             Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
-            
-            android.content.Intent intent = new android.content.Intent(this, EinkaufslisteActivity.class);
-            intent.putExtra("LIST_ID", newListId);
-            intent.putExtra("LIST_NAME", listName);
-            // No FIREBASE_LIST_ID extra -> Private list
-            startActivity(intent);
-            finish(); // Close current activity (which shows the dying cloud list)
+            refreshItemList(); // Reloads items from DB (which are now the decoupled ones)
+
+            // 6. Delete from Cloud
+            // Even if MainActivity listener fires now, it won't find this list in "obsolete" check because it has no firebaseId locally.
+            shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, null);
         });
     }
 
     private void updateSyncIcon(int drawableId) {
-        if (toolbarCloudIcon != null && firebaseListId != null) {
-            toolbarCloudIcon.setImageResource(drawableId);
-            if (drawableId != R.drawable.ic_cloud_synced_24) {
-                syncIconHandler.removeCallbacksAndMessages(null);
-                syncIconHandler.postDelayed(() -> {
-                    if (toolbarCloudIcon != null) toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
-                }, 1000);
-            }
-        } else if (toolbarCloudIcon != null && drawableId == R.drawable.ic_cloud_24) {
-             toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
+        if (toolbarCloudIcon == null) return;
+        
+        // Always show icon if user can sync (logged in)
+        boolean canSync = mAuth.getCurrentUser() != null;
+        toolbarCloudIcon.setVisibility((firebaseListId != null || canSync) ? View.VISIBLE : View.GONE);
+
+        if (firebaseListId != null) {
+             // List is synced
+             toolbarCloudIcon.setImageResource(drawableId);
+             if (drawableId != R.drawable.ic_cloud_synced_24) {
+                 syncIconHandler.removeCallbacksAndMessages(null);
+                 syncIconHandler.postDelayed(() -> {
+                     if (toolbarCloudIcon != null) toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
+                 }, 1000);
+             }
+        } else {
+             // List is local
+             toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24); // Use outline/gray icon for local
         }
     }
 
