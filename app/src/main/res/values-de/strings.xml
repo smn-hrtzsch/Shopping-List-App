@@ -247,7 +247,7 @@
     <string name="toast_finish_editing_delete">Bitte Bearbeitung abschließen vor dem Löschen.</string>
     <string name="error_google_sign_in">Google Anmeldung fehlgeschlagen: %s</string>
     <string name="error_google_already_linked">Es ist bereits ein Google-Konto verknüpft. Bitte trenne es zuerst.</string>
-    <string name="toast_items_cleared_done">Erledigte Artikel entfernt</string>
+    <string name="toast_items_cleared_done">Abgehakte Artikel entfernt</string>
     <string name="toast_items_cleared_all">Alle Artikel entfernt</string>
     <string name="error_list_deleted_by_owner">Diese Liste wurde vom Eigentümer gelöscht.</string>
     <string name="error_cannot_share_shared">Geteilte Listen können nicht erneut geteilt werden.</string>
