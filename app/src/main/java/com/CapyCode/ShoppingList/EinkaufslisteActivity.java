@@ -192,27 +192,41 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void performSafeUnsync() {
+        if (firebaseListId == null) return;
+
+        // 1. Fetch items from cloud first
         shoppingListRepository.getItemsForListId(firebaseListId, cloudItems -> {
-            if (listSnapshotListener != null) listSnapshotListener.remove();
-            if (itemsSnapshotListener != null) itemsSnapshotListener.remove();
-            listSnapshotListener = null;
-            itemsSnapshotListener = null;
+            // 2. Remove listeners immediately to prevent "Activity finish" trigger
+            if (listSnapshotListener != null) {
+                listSnapshotListener.remove();
+                listSnapshotListener = null;
+            }
+            if (itemsSnapshotListener != null) {
+                itemsSnapshotListener.remove();
+                itemsSnapshotListener = null;
+            }
 
+            // 3. Save items locally
             shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
-
             for (ShoppingItem item : cloudItems) {
                 ShoppingItem localItem = new ShoppingItem(item.getName(), item.getQuantity(), item.getUnit(), item.isDone(), currentShoppingListId, item.getNotes(), item.getPosition());
                 shoppingListRepository.addItemToShoppingList(currentShoppingListId, localItem);
             }
 
-            shoppingListRepository.deleteSingleListFromCloud(firebaseListId, () -> {
-                currentShoppingList.setFirebaseId(null);
-                shoppingListRepository.getShoppingListDatabaseHelper().updateShoppingListFirebaseId(currentShoppingList.getId(), null);
-                firebaseListId = null;
-                if (toolbarCloudIcon != null) toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
-                Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
-                refreshItemList();
-            });
+            // 4. Decouple local list from cloud (set firebaseId to null) BEFORE deleting from cloud
+            String listToDeleteId = firebaseListId; // Keep ID for deletion
+            
+            currentShoppingList.setFirebaseId(null);
+            firebaseListId = null;
+            shoppingListRepository.getShoppingListDatabaseHelper().updateShoppingListFirebaseId(currentShoppingList.getId(), null);
+            
+            // Update UI to local state immediately
+            if (toolbarCloudIcon != null) toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
+            Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
+            refreshItemList();
+
+            // 5. Delete from cloud safely
+            shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, null);
         });
     }
 
