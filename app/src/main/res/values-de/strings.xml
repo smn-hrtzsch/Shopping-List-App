@@ -261,4 +261,8 @@
     <string name="button_stop_sync">Beenden &amp; Löschen</string>
     <string name="toast_sync_enabled">Cloud-Sicherung aktiviert</string>
     <string name="toast_sync_disabled">Cloud-Sicherung deaktiviert</string>
+
+    <string name="dialog_enable_sync_title">Cloud-Sync aktivieren?</string>
+    <string name="dialog_enable_sync_message">Möchtest du diese Liste in die Cloud hochladen, um von anderen Geräten darauf zuzugreifen?</string>
+    <string name="button_enable_sync">Sync aktivieren</string>
 </resources>

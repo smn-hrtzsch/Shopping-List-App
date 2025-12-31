@@ -167,26 +167,53 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void toggleCloudSync(boolean enable, com.google.android.material.switchmaterial.SwitchMaterial syncSwitch) {
         if (enable && firebaseListId == null) {
-            updateSyncIcon(R.drawable.ic_cloud_upload_24);
-            shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
-                firebaseListId = currentShoppingList.getFirebaseId();
-                updateSyncIcon(R.drawable.ic_cloud_synced_24);
-                Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
-                refreshItemList();
+            showCustomDialog(getString(R.string.dialog_enable_sync_title), getString(R.string.dialog_enable_sync_message), getString(R.string.button_enable_sync), () -> {
+                updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
+                    firebaseListId = currentShoppingList.getFirebaseId();
+                    updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                    Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
+                    refreshItemList();
+                });
+            }, () -> {
+                syncSwitch.setOnCheckedChangeListener(null);
+                syncSwitch.setChecked(false);
+                syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> toggleCloudSync(isChecked, syncSwitch));
             });
         } else if (!enable && firebaseListId != null) {
             showCustomDialog(getString(R.string.dialog_stop_sync_title), getString(R.string.dialog_stop_sync_message), getString(R.string.button_stop_sync), () -> {
-                updateSyncIcon(R.drawable.ic_cloud_upload_24);
-                shoppingListRepository.deleteSingleListFromCloud(firebaseListId, () -> {
-                    currentShoppingList.setFirebaseId(null);
-                    shoppingListRepository.getShoppingListDatabaseHelper().updateShoppingListFirebaseId(currentShoppingList.getId(), null);
-                    firebaseListId = null;
-                    toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
-                    Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
-                    refreshItemList(); 
-                });
+                performSafeUnsync();
+            }, () -> {
+                syncSwitch.setOnCheckedChangeListener(null);
+                syncSwitch.setChecked(true);
+                syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> toggleCloudSync(isChecked, syncSwitch));
             });
         }
+    }
+
+    private void performSafeUnsync() {
+        shoppingListRepository.getItemsForListId(firebaseListId, cloudItems -> {
+            if (listSnapshotListener != null) listSnapshotListener.remove();
+            if (itemsSnapshotListener != null) itemsSnapshotListener.remove();
+            listSnapshotListener = null;
+            itemsSnapshotListener = null;
+
+            shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
+
+            for (ShoppingItem item : cloudItems) {
+                ShoppingItem localItem = new ShoppingItem(item.getName(), item.getQuantity(), item.getUnit(), item.isDone(), currentShoppingListId, item.getNotes(), item.getPosition());
+                shoppingListRepository.addItemToShoppingList(currentShoppingListId, localItem);
+            }
+
+            shoppingListRepository.deleteSingleListFromCloud(firebaseListId, () -> {
+                currentShoppingList.setFirebaseId(null);
+                shoppingListRepository.getShoppingListDatabaseHelper().updateShoppingListFirebaseId(currentShoppingList.getId(), null);
+                firebaseListId = null;
+                if (toolbarCloudIcon != null) toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_24);
+                Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
+                refreshItemList();
+            });
+        });
     }
 
     private void updateSyncIcon(int drawableId) {
@@ -428,7 +455,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     @Override
     public View getSnackbarAnchorView() { return findViewById(R.id.add_item_bar_container); }
 
-    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction) {
+    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
         builder.setView(dialogView);
@@ -437,8 +464,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         TextView textTitle = dialogView.findViewById(R.id.dialog_title); TextView textMessage = dialogView.findViewById(R.id.dialog_message);
         com.google.android.material.button.MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive); com.google.android.material.button.MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
         textTitle.setText(title); textMessage.setText(message); btnPositive.setText(positiveButtonText);
-        btnPositive.setOnClickListener(v -> { onPositiveAction.run(); dialog.dismiss(); });
-        btnNegative.setOnClickListener(v -> dialog.dismiss());
+        btnPositive.setOnClickListener(v -> { if (onPositiveAction != null) onPositiveAction.run(); dialog.dismiss(); });
+        btnNegative.setOnClickListener(v -> { if (onNegativeAction != null) onNegativeAction.run(); dialog.dismiss(); });
         dialog.show();
     }
 }

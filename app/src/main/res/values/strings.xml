@@ -240,4 +240,8 @@
     <string name="button_stop_sync">Stop &amp; Delete</string>
     <string name="toast_sync_enabled">Cloud backup enabled</string>
     <string name="toast_sync_disabled">Cloud backup disabled</string>
+
+    <string name="dialog_enable_sync_title">Enable Cloud Sync?</string>
+    <string name="dialog_enable_sync_message">Do you want to upload this list to the cloud to access it from other devices?</string>
+    <string name="button_enable_sync">Enable Sync</string>
 </resources>
