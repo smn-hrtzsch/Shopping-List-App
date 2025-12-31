@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="?attr/colorSurface">
+    android:background="@drawable/bg_dialog_rounded">
 
     <TextView
         android:id="@+id/dialog_title"
@@ -31,6 +31,7 @@
         android:textAllCaps="false"
         android:textSize="16sp"
         android:textColor="?attr/colorOnSurface"
+        app:iconTint="?attr/colorOnSurface"
         app:strokeColor="?attr/colorOnSurfaceSecondary"/>
 
     <com.google.android.material.button.MaterialButton
