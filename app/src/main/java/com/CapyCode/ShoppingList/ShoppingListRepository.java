@@ -163,7 +163,6 @@ public class ShoppingListRepository {
 
     public void fetchItemsFromCloudOneTime(String firebaseListId, OnItemsLoadedListener listener) {
         db.collection("shopping_lists").document(firebaseListId).collection("items")
-                .orderBy("position")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<ShoppingItem> items = new ArrayList<>();
@@ -174,6 +173,11 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
+                    // Manual sorting to avoid Firestore index requirement
+                    items.sort((a, b) -> {
+                        if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
+                        return Integer.compare(a.getPosition(), b.getPosition());
+                    });
                     listener.onItemsLoaded(items);
                 })
                 .addOnFailureListener(e -> listener.onItemsLoaded(new ArrayList<>()));
@@ -181,7 +185,6 @@ public class ShoppingListRepository {
 
     public com.google.firebase.firestore.ListenerRegistration getItemsForListId(String firebaseListId, OnItemsLoadedListener listener) {
         return db.collection("shopping_lists").document(firebaseListId).collection("items")
-                .orderBy("position")
                 .addSnapshotListener((value, e) -> {
                     if (e != null) {
                         listener.onItemsLoaded(new ArrayList<>());
@@ -195,6 +198,11 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
+                    // Manual sorting to avoid Firestore index requirement
+                    items.sort((a, b) -> {
+                        if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
+                        return Integer.compare(a.getPosition(), b.getPosition());
+                    });
                     listener.onItemsLoaded(items);
                 });
     }

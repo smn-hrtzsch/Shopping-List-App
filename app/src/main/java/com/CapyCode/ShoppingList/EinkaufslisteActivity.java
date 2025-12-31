@@ -223,7 +223,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             // 6. Delete from Cloud
             // Even if MainActivity listener fires now, it won't find this list in "obsolete" check because it has no firebaseId locally.
             shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, null);
-            isUnsyncing = false;
         });
     }
 
