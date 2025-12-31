@@ -2,6 +2,8 @@
 
 ## Allgemein
 
+- [ ] Impressum und Datenschutzrichtlinie erstellen und in der App verlinken
+
 ## Fixes
 
 - [x] Ladezeit der MainActivity optimieren, lokale Kopie der Clouda Datenbank verwenden
