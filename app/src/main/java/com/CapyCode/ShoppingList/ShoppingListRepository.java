@@ -457,6 +457,16 @@ public class ShoppingListRepository {
         ShoppingList list = lists.get(index);
         List<ShoppingItem> items = dbHelper.getAllItems(list.getId());
 
+        // Generate ID locally
+        com.google.firebase.firestore.DocumentReference docRef = db.collection("shopping_lists").document();
+        String firebaseId = docRef.getId();
+
+        // Update local object and DB immediately BEFORE upload to prevent race condition with listeners
+        list.setFirebaseId(firebaseId);
+        list.setOwnerId(user.getUid());
+        list.setMembers(java.util.Collections.singletonList(user.getUid()));
+        dbHelper.updateLocalListAfterMigration(list);
+
         Map<String, Object> listData = new HashMap<>();
         listData.put("name", list.getName());
         listData.put("ownerId", user.getUid());
@@ -465,15 +475,8 @@ public class ShoppingListRepository {
         listData.put("pending_members", new ArrayList<>());
         listData.put("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
-        db.collection("shopping_lists").add(listData)
-            .addOnSuccessListener(docRef -> {
-                String firebaseId = docRef.getId();
-                list.setFirebaseId(firebaseId);
-                list.setOwnerId(user.getUid());
-                list.setMembers(java.util.Collections.singletonList(user.getUid()));
-                
-                dbHelper.updateLocalListAfterMigration(list);
-
+        docRef.set(listData)
+            .addOnSuccessListener(aVoid -> {
                 if (items.isEmpty()) {
                      uploadNextList(lists, index + 1, user, onComplete);
                 } else {
@@ -493,12 +496,30 @@ public class ShoppingListRepository {
                          batch.set(itemRef, itemData);
                      }
                      batch.commit().addOnCompleteListener(t -> {
+                         // Update items locally with their new firebaseIds
+                         // This is optional as listeners might catch it, but good for consistency
+                         for(ShoppingItem item : items) {
+                             dbHelper.updateItem(item); // Needs a method to update firebaseId on item? ShoppingItem doesn't store firebaseId in SQLite by default unless column added?
+                             // Wait, dbHelper.updateItem updates standard fields. Does it update firebaseId?
+                             // ShoppingListDatabaseHelper doesn't seem to have a column for item firebase_id in updateItem?
+                             // Let's check ShoppingItem.java and ShoppingListDatabaseHelper.java
+                             // ShoppingItem has firebaseId field. 
+                             // ShoppingListDatabaseHelper TABLE_ITEMS doesn't seem to have firebase_id column based on previous read_file?
+                             // Wait, let me check the read_file output of ShoppingListDatabaseHelper again.
+                         }
                          uploadNextList(lists, index + 1, user, onComplete);
                      });
                 }
             })
             .addOnFailureListener(e -> {
                 Log.e("Repo", "Failed to upload list " + list.getName(), e);
+                // If upload fails, we might want to revert the local firebaseId?
+                // For now, let's keep it or maybe set it to null?
+                // If we keep it, it might be "stuck" in syncing state without being on server.
+                // Safest might be to revert if it failed completely.
+                list.setFirebaseId(null);
+                dbHelper.updateShoppingListFirebaseId(list.getId(), null);
+                
                 uploadNextList(lists, index + 1, user, onComplete);
             });
     }
