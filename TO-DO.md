@@ -1,5 +1,7 @@
 # To-Dos Shopping List App
 
+## Allgemein
+
 ## Fixes
 
 - [x] Ladezeit der MainActivity optimieren, lokale Kopie der Clouda Datenbank verwenden

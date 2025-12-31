@@ -30,7 +30,8 @@
         <item name="colorSecondary">@color/orange2</item>
         <item name="colorSurface">@color/black</item>
         <item name="colorOnSurface">@color/light_gray</item>
-        <item name="android:background">@color/dark_gray</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:textColorPrimary">@color/light_gray</item>
         <item name="android:textColorSecondary">@color/gray</item>
         <item name="buttonBarPositiveButtonStyle">@style/MyDialogButton</item>

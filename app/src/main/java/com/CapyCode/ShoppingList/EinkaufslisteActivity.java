@@ -268,7 +268,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
             @Override
             public void onLoaded(List<Map<String, String>> membersWithNames) {
-                MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(EinkaufslisteActivity.this);
+                androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(EinkaufslisteActivity.this);
                 View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
                 builder.setView(dialogView);
                 androidx.appcompat.app.AlertDialog dialog = builder.create();
@@ -307,7 +307,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void showInviteUserDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_invite_user, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
