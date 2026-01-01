@@ -454,11 +454,23 @@ public class ShoppingListRepository {
                             memberInfo.put("role", role);
                             result.add(memberInfo);
                             if (counter.incrementAndGet() == allIds.size()) {
+                                // Sort result based on order in allIds to maintain consistency (e.g. join order)
+                                result.sort((m1, m2) -> {
+                                    int idx1 = allIds.indexOf(m1.get("uid"));
+                                    int idx2 = allIds.indexOf(m2.get("uid"));
+                                    return Integer.compare(idx1, idx2);
+                                });
                                 listener.onLoaded(result);
                             }
                         })
                         .addOnFailureListener(e -> {
                             if (counter.incrementAndGet() == allIds.size()) {
+                                // Even on partial failure, sort what we have
+                                result.sort((m1, m2) -> {
+                                    int idx1 = allIds.indexOf(m1.get("uid"));
+                                    int idx2 = allIds.indexOf(m2.get("uid"));
+                                    return Integer.compare(idx1, idx2);
+                                });
                                 listener.onLoaded(result);
                             }
                         });

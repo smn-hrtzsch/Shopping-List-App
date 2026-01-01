@@ -197,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
         View cardPrivate = dialogView.findViewById(R.id.card_private_list);
         View cardShared = dialogView.findViewById(R.id.card_shared_list);
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         cardPrivate.setOnClickListener(v -> {
             toggleAddListInput(false);
@@ -207,6 +208,10 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             toggleAddListInput(true);
             dialog.dismiss();
         });
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
 
         dialog.show();
     }
