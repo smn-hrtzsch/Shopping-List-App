@@ -440,7 +440,12 @@ public class ShoppingListRepository {
                         .addOnSuccessListener(userDoc -> {
                             Map<String, String> memberInfo = new HashMap<>();
                             memberInfo.put("uid", uid);
-                            memberInfo.put("username", userDoc.exists() ? userDoc.getString("username") : "Unbekannt");
+                            if (userDoc.exists()) {
+                                memberInfo.put("username", userDoc.getString("username"));
+                                memberInfo.put("profileImageUrl", userDoc.getString("profileImageUrl"));
+                            } else {
+                                memberInfo.put("username", "Unbekannt");
+                            }
                             
                             String role = "Mitglied";
                             if (uid.equals(doc.getString("ownerId"))) role = "Besitzer";

@@ -33,6 +33,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -280,20 +283,35 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 for (Map<String, String> member : membersWithNames) {
                     android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
                     row.setOrientation(android.widget.LinearLayout.HORIZONTAL); row.setGravity(android.view.Gravity.CENTER_VERTICAL); row.setPadding(0, 24, 0, 24);
-                    ImageView icon = new ImageView(EinkaufslisteActivity.this); icon.setImageResource(R.drawable.ic_account_circle_24);
-                    String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
-                    int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
-                    int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
-                    icon.setColorFilter(isMe ? highlightColor : textColor);
+                    ImageView icon = new ImageView(EinkaufslisteActivity.this); 
+                    
+                    String imageUrl = member.get("profileImageUrl");
+                    if (imageUrl != null && !imageUrl.isEmpty()) {
+                        Glide.with(EinkaufslisteActivity.this)
+                             .load(imageUrl)
+                             .apply(RequestOptions.circleCropTransform())
+                             .into(icon);
+                        icon.setOnClickListener(v -> showImagePreviewDialog(imageUrl));
+                    } else {
+                        icon.setImageResource(R.drawable.ic_account_circle_24);
+                        int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
+                        int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
+                        String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
+                        icon.setColorFilter(isMe ? highlightColor : textColor);
+                    }
+                    
                     android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); iconParams.setMargins(0, 0, 32, 0);
                     row.addView(icon, iconParams);
                     TextView text = new TextView(EinkaufslisteActivity.this);
                     String role = member.get("role"); String username = member.get("username");
+                    String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
                     if (isMe) username += getString(R.string.member_is_me);
                     android.text.SpannableString content = new android.text.SpannableString(username + "\n" + role);
                     content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);
                     content.setSpan(new android.text.style.RelativeSizeSpan(0.85f), username.length() + 1, content.length(), 0);
                     content.setSpan(new android.text.style.ForegroundColorSpan(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurfaceVariant)), username.length() + 1, content.length(), 0);
+                    int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
+                    int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
                     text.setText(content); text.setTextColor(isMe ? highlightColor : textColor); text.setTextSize(16); row.addView(text);
                     container.addView(row);
                 }
@@ -304,6 +322,27 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             @Override
             public void onError(String error) { Toast.makeText(EinkaufslisteActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show(); }
         });
+    }
+
+    private void showImagePreviewDialog(String imageUrl) {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_image_preview, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+        
+        ImageView imageView = dialogView.findViewById(R.id.dialog_image_preview);
+        View btnClose = dialogView.findViewById(R.id.dialog_button_close_preview);
+        
+        Glide.with(this)
+             .load(imageUrl)
+             .apply(RequestOptions.circleCropTransform())
+             .into(imageView);
+             
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     private void showInviteUserDialog() {
