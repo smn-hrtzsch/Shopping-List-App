@@ -52,6 +52,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_THEME = "prefs_theme";
+    private static final String KEY_LANGUAGE = "prefs_language";
     private SharedPreferences sharedPreferences;
 
     private MaterialButton buttonDelete;
@@ -101,6 +102,21 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                 }
             });
+
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        SharedPreferences prefs = newBase.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String lang = prefs.getString(KEY_LANGUAGE, "en"); // Default to English or system? Let's say 'en' or maybe check system.
+        // Better: check system default if not set. But for toggle we need explicit.
+        // Let's assume 'en' as default fall back or check system locale.
+        // For simplicity in this step, I'll load what's saved or default to 'en'.
+        
+        java.util.Locale locale = new java.util.Locale(lang);
+        java.util.Locale.setDefault(locale);
+        android.content.res.Configuration config = newBase.getResources().getConfiguration();
+        config.setLocale(locale);
+        super.attachBaseContext(newBase.createConfigurationContext(config));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -403,7 +419,26 @@ public class ProfileActivity extends AppCompatActivity {
                 themeItem.setIcon(R.drawable.ic_moon_outlined);
             }
         }
+
+        MenuItem languageItem = menu.findItem(R.id.action_switch_language);
+        if (languageItem != null) {
+            View actionView = languageItem.getActionView();
+            if (actionView != null) {
+                TextView langText = actionView.findViewById(R.id.text_language_code);
+                String currentLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+                langText.setText(currentLang.toUpperCase());
+                actionView.setOnClickListener(v -> switchLanguage());
+            }
+        }
         return true;
+    }
+
+    private void switchLanguage() {
+        String currentLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+        String newLang = currentLang.equals("en") ? "de" : "en";
+        
+        sharedPreferences.edit().putString(KEY_LANGUAGE, newLang).apply();
+        recreate();
     }
 
     @Override
