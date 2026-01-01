@@ -291,7 +291,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                              .load(imageUrl)
                              .apply(RequestOptions.circleCropTransform())
                              .into(icon);
-                        icon.setOnClickListener(v -> showImagePreviewDialog(imageUrl));
+                        icon.setOnClickListener(v -> showImagePreviewDialog(imageUrl, member.get("username")));
                     } else {
                         icon.setImageResource(R.drawable.ic_account_circle_24);
                         int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
@@ -324,7 +324,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         });
     }
 
-    private void showImagePreviewDialog(String imageUrl) {
+    private void showImagePreviewDialog(String imageUrl, String username) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_image_preview, null);
         builder.setView(dialogView);
@@ -333,8 +333,13 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
         
+        TextView titleView = dialogView.findViewById(R.id.dialog_title_preview);
         ImageView imageView = dialogView.findViewById(R.id.dialog_image_preview);
+        TextView usernameView = dialogView.findViewById(R.id.dialog_username_preview);
         View btnClose = dialogView.findViewById(R.id.dialog_button_close_preview);
+        
+        titleView.setText(R.string.profile_picture);
+        usernameView.setText(username);
         
         Glide.with(this)
              .load(imageUrl)

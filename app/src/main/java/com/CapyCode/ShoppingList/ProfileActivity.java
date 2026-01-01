@@ -160,14 +160,14 @@ public class ProfileActivity extends AppCompatActivity {
         
         imageProfile.setOnClickListener(v -> {
             if (currentImageUrl != null && !currentImageUrl.isEmpty()) {
-                showImagePreviewDialog(currentImageUrl);
+                showImagePreviewDialog(currentImageUrl, currentLoadedUsername);
             }
         });
 
         setupSyncSwitch();
     }
 
-    private void showImagePreviewDialog(String imageUrl) {
+    private void showImagePreviewDialog(String imageUrl, String username) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_image_preview, null);
         builder.setView(dialogView);
@@ -176,8 +176,17 @@ public class ProfileActivity extends AppCompatActivity {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
         
+        TextView titleView = dialogView.findViewById(R.id.dialog_title_preview);
         ImageView imageView = dialogView.findViewById(R.id.dialog_image_preview);
+        TextView usernameView = dialogView.findViewById(R.id.dialog_username_preview);
         View btnClose = dialogView.findViewById(R.id.dialog_button_close_preview);
+
+        titleView.setText(R.string.profile_picture);
+        if (username != null) {
+            usernameView.setText(username);
+        } else {
+            usernameView.setVisibility(View.GONE);
+        }
         
         Glide.with(this)
              .load(imageUrl)

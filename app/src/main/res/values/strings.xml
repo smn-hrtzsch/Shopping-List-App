@@ -155,6 +155,7 @@
     <string name="button_create_account">Create Account</string>
     <string name="button_sign_out">Sign Out</string>
     <string name="account_info">Account Info</string>
+    <string name="profile_picture">Profile Picture</string>
     <string name="close">Close</string>
     <string name="change_profile_picture">Change Picture</string>
     <string name="action_register_email">Register with Email</string>
