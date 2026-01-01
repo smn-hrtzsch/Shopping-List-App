@@ -447,9 +447,9 @@ public class ShoppingListRepository {
                                 memberInfo.put("username", "Unbekannt");
                             }
                             
-                            String role = "Mitglied";
-                            if (uid.equals(doc.getString("ownerId"))) role = "Besitzer";
-                            else if (pendingIds != null && pendingIds.contains(uid)) role = "Eingeladen";
+                            String role = context.getString(R.string.member_role_member);
+                            if (uid.equals(doc.getString("ownerId"))) role = context.getString(R.string.member_role_owner);
+                            else if (pendingIds != null && pendingIds.contains(uid)) role = context.getString(R.string.member_role_invited);
                             
                             memberInfo.put("role", role);
                             result.add(memberInfo);

@@ -76,6 +76,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         emptyView = findViewById(R.id.empty_view_items);
         activityRootView = findViewById(R.id.einkaufsliste_activity_root);
         toolbarCloudIcon = findViewById(R.id.toolbar_cloud_icon);
+        if (toolbarCloudIcon != null) {
+            toolbarCloudIcon.setOnClickListener(v -> toggleCloudSync());
+        }
 
         AppBarLayout appBarLayout = findViewById(R.id.appbar);
         View addItemBarContainer = findViewById(R.id.add_item_bar_container);
@@ -154,23 +157,23 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         boolean isShared = currentShoppingList != null && currentShoppingList.isShared();
         menu.findItem(R.id.action_share_list).setVisible(!isShared);
         menu.findItem(R.id.action_view_members).setVisible(isShared);
-
-        MenuItem syncItem = menu.findItem(R.id.action_sync_switch);
-        syncItem.setVisible(!isShared && mAuth.getCurrentUser() != null);
-        if (syncItem.isVisible()) {
-            com.google.android.material.switchmaterial.SwitchMaterial syncSwitch = 
-                (com.google.android.material.switchmaterial.SwitchMaterial) syncItem.getActionView();
-            if (syncSwitch != null) {
-                syncSwitch.setOnCheckedChangeListener(null);
-                syncSwitch.setChecked(firebaseListId != null);
-                syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> toggleCloudSync(isChecked, syncSwitch));
-            }
-        }
         return true;
     }
 
-    private void toggleCloudSync(boolean enable, com.google.android.material.switchmaterial.SwitchMaterial syncSwitch) {
-        if (enable && firebaseListId == null) {
+    private void toggleCloudSync() {
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(this, R.string.auth_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        boolean isShared = currentShoppingList != null && currentShoppingList.isShared();
+        if (isShared) {
+            // Already shared, maybe show members? Or just do nothing.
+            // For now, only for non-shared private lists.
+            return;
+        }
+
+        if (firebaseListId == null) {
             showCustomDialog(getString(R.string.dialog_enable_sync_title), getString(R.string.dialog_enable_sync_message), getString(R.string.button_enable_sync), () -> {
                 updateSyncIcon(R.drawable.ic_cloud_upload_24);
                 shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
@@ -179,20 +182,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
                     refreshItemList();
                 });
-            }, () -> {
-                syncSwitch.setOnCheckedChangeListener(null);
-                syncSwitch.setChecked(false);
-                syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> toggleCloudSync(isChecked, syncSwitch));
-            });
-        } else if (!enable && firebaseListId != null) {
+            }, null);
+        } else {
             showCustomDialog(getString(R.string.dialog_stop_sync_title), getString(R.string.dialog_stop_sync_message), getString(R.string.button_stop_sync), () -> {
                 isUnsyncing = true; // Set early here!
                 performSafeUnsync();
-            }, () -> {
-                syncSwitch.setOnCheckedChangeListener(null);
-                syncSwitch.setChecked(true);
-                syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> toggleCloudSync(isChecked, syncSwitch));
-            });
+            }, null);
         }
     }
 

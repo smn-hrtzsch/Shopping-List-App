@@ -118,6 +118,7 @@
     <string name="button_leave">Liste verlassen</string>
     <string name="member_role_owner">Besitzer</string>
     <string name="member_role_member">Mitglied</string>
+    <string name="member_role_invited">Eingeladen</string>
     <string name="dialog_members_title">Mitglieder der Liste</string>
     <string name="profile_warning_anonymous">Achtung: Dein Konto ist aktuell an dieses Gerät gebunden (Anonym).\nUm deine Listen dauerhaft zu sichern, solltest du dein Konto verknüpfen.</string>
     <string name="profile_delete_account">Cloud-Konto &amp; Daten löschen</string>
@@ -190,11 +191,11 @@
     <string name="action_link_google">Mit Google verknüpfen</string>
     <string name="linked_google">Google: %s</string>
     <string name="linked_email">E-Mail: %s</string>
-    <string name="google_linked_disconnect">Google verknüpft (Trennen)</string>
+    <string name="google_linked_disconnect">Google Verknüpfung entfernen</string>
     <string name="email_linked_disconnect">E-Mail Verknüpfung entfernen</string>
     <string name="dialog_unlink_title">Verknüpfung aufheben?</string>
     <string name="dialog_unlink_message">Möchtest du diese Anmelde-Methode wirklich entfernen? Wenn du keine anderen Methoden hast, verlierst du den Zugriff auf dein Konto.</string>
-    <string name="button_unlink">Trennen</string>
+    <string name="button_unlink">Verknüpfung entfernen</string>
     <string name="toast_unlinked">Verknüpfung aufgehoben</string>
     <string name="warning_no_providers">Warnung: Dein Konto hat keine Anmeldemethoden mehr.</string>
     <string name="toast_reauth_google">Bitte melde dich erneut mit Google an, um die Verknüpfung zu trennen.</string>

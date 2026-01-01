@@ -97,6 +97,7 @@
     <string name="button_leave">Leave List</string>
     <string name="member_role_owner">Owner</string>
     <string name="member_role_member">Member</string>
+    <string name="member_role_invited">Invited</string>
     <string name="dialog_members_title">List Members</string>
     <string name="profile_warning_anonymous">Attention: Your account is currently tied to this device (Anonymous).\nTo strictly secure your lists, you should link your account.</string>
     <string name="profile_delete_account">Delete Cloud Account &amp; Data</string>
@@ -169,11 +170,11 @@
     <string name="action_link_google">Link with Google</string>
     <string name="linked_google">Google: %s</string>
     <string name="linked_email">Email: %s</string>
-    <string name="google_linked_disconnect">Google connected (Disconnect)</string>
-    <string name="email_linked_disconnect">Disconnect Email</string>
-    <string name="dialog_unlink_title">Disconnect?</string>
+    <string name="google_linked_disconnect">Remove Google link</string>
+    <string name="email_linked_disconnect">Remove Email link</string>
+    <string name="dialog_unlink_title">Remove link?</string>
     <string name="dialog_unlink_message">Do you really want to remove this login method? If you have no other methods, you will lose access to your account.</string>
-    <string name="button_unlink">Disconnect</string>
+    <string name="button_unlink">Remove</string>
     <string name="toast_unlinked">Disconnected</string>
     <string name="warning_no_providers">Warning: Your account has no login methods left.</string>
     <string name="toast_reauth_google">Please sign in with Google again to disconnect.</string>
