@@ -73,6 +73,11 @@ public class ProfileActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
 
+    private View overlayFullImage;
+    private ImageView imageFullScreen;
+    private View buttonCloseFullImage;
+    private String currentImageUrl = null;
+
     private final ActivityResultLauncher<Intent> authActivityLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK) {
@@ -146,6 +151,10 @@ public class ProfileActivity extends AppCompatActivity {
         containerContent = findViewById(R.id.container_content);
         progressBarLoading = findViewById(R.id.progress_bar_loading);
 
+        overlayFullImage = findViewById(R.id.overlay_full_image);
+        imageFullScreen = findViewById(R.id.image_full_screen);
+        buttonCloseFullImage = findViewById(R.id.button_close_full_image);
+
         loadCurrentProfile();
 
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
@@ -156,7 +165,42 @@ public class ProfileActivity extends AppCompatActivity {
         buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
         buttonSignOut.setOnClickListener(v -> confirmSignOut());
         
+        imageProfile.setOnClickListener(v -> showFullScreenImage());
+        buttonCloseFullImage.setOnClickListener(v -> hideFullScreenImage());
+        overlayFullImage.setOnClickListener(v -> hideFullScreenImage());
+
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (overlayFullImage.getVisibility() == View.VISIBLE) {
+                    hideFullScreenImage();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
+
         setupSyncSwitch();
+    }
+
+    private void showFullScreenImage() {
+        if (currentImageUrl != null && !currentImageUrl.isEmpty()) {
+            overlayFullImage.setVisibility(View.VISIBLE);
+            Glide.with(this)
+                 .load(currentImageUrl)
+                 .into(imageFullScreen);
+        } else {
+            // Optional: Handle case where there is no image (e.g. default icon)
+            // For now, we only show if there is a real URL, or we could show the default drawable big.
+             overlayFullImage.setVisibility(View.VISIBLE);
+             imageFullScreen.setImageResource(R.drawable.ic_account_circle_24);
+             imageFullScreen.setColorFilter(ContextCompat.getColor(this, R.color.icon_tint_adaptive));
+        }
+    }
+
+    private void hideFullScreenImage() {
+        overlayFullImage.setVisibility(View.GONE);
     }
 
     private void setupSyncSwitch() {
@@ -399,6 +443,8 @@ public class ProfileActivity extends AppCompatActivity {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
                     
+                    currentImageUrl = imageUrl;
+
                     if (imageUrl != null && !imageUrl.isEmpty()) {
                         Glide.with(ProfileActivity.this)
                              .load(imageUrl)

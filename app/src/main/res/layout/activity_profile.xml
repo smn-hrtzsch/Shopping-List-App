@@ -274,4 +274,37 @@
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
+
+    <!-- Full Screen Image Overlay -->
+    <FrameLayout
+        android:id="@+id/overlay_full_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#D9000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:elevation="10dp">
+
+        <ImageView
+            android:id="@+id/image_full_screen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/account_info"/>
+
+        <ImageButton
+            android:id="@+id/button_close_full_image"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="48dp"
+            android:layout_marginEnd="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_decline_list"
+            app:tint="@android:color/white"
+            android:contentDescription="@string/close" />
+
+    </FrameLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
