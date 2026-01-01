@@ -50,6 +50,10 @@ import java.util.Map;
 
 public class ProfileActivity extends AppCompatActivity {
 
+    private static final String PREFS_NAME = "theme_prefs";
+    private static final String KEY_THEME = "prefs_theme";
+    private SharedPreferences sharedPreferences;
+
     private MaterialButton buttonDelete;
     private MaterialButton buttonRegisterEmail;
     private MaterialButton buttonRegisterGoogle;
@@ -98,6 +102,10 @@ public class ProfileActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        int savedTheme = sharedPreferences.getInt(KEY_THEME, androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(savedTheme);
+
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_profile);
@@ -345,6 +353,16 @@ public class ProfileActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_profile, menu);
+
+        int currentNightMode = getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+        MenuItem themeItem = menu.findItem(R.id.action_switch_theme);
+        if (themeItem != null) {
+            if (currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                themeItem.setIcon(R.drawable.ic_moon_filled);
+            } else {
+                themeItem.setIcon(R.drawable.ic_moon_outlined);
+            }
+        }
         return true;
     }
 
@@ -355,6 +373,17 @@ public class ProfileActivity extends AppCompatActivity {
             return true;
         } else if (item.getItemId() == android.R.id.home) {
             getOnBackPressedDispatcher().onBackPressed();
+            return true;
+        } else if (item.getItemId() == R.id.action_switch_theme) {
+            int currentNightMode = getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+            if (currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO);
+                sharedPreferences.edit().putInt(KEY_THEME, androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO).apply();
+            } else {
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES);
+                sharedPreferences.edit().putInt(KEY_THEME, androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES).apply();
+            }
+            recreate();
             return true;
         }
         return super.onOptionsItemSelected(item);
