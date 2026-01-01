@@ -51,3 +51,15 @@
 
 - [ ] **Cleanup verbessern:** Beim Löschen einer Liste via Cloud Functions auch die Subcollection "items" rekursiv löschen (verhindert verwaiste Daten)
 - [ ] **Offline-Modus:** Visueller Indikator, wenn die App offline ist und Änderungen nur lokal gespeichert sind
+- [ ] **Passwort-Manager:** App Icon wird nicht korrekt angezeigt im Google Passwort Manager
+
+## Bugfixes
+
+- [ ] Einkaufsliste Activity schließt / stürzt ab, wenn man eine Liste unsyncen möchte.
+- [ ] Nach Abmelden von Account nicht direkt Edit Profile Dialog anzeigen.
+- [ ] Beim Erstellen einer geteilten Liste ohne vorher User Name fesgelegt zu haben, Liste nach korrekter Vergabe auch speichern und nicht verwerfen.
+- [ ] Email Icon Farbe für den Mit Email Anmelden Button ist noch falsch.
+- [ ] Unsynced Cloud Symbol ist im Hintergrund bei Einladung in der Main Activity sichtbar und überlappt mit Annehmen Button.
+- [ ] Umrandung für Ablehnen Button bei Einladung zu geteilter Liste fehlt noch (Nutzung des Styles muss noch korrekt angewendet werden).
+- [ ] Nach Abmeldung werden manchmal fälschlicherweise die unlink Icons in den Anmeldungs Buttons angezeigt anstatt des Email oder Google Icons.
+- [ ] Beim Input für das Einladen eines Members werden Passwort Manager Vorschläge angezeigt (sollte nicht sein).
