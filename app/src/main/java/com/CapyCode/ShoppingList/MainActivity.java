@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_THEME = "prefs_theme";
+    private static final String KEY_LANGUAGE = "prefs_language";
 
     private RecyclerView recyclerView;
     private ListRecyclerViewAdapter adapter;
@@ -81,6 +82,17 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 }
             });
 
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        SharedPreferences prefs = newBase.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String lang = prefs.getString(KEY_LANGUAGE, "en");
+        
+        java.util.Locale locale = new java.util.Locale(lang);
+        java.util.Locale.setDefault(locale);
+        android.content.res.Configuration config = newBase.getResources().getConfiguration();
+        config.setLocale(locale);
+        super.attachBaseContext(newBase.createConfigurationContext(config));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -529,6 +541,14 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     @Override
     protected void onResume() {
         super.onResume();
+        
+        String savedLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+        String currentLang = getResources().getConfiguration().getLocales().get(0).getLanguage();
+        if (!savedLang.equals(currentLang)) {
+            recreate();
+            return;
+        }
+
         if (addListInputLayout.getVisibility() == View.VISIBLE) {
             addListInputLayout.setVisibility(View.GONE);
             fab.show();
