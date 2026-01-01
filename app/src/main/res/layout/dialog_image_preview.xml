@@ -5,24 +5,35 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="@drawable/bg_dialog_rounded"
-    android:gravity="center_horizontal">
+    android:background="@drawable/bg_dialog_rounded">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="@string/account_info"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/dialog_button_close_preview"
+            style="@style/Widget.App.Button.Close"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true" />
+    </RelativeLayout>
 
     <ImageView
         android:id="@+id/dialog_image_preview"
         android:layout_width="250dp"
         android:layout_height="250dp"
         android:scaleType="centerCrop"
-        android:layout_marginBottom="24dp"
+        android:layout_gravity="center_horizontal"
         android:contentDescription="@string/account_info"/>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/dialog_button_close_preview"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/close"
-        android:textColor="@color/dialog_action_text_adaptive"
-        app:strokeColor="@color/dialog_action_text_adaptive"/>
 
 </LinearLayout>
