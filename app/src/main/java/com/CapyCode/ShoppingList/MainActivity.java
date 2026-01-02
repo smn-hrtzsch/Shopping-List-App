@@ -344,7 +344,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                         shoppingList.put("name", listName);
                         shoppingList.put("ownerId", userId);
                         shoppingList.put("isShared", true);
-                        shoppingList.put("members", Arrays.asList(userId));
+                        shoppingList.put("members", new ArrayList<>(Arrays.asList(userId)));
 
                         db.collection("shopping_lists")
                                 .add(shoppingList)
