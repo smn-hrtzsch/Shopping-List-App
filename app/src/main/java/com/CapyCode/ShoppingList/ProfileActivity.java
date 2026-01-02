@@ -610,7 +610,8 @@ public class ProfileActivity extends AppCompatActivity {
             } else {
                 buttonRegisterEmail.setText(R.string.action_link_email);
                 buttonRegisterEmail.setIconResource(R.drawable.ic_email);
-                buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.icon_tint_adaptive));
+                int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
+                buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
                 buttonRegisterEmail.setOnClickListener(v -> {
                     Intent intent = new Intent(this, AuthActivity.class);
                     authActivityLauncher.launch(intent);
