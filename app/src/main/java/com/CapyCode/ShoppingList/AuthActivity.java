@@ -95,45 +95,15 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        mAuth.fetchSignInMethodsForEmail(email)
-            .addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    java.util.List<String> methods = task.getResult().getSignInMethods();
-                    if (methods == null || methods.isEmpty()) {
-                        showLoading(false);
-                        Toast.makeText(AuthActivity.this, R.string.error_login_user_not_found, Toast.LENGTH_LONG).show();
-                    } else {
-                        // User exists. Check if they have a password method.
-                        if (methods.contains(com.google.firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
-                            FirebaseUser currentUser = mAuth.getCurrentUser();
-                            if (currentUser != null && currentUser.isAnonymous()) {
-                                verifyCredentialsAndLogin(email, password);
-                            } else {
-                                performLogin(email, password);
-                            }
-                        } else if (methods.contains(com.google.firebase.auth.GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD)) {
-                            showLoading(false);
-                            showCustomDialog(
-                                getString(R.string.dialog_google_account_title),
-                                getString(R.string.dialog_google_account_message),
-                                getString(R.string.ok),
-                                () -> {}
-                            );
-                        } else {
-                            // Some other method? Proceed with login attempt anyway.
-                            performLogin(email, password);
-                        }
-                    }
-                } else {
-                    // Check failed, maybe network error. Proceed anyway and handle errors later.
-                    FirebaseUser currentUser = mAuth.getCurrentUser();
-                    if (currentUser != null && currentUser.isAnonymous()) {
-                        verifyCredentialsAndLogin(email, password);
-                    } else {
-                        performLogin(email, password);
-                    }
-                }
-            });
+
+        // Directly attempt to login/verify, bypassing fetchSignInMethodsForEmail
+        // which might be blocked by Email Enumeration Protection.
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null && currentUser.isAnonymous()) {
+            verifyCredentialsAndLogin(email, password);
+        } else {
+            performLogin(email, password);
+        }
     }
 
     private void verifyCredentialsAndLogin(String email, String password) {
@@ -416,33 +386,9 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        mAuth.fetchSignInMethodsForEmail(email)
-            .addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    java.util.List<String> methods = task.getResult().getSignInMethods();
-                    if (methods == null || methods.isEmpty()) {
-                        showLoading(false);
-                        Toast.makeText(AuthActivity.this, R.string.error_login_user_not_found, Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    if (methods.contains(com.google.firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
-                        sendResetEmail(email);
-                    } else if (methods.contains(com.google.firebase.auth.GoogleAuthProvider.GOOGLE_SIGN_IN_METHOD)) {
-                        showLoading(false);
-                        showCustomDialog(
-                            getString(R.string.dialog_google_account_title),
-                            getString(R.string.dialog_google_account_message),
-                            getString(R.string.ok),
-                            () -> {}
-                        );
-                    } else {
-                        sendResetEmail(email);
-                    }
-                } else {
-                    sendResetEmail(email);
-                }
-            });
+        // Directly send reset email. If user doesn't exist, Firebase might still return success
+        // or fail depending on settings, but we shouldn't pre-check existence.
+        sendResetEmail(email);
     }
 
     private void sendResetEmail(String email) {
