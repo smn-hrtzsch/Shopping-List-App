@@ -500,9 +500,6 @@ public class ProfileActivity extends AppCompatActivity {
                         isInitialProfileCreation = true;
                         currentLoadedUsername = null;
                         textViewCurrentUsername.setText("...");
-                        if (!isSigningOut) {
-                            showEditProfileDialog();
-                        }
                     }
                     isSigningOut = false;
                     updateAuthUI();
@@ -513,9 +510,6 @@ public class ProfileActivity extends AppCompatActivity {
                     containerContent.setVisibility(View.VISIBLE);
                     Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
                     isInitialProfileCreation = true;
-                    if (!isSigningOut) {
-                        showEditProfileDialog();
-                    }
                     isSigningOut = false;
                 }
             });
@@ -696,10 +690,11 @@ public class ProfileActivity extends AppCompatActivity {
         repo.migrateLocalListsToCloud(() -> {
              repo.clearLocalDatabase();
              mAuth.signOut();
-             mGoogleSignInClient.signOut();
-             progressBarLoading.setVisibility(View.GONE);
-             Toast.makeText(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
-             loadCurrentProfile(); 
+             mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+                 progressBarLoading.setVisibility(View.GONE);
+                 Toast.makeText(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
+                 loadCurrentProfile(); 
+             });
         });
     }
 
