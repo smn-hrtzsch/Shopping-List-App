@@ -217,6 +217,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             // 5. Update UI immediately
             updateSyncIcon(R.drawable.ic_cloud_unsynced_24);
             Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
+            
+            // Force adapter recreation to switch to local mode
+            adapter = null; 
             refreshItemList(); // Reloads items from DB (which are now the decoupled ones)
 
             // 6. Delete from Cloud
@@ -511,17 +514,32 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     private void refreshItemList() {
-        if (shoppingListRepository == null || adapter == null) return;
-        adapter.resetEditingPosition();
+        if (shoppingListRepository == null) return;
+        if (adapter != null) adapter.resetEditingPosition();
+        
         if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
         if (firebaseListId != null) {
             itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
                 updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
-                this.shoppingItems = loadedItems; adapter.setItems(shoppingItems); checkEmptyViewItems(shoppingItems.isEmpty());
+                this.shoppingItems = loadedItems;
+                if (adapter == null) {
+                    adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
+                    recyclerView.setAdapter(adapter);
+                } else {
+                    adapter.setItems(shoppingItems);
+                }
+                checkEmptyViewItems(shoppingItems.isEmpty());
             });
         } else {
             shoppingListRepository.getItemsForListId(currentShoppingListId, (loadedItems, hasPendingWrites) -> {
-                this.shoppingItems = loadedItems; adapter.setItems(shoppingItems); checkEmptyViewItems(shoppingItems.isEmpty());
+                this.shoppingItems = loadedItems;
+                if (adapter == null) {
+                    adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, null);
+                    recyclerView.setAdapter(adapter);
+                } else {
+                    adapter.setItems(shoppingItems);
+                }
+                checkEmptyViewItems(shoppingItems.isEmpty());
             });
         }
     }
