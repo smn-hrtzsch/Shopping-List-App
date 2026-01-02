@@ -205,6 +205,7 @@
                         app:icon="@drawable/ic_email"
                         app:iconGravity="textStart"
                         app:iconPadding="16dp"
+                        app:iconTint="?attr/colorOnSurface"
                         app:cornerRadius="30dp"
                         android:textAllCaps="false"
                         android:textSize="16sp"
