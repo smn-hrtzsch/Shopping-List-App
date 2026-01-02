@@ -255,7 +255,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         final TextView textViewListItemCount;
         final ImageView cloudIcon;
         final ImageButton buttonJoin;
-        final ImageButton buttonDecline;
+        final com.google.android.material.button.MaterialButton buttonDecline;
 
 
         public ViewHolder(View view) {
