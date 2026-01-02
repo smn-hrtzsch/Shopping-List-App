@@ -166,7 +166,7 @@
     <string name="sign_in_apple">Mit Apple anmelden</string>
     <string name="auth_success">Anmeldung erfolgreich</string>
     <string name="auth_failed">Anmeldung fehlgeschlagen</string>
-    <string name="email_sent">E-Mail zum Zurücksetzen gesendet</string>
+    <string name="email_sent">Falls ein Konto existiert, wurde eine E-Mail gesendet.</string>
     <string name="error_email_required">E-Mail ist erforderlich</string>
     <string name="error_invalid_email">Bitte gib eine gültige E-Mail Adresse ein.</string>
     <string name="error_password_required">Passwort ist erforderlich</string>
@@ -182,8 +182,8 @@
     <string name="change_profile_picture">Bild ändern</string>
     <string name="action_register_email">Mit E-Mail registrieren</string>
     <string name="action_sign_in_email">Mit E-Mail anmelden</string>
-    <string name="error_login_user_not_found">Noch kein Konto mit dieser E-Mail vorhanden. Bitte erst registrieren.</string>
-    <string name="error_login_wrong_password">Das eingegebene Passwort ist nicht korrekt.</string>
+    <string name="error_login_user_not_found">E-Mail oder Passwort falsch.</string>
+    <string name="error_login_wrong_password">E-Mail oder Passwort falsch.</string>
     <string name="dialog_switch_account_title">Konto wechseln?</string>
     <string name="dialog_switch_account_message">Ein Konto mit der E-Mail dieses Google-Accounts existiert bereits.\n\nMöchtest du dich stattdessen in dieses Konto einloggen? Dabei wird dein Google-Konto mit dem bestehenden Account verknüpft (und deine aktuellen Gast-Daten ersetzt).</string>
     <string name="button_switch_and_link">Wechseln &amp; Verknüpfen</string>
