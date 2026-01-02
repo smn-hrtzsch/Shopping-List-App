@@ -196,12 +196,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         isUnsyncing = true; // Set early here!
         Toast.makeText(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
+        // Remove listeners immediately to prevent any updates during unsync
+        if (listSnapshotListener != null) { listSnapshotListener.remove(); listSnapshotListener = null; }
+        if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
+
         // 1. Fetch items from cloud (One-Time) to ensure we have latest state
         shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, (cloudItems, hasPendingWrites) -> {
-            // 2. Remove listeners immediately
-            if (listSnapshotListener != null) { listSnapshotListener.remove(); listSnapshotListener = null; }
-            if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
-
             // 3. Atomically decouple list and replace items locally
             // This prevents "deleteObsoleteCloudLists" from deleting this list because firebaseId becomes NULL
             shoppingListRepository.decoupleListAndReplaceItems(currentShoppingListId, cloudItems);

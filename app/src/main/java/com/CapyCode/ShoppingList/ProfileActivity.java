@@ -75,6 +75,7 @@ public class ProfileActivity extends AppCompatActivity {
     private GoogleSignInClient mGoogleSignInClient;
 
     private String currentImageUrl = null;
+    private boolean isSigningOut = false;
 
     private final ActivityResultLauncher<Intent> authActivityLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -267,6 +268,7 @@ public class ProfileActivity extends AppCompatActivity {
                 Toast.makeText(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
                 currentLoadedUsername = username;
                 textViewCurrentUsername.setText(username);
+                setResult(RESULT_OK);
                 dialog.dismiss();
                 if (isInitialProfileCreation) { loadCurrentProfile(); }
             }
@@ -498,8 +500,11 @@ public class ProfileActivity extends AppCompatActivity {
                         isInitialProfileCreation = true;
                         currentLoadedUsername = null;
                         textViewCurrentUsername.setText("...");
-                        showEditProfileDialog();
+                        if (!isSigningOut) {
+                            showEditProfileDialog();
+                        }
                     }
+                    isSigningOut = false;
                     updateAuthUI();
                 }
                 @Override
@@ -508,7 +513,10 @@ public class ProfileActivity extends AppCompatActivity {
                     containerContent.setVisibility(View.VISIBLE);
                     Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
                     isInitialProfileCreation = true;
-                    showEditProfileDialog();
+                    if (!isSigningOut) {
+                        showEditProfileDialog();
+                    }
+                    isSigningOut = false;
                 }
             });
         };
@@ -602,7 +610,7 @@ public class ProfileActivity extends AppCompatActivity {
             } else {
                 buttonRegisterEmail.setText(R.string.action_link_email);
                 buttonRegisterEmail.setIconResource(R.drawable.ic_email);
-                buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.text_primary_adaptive));
+                buttonRegisterEmail.setIconTint(ContextCompat.getColorStateList(this, R.color.icon_tint_adaptive));
                 buttonRegisterEmail.setOnClickListener(v -> {
                     Intent intent = new Intent(this, AuthActivity.class);
                     authActivityLauncher.launch(intent);
@@ -636,7 +644,7 @@ public class ProfileActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                     Toast.makeText(this, R.string.toast_unlinked, Toast.LENGTH_SHORT).show();
                     if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) mGoogleSignInClient.signOut();
-                    loadCurrentProfile();
+                    user.reload().addOnCompleteListener(reloadTask -> loadCurrentProfile());
                 } else {
                     if (task.getException() instanceof FirebaseAuthRecentLoginRequiredException) {
                         if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) {
@@ -682,6 +690,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void performSafeSignOut() {
         progressBarLoading.setVisibility(View.VISIBLE);
+        isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.migrateLocalListsToCloud(() -> {
              repo.clearLocalDatabase();
