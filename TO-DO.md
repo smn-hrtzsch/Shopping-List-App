@@ -62,10 +62,10 @@
 - [ ] Beim Bearbeiten eines Listennamens, kanne es vorkommen, dass der +-Button zum Hinzufügen einer Liste den Speichern-Button überdeckt. Beim Bearbeiten eines Listennamens, sollte der +-Button ausgeblendet werden.
 - [ ] Konto wechseln? - Dialog sollte nicht angezeigt werden, wenn zum Zeitpunkt der Anmeldung kein Profil vorhanden ist, welches durch die Anmeldung Datenverlust erleiden würde. Auch die Nachricht ergibt irgendwie nicht so wirklich, warum wird das Google Konto erwähnt, wenn der Dialog bei der Anmeldung mit Email/Passwort erscheint?  
 
-- [ ] Der Abstand in @app/src/main/res/layout/dialog_edit_profile.xml zwischen Speichern Button und dem Titel von Profilbild ist zu klein. Es wirkt etwas gequetscht.
-- [ ] Außerdem finde ich den Abstand zwischen den Buttons in der ProfilActivity zu groß, also zwischen Email Button, Google Button, Abmelden Button und Konto Löschen Button, das kannst du etwas enger machen.
-- [ ] Der Sprache Button funktioniert nicht und du solltest auch nicht so einen text button machen sondern @app/src/main/res/layout/menu_item_language.xml nutzen, also einfach genauso wie in der ProfileActivity.
-- [ ] Dann möchte ich noch den Übergang zwischen @app/src/main/res/layout/dialog_members_list.xml und @app/src/main/res/layout/dialog_invite_user.xml smoother machen. Momentan flackert es da kurz, weil der eine Dialog geschlossen wird und der andere geöffnet, genauso beim Übergang zurück. Aber es wäre viel eleganter und Smoother, wenn der Dialog nicht schließ, sondern einfach nur überdeckt wird, so flackert es nicht, ist es möglich das umzusetzen?
+- [x] Der Abstand in @app/src/main/res/layout/dialog_edit_profile.xml zwischen Speichern Button und dem Titel von Profilbild ist zu klein. Es wirkt etwas gequetscht.
+- [x] Außerdem finde ich den Abstand zwischen den Buttons in der ProfilActivity zu groß, also zwischen Email Button, Google Button, Abmelden Button und Konto Löschen Button, das kannst du etwas enger machen.
+- [x] Der Sprache Button funktioniert nicht und du solltest auch nicht so einen text button machen sondern @app/src/main/res/layout/menu_item_language.xml nutzen, also einfach genauso wie in der ProfileActivity.
+- [x] Dann möchte ich noch den Übergang zwischen @app/src/main/res/layout/dialog_members_list.xml und @app/src/main/res/layout/dialog_invite_user.xml smoother machen. Momentan flackert es da kurz, weil der eine Dialog geschlossen wird und der andere geöffnet, genauso beim Übergang zurück. Aber es wäre viel eleganter und Smoother, wenn der Dialog nicht schließ, sondern einfach nur überdeckt wird, so flackert es nicht, ist es möglich das umzusetzen?
 
 ## Fixed Bugs
 
