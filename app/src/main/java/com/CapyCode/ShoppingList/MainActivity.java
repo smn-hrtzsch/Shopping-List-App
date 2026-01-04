@@ -228,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
     private void showNameInputDialog(boolean isShared) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View view = getLayoutInflater().inflate(R.layout.merge_input_with_button, null);
+        View view = getLayoutInflater().inflate(R.layout.dialog_input_name, null);
         builder.setView(view);
         AlertDialog dialog = builder.create();
         
@@ -236,26 +236,15 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
-        // Adjust padding for dialog usage since the merge layout might not have dialog-specific padding
-        view.setPadding(32, 32, 32, 32); 
-        // actually standard dialog padding is handled by background or parent, but raw inflate might need it. 
-        // Let's rely on the layout's internal structure or add a container if needed. 
-        // The merge layout has root LinearLayout without padding in the previous file content? 
-        // Let's check merge_input_with_button.xml content.
-        // It has NO padding on root. Dialogs usually need padding. 
-        // I'll wrap it or set padding.
-        view.setPadding(
-            (int)(24 * getResources().getDisplayMetrics().density), 
-            (int)(24 * getResources().getDisplayMetrics().density), 
-            (int)(24 * getResources().getDisplayMetrics().density), 
-            (int)(24 * getResources().getDisplayMetrics().density)
-        );
+        View btnClose = view.findViewById(R.id.button_dialog_close);
+        btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        EditText input = view.findViewById(R.id.username_edit_text);
+        View includeInput = view.findViewById(R.id.include_input);
+        EditText input = includeInput.findViewById(R.id.username_edit_text);
         input.setHint(R.string.enter_list_name);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         
-        Button btnSave = view.findViewById(R.id.username_action_button);
+        Button btnSave = includeInput.findViewById(R.id.username_action_button);
         btnSave.setText(R.string.button_save);
 
         btnSave.setOnClickListener(v -> {
@@ -285,6 +274,22 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         dialog.show();
     }
 
+    private void showCustomToast(String message) {
+        try {
+            View layout = getLayoutInflater().inflate(R.layout.toast_custom, null);
+            TextView text = layout.findViewById(R.id.toast_text);
+            text.setText(message);
+
+            Toast toast = new Toast(getApplicationContext());
+            toast.setDuration(Toast.LENGTH_SHORT);
+            toast.setView(layout);
+            toast.show();
+        } catch (Exception e) {
+            // Fallback for devices/versions where custom toast might fail or if layout is missing
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void createList(String listName, boolean isShared) {
         if (isShared) {
             createSharedListInFirestore(listName);
@@ -292,7 +297,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             int nextPosition = shoppingListRepository.getNextPosition();
             long newId = shoppingListManager.addShoppingList(listName, nextPosition, false);
             if (newId != -1) {
-                Toast.makeText(MainActivity.this, getString(R.string.local_list_created, listName), Toast.LENGTH_SHORT).show();
+                showCustomToast(getString(R.string.local_list_created, listName));
                 syncPrivateListIfEnabled();
             } else {
                 Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
