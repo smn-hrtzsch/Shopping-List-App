@@ -147,9 +147,18 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         items.remove(position);
         notifyItemRemoved(position);
 
-        View rootView = interactionListener.getCoordinatorLayout();
+        View rootView = null;
+        if (interactionListener != null) {
+            rootView = interactionListener.getCoordinatorLayout();
+        }
+        
         if (rootView == null) {
-            rootView = ((EinkaufslisteActivity) context).findViewById(android.R.id.content);
+            if (context instanceof EinkaufslisteActivity) {
+                rootView = ((EinkaufslisteActivity) context).findViewById(android.R.id.content);
+            } else {
+                // Fallback for other contexts if applicable, but usually it's an Activity
+                rootView = ((android.app.Activity) context).findViewById(android.R.id.content);
+            }
         }
 
         Snackbar snackbar = Snackbar.make(rootView,
@@ -171,9 +180,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     }
                 });
 
-        View anchor = interactionListener.getSnackbarAnchorView();
-        if (anchor != null) {
-            snackbar.setAnchorView(anchor);
+        if (interactionListener != null) {
+            View anchor = interactionListener.getSnackbarAnchorView();
+            if (anchor != null) {
+                snackbar.setAnchorView(anchor);
+            }
         }
 
         snackbar.show();
