@@ -101,14 +101,35 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         if (fromPosition >= items.size() || toPosition >= items.size() || fromPosition < 0 || toPosition < 0) {
             return false;
         }
+        
+        // Prevent moving across done/not-done boundaries if we want to keep that strict
+        if (items.get(fromPosition).isDone() != items.get(toPosition).isDone()) {
+            return false;
+        }
+
         ShoppingItem movedItem = items.remove(fromPosition);
         items.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
 
+        // Update positions based on the current list order
         for (int i = 0; i < items.size(); i++) {
             items.get(i).setPosition(i);
         }
+        
         repository.updateItemPositions(items);
+        
+        // If it's a cloud list, we need to update the positions on the server as well
+        if (firebaseListId != null) {
+            // We only update the moved item and its neighbors to save bandwidth, 
+            // but for simplicity and correctness in this small app, we update the moved item's new state.
+            // Actually, to be truly correct, we should update all positions in Firestore if we want to persist the exact order.
+            // Since there is no "batch update positions" for Firestore items yet, we update them individually.
+            for (ShoppingItem item : items) {
+                repository.updateItemInList(item, firebaseListId, null);
+            }
+            repository.updateListTimestamp(firebaseListId, null);
+        }
+        
         return true;
     }
 
@@ -147,45 +168,44 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         items.remove(position);
         notifyItemRemoved(position);
 
-        View rootView = null;
+        View anchor = null;
         if (interactionListener != null) {
-            rootView = interactionListener.getCoordinatorLayout();
+            anchor = interactionListener.getSnackbarAnchorView();
         }
-        
-        if (rootView == null) {
-            if (context instanceof EinkaufslisteActivity) {
-                rootView = ((EinkaufslisteActivity) context).findViewById(android.R.id.content);
+
+        // Use a more stable approach for the Snackbar
+        // Instead of trying to find the perfect root, we use the anchor if available
+        // as a reference point for the popup.
+        Snackbar snackbar;
+        if (anchor != null) {
+            snackbar = Snackbar.make(anchor,
+                    "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG);
+            snackbar.setAnchorView(anchor);
+        } else {
+            // Ultimate fallback
+            View rootView = ((android.app.Activity) context).findViewById(android.R.id.content);
+            snackbar = Snackbar.make(rootView,
+                    "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG);
+        }
+
+        snackbar.setAction(R.string.undo, view -> {
+            if (firebaseListId != null) {
+                repository.addItemToShoppingList(firebaseListId, itemToDelete, null);
+                repository.updateListTimestamp(firebaseListId, null);
             } else {
-                // Fallback for other contexts if applicable, but usually it's an Activity
-                rootView = ((android.app.Activity) context).findViewById(android.R.id.content);
+                long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
+                itemToDelete.setId(newId);
             }
-        }
 
-        Snackbar snackbar = Snackbar.make(rootView,
-                        "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG)
-                .setAction(R.string.undo, view -> {
-                    if (firebaseListId != null) {
-                        repository.addItemToShoppingList(firebaseListId, itemToDelete, null);
-                        repository.updateListTimestamp(firebaseListId, null);
-                    } else {
-                        long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
-                        itemToDelete.setId(newId);
-                    }
+            // Correctly re-insert at the deleted position if possible
+            int reInsertPos = Math.min(deletedPosition, items.size());
+            items.add(reInsertPos, itemToDelete);
+            notifyItemInserted(reInsertPos);
 
-                    items.add(deletedPosition, itemToDelete);
-                    notifyItemInserted(deletedPosition);
-
-                    if (interactionListener != null) {
-                        interactionListener.requestItemResort();
-                    }
-                });
-
-        if (interactionListener != null) {
-            View anchor = interactionListener.getSnackbarAnchorView();
-            if (anchor != null && anchor.getVisibility() == View.VISIBLE) {
-                snackbar.setAnchorView(anchor);
+            if (interactionListener != null) {
+                interactionListener.requestItemResort();
             }
-        }
+        });
 
         snackbar.show();
     }

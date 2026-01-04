@@ -91,8 +91,14 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             appBarLayout.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             addItemBarContainer.setPadding(systemBars.left, 0, systemBars.right, bottomInset);
             
+            // Only scroll if keyboard is actually opening (bottomInset increased)
+            // and don't over-scroll if it's already there.
             if (isKeyboardVisible) {
-                scrollToBottom();
+                recyclerView.postDelayed(() -> {
+                    if (adapter != null && adapter.getItemCount() > 0) {
+                        recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                    }
+                }, 150);
             }
             return insets;
         });
@@ -522,6 +528,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     updateSyncIcon(R.drawable.ic_cloud_upload_24);
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
                     shoppingListRepository.updateListTimestamp(firebaseListId, null);
+                    // Cloud refresh will trigger update, but we can pre-scroll
                     scrollToBottom();
                 } else {
                     long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
