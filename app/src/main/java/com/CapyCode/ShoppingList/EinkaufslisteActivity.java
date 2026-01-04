@@ -30,7 +30,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -200,14 +199,13 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
         // Check if anonymous
         if (user.isAnonymous()) {
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.dialog_auth_required_title)
-                    .setMessage(R.string.dialog_auth_required_message)
-                    .setPositiveButton(R.string.button_register, (dialog, which) -> {
-                        startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class));
-                    })
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show();
+            showCustomDialog(
+                    getString(R.string.dialog_auth_required_title),
+                    getString(R.string.dialog_auth_required_message),
+                    getString(R.string.button_register),
+                    () -> startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class)),
+                    null
+            );
             return;
         }
 
@@ -217,14 +215,13 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             @Override
             public void onLoaded(String username) {
                 if (username == null || username.trim().isEmpty()) {
-                    new MaterialAlertDialogBuilder(EinkaufslisteActivity.this)
-                            .setTitle(R.string.dialog_username_required_title)
-                            .setMessage(R.string.dialog_username_required_message)
-                            .setPositiveButton(R.string.button_set_username, (dialog, which) -> {
-                                startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class));
-                            })
-                            .setNegativeButton(android.R.string.cancel, null)
-                            .show();
+                    showCustomDialog(
+                            getString(R.string.dialog_username_required_title),
+                            getString(R.string.dialog_username_required_message),
+                            getString(R.string.button_set_username),
+                            () -> startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class)),
+                            null
+                    );
                 } else {
                     onRequirementsMet.run();
                 }
