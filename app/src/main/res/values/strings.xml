@@ -255,7 +255,7 @@
     <string name="button_enable_sync">Enable Sync</string>
 
     <string name="dialog_auth_required_title">Registration required</string>
-    <string name="dialog_auth_required_message">To enable cloud synchronization, you must register or link your account.</string>
+    <string name="dialog_auth_required_message">To enable cloud synchronization, you must register or connect your account with Email or Google.</string>
     <string name="button_register">Register</string>
     <string name="dialog_username_required_title">Username required</string>
     <string name="dialog_username_required_message">To enable cloud synchronization, you must set a username so others can find you.</string>

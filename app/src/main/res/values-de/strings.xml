@@ -190,8 +190,8 @@
     <string name="dialog_switch_account_message_guest">Dieses Konto ist bereits mit einem anderen Profil verknüpft.\n\nMöchtest du zu diesem Profil wechseln? Deine aktuellen, nicht synchronisierten Listen werden gelöscht.</string>
     <string name="dialog_switch_account_message_conflict">Dieses Konto ist bereits mit einem anderen Profil verknüpft.\n\nDu kannst es nicht mit deinem aktuellen Profil verknüpfen. Möchtest du stattdessen zu diesem anderen Profil wechseln?</string>
     <string name="button_switch_and_link">Konto wechseln</string>
-    <string name="action_link_email">Mit E-Mail verbinden</string>
-    <string name="action_link_google">Mit Google verbinden</string>
+    <string name="action_link_email">Mit E-Mail verknüpfen</string>
+    <string name="action_link_google">Mit Google verknüpfen</string>
     <string name="linked_google">Google: %s</string>
     <string name="linked_email">E-Mail: %s</string>
     <string name="google_linked_disconnect">Google Verknüpfung entfernen</string>
@@ -274,7 +274,7 @@
     <string name="button_enable_sync">Sync aktivieren</string>
 
     <string name="dialog_auth_required_title">Registrierung erforderlich</string>
-    <string name="dialog_auth_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du dich registrieren oder dein Konto verknüpfen.</string>
+    <string name="dialog_auth_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du dich registrieren oder dein Konto mit E-Mail oder Google verknüpfen.</string>
     <string name="button_register">Registrieren</string>
     <string name="dialog_username_required_title">Benutzername erforderlich</string>
     <string name="dialog_username_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du einen Benutzernamen festlegen, damit andere dich finden können.</string>
