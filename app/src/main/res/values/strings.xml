@@ -155,7 +155,7 @@
     <string name="error_password_short">Password must be at least 6 characters long.</string>
     <string name="dialog_create_account_title">Create Account?</string>
     <string name="dialog_create_account_message">Create an account to securely back up all your lists (including private ones) and access them from other devices.</string>
-    <string name="syncing_data">Syncing data...</string>
+    <string name="syncing_data">Syncing data…</string>
     <string name="button_create_account">Create Account</string>
     <string name="button_sign_out">Sign Out</string>
     <string name="account_info">Account Info</string>
@@ -168,11 +168,11 @@
     <string name="error_login_wrong_password">Email or password incorrect.</string>
     <string name="dialog_switch_account_title">Switch Account?</string>
     <string name="dialog_switch_account_message">You are about to sign in to a different account. Your current local lists and data will be deleted.\n\nDo you really want to switch accounts?</string>
-    <string name="dialog_switch_account_message_guest">This account is already in use by another user.\n\nDo you want to switch to this account? Your current local guest data will be deleted.</string>
-    <string name="dialog_switch_account_message_conflict">This account is already linked to another user.\n\nYou cannot link it to your current account. Do you want to sign out and sign in with this account instead?</string>
+    <string name="dialog_switch_account_message_guest">This account is already linked to another profile.\n\nDo you want to switch to this profile? Your current unsynced lists will be deleted.</string>
+    <string name="dialog_switch_account_message_conflict">This account is already linked to another profile.\n\nYou cannot link it to your current profile. Do you want to switch to this other profile instead?</string>
     <string name="button_switch_and_link">Switch Account</string>
-    <string name="action_link_email">Link with Email</string>
-    <string name="action_link_google">Link with Google</string>
+    <string name="action_link_email">Connect with Email</string>
+    <string name="action_link_google">Connect with Google</string>
     <string name="linked_google">Google: %s</string>
     <string name="linked_email">Email: %s</string>
     <string name="google_linked_disconnect">Remove Google link</string>
