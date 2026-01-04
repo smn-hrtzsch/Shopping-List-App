@@ -103,7 +103,7 @@ public class ProfileActivity extends AppCompatActivity {
                         GoogleSignInAccount account = task.getResult(ApiException.class);
                         firebaseAuthWithGoogle(account.getIdToken());
                     } catch (ApiException e) {
-                        Toast.makeText(ProfileActivity.this, getString(R.string.error_google_sign_in, e.getMessage()), Toast.LENGTH_SHORT).show();
+                        UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.error_google_sign_in, e.getMessage()), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -284,16 +284,16 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void saveUsername(String username, androidx.appcompat.app.AlertDialog dialog) {
-        if (username.isEmpty()) { Toast.makeText(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show(); return; }
-        if (username.length() < 3) { Toast.makeText(this, R.string.profile_error_short, Toast.LENGTH_SHORT).show(); return; }
-        if (username.contains(" ")) { Toast.makeText(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
+        if (username.isEmpty()) { UiUtils.makeCustomToast(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show(); return; }
+        if (username.length() < 3) { UiUtils.makeCustomToast(this, R.string.profile_error_short, Toast.LENGTH_SHORT).show(); return; }
+        if (username.contains(" ")) { UiUtils.makeCustomToast(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
         
         progressBarLoading.setVisibility(View.VISIBLE);
         userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
                 progressBarLoading.setVisibility(View.GONE);
-                Toast.makeText(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
                 currentLoadedUsername = username;
                 textViewCurrentUsername.setText(username);
                 setResult(RESULT_OK);
@@ -304,7 +304,7 @@ public class ProfileActivity extends AppCompatActivity {
             @Override
             public void onError(String message) { 
                 progressBarLoading.setVisibility(View.GONE);
-                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); 
+                UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); 
             }
         });
     }
@@ -334,7 +334,7 @@ public class ProfileActivity extends AppCompatActivity {
             for (UserInfo profile : currentUser.getProviderData()) {
                 if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
                      progressBarLoading.setVisibility(View.GONE);
-                     Toast.makeText(this, R.string.error_google_already_linked, Toast.LENGTH_LONG).show();
+                     UiUtils.makeCustomToast(this, R.string.error_google_already_linked, Toast.LENGTH_LONG).show();
                      mGoogleSignInClient.signOut();
                      return;
                 }
@@ -342,7 +342,7 @@ public class ProfileActivity extends AppCompatActivity {
             currentUser.linkWithCredential(credential)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(ProfileActivity.this, R.string.toast_google_linked, Toast.LENGTH_SHORT).show();
+                            UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_google_linked, Toast.LENGTH_SHORT).show();
                             syncGoogleProfilePicture();
                             triggerSync();
                             loadCurrentProfile();
@@ -368,7 +368,7 @@ public class ProfileActivity extends AppCompatActivity {
                              } else {
                                  progressBarLoading.setVisibility(View.GONE);
                                  String msg = task.getException() != null ? task.getException().getMessage() : "Error";
-                                 Toast.makeText(ProfileActivity.this, getString(R.string.error_link_failed, msg), Toast.LENGTH_LONG).show();
+                                 UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.error_link_failed, msg), Toast.LENGTH_LONG).show();
                              }
                         }
                     });
@@ -409,7 +409,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void triggerSync() {
-        Toast.makeText(this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
+        UiUtils.makeCustomToast(this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
         ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
         repository.migrateLocalListsToCloud(() -> {
             android.util.Log.d("Profile", "Local lists migrated to cloud.");
@@ -428,7 +428,7 @@ public class ProfileActivity extends AppCompatActivity {
                     } else {
                         progressBarLoading.setVisibility(View.GONE);
                         String msg = task.getException() != null ? task.getException().getMessage() : "Authentication failed";
-                        Toast.makeText(ProfileActivity.this, getString(R.string.error_auth_failed, msg), Toast.LENGTH_SHORT).show();
+                        UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.error_auth_failed, msg), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -557,7 +557,7 @@ public class ProfileActivity extends AppCompatActivity {
                     containerContent.setVisibility(View.VISIBLE);
                     // Ignore "offline" error for new users who might not have a doc yet
                     if (error != null && !error.toLowerCase().contains("offline")) {
-                        Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
+                        UiUtils.makeCustomToast(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
                     }
                     isInitialProfileCreation = true;
                     isSigningOut = false;
@@ -580,7 +580,7 @@ public class ProfileActivity extends AppCompatActivity {
                 } else {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
-                    Toast.makeText(ProfileActivity.this, "Auth failed", Toast.LENGTH_LONG).show();
+                    UiUtils.makeCustomToast(ProfileActivity.this, "Auth failed", Toast.LENGTH_LONG).show();
                 }
             });
         } else fetchProfileData.run();
@@ -702,7 +702,7 @@ public class ProfileActivity extends AppCompatActivity {
         if (user != null) {
             user.unlink(providerId).addOnCompleteListener(this, task -> {
                 if (task.isSuccessful()) {
-                    Toast.makeText(this, R.string.toast_unlinked, Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(this, R.string.toast_unlinked, Toast.LENGTH_SHORT).show();
                     if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) mGoogleSignInClient.signOut();
                     
                     user.reload().addOnCompleteListener(reloadTask -> {
@@ -733,7 +733,7 @@ public class ProfileActivity extends AppCompatActivity {
                             signInWithGoogle();
                         } else if (EmailAuthProvider.PROVIDER_ID.equals(providerId)) showReauthDialog(providerId);
                     } else {
-                        Toast.makeText(this, "Unlink failed", Toast.LENGTH_LONG).show();
+                        UiUtils.makeCustomToast(this, "Unlink failed", Toast.LENGTH_LONG).show();
                     }
                 }
             });
@@ -761,7 +761,7 @@ public class ProfileActivity extends AppCompatActivity {
             AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), password);
             user.reauthenticate(credential).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) unlinkProvider(providerId);
-                else Toast.makeText(this, R.string.error_password_wrong, Toast.LENGTH_SHORT).show();
+                else UiUtils.makeCustomToast(this, R.string.error_password_wrong, Toast.LENGTH_SHORT).show();
             });
         }
     }
@@ -779,7 +779,7 @@ public class ProfileActivity extends AppCompatActivity {
              mAuth.signOut();
              mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
                  progressBarLoading.setVisibility(View.GONE);
-                 Toast.makeText(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
+                 UiUtils.makeCustomToast(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
                  loadCurrentProfile(); 
              });
         });
@@ -792,12 +792,12 @@ public class ProfileActivity extends AppCompatActivity {
             public void onSuccess() {
                  progressBarLoading.setVisibility(View.GONE);
                  loadCurrentProfile();
-                 Toast.makeText(ProfileActivity.this, R.string.toast_image_removed, Toast.LENGTH_SHORT).show();
+                 UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_image_removed, Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onError(String message) {
                 progressBarLoading.setVisibility(View.GONE);
-                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+                UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -811,12 +811,12 @@ public class ProfileActivity extends AppCompatActivity {
                 Glide.with(ProfileActivity.this).load(downloadUrl).apply(RequestOptions.circleCropTransform()).into(imageProfile);
                 imageProfile.setPadding(0,0,0,0);
                 imageProfile.clearColorFilter();
-                Toast.makeText(ProfileActivity.this, R.string.toast_image_uploaded, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_image_uploaded, Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onError(String message) {
                 progressBarLoading.setVisibility(View.GONE);
-                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+                UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -848,7 +848,7 @@ public class ProfileActivity extends AppCompatActivity {
             userRepository.deleteAccount(new UserRepository.OnProfileActionListener() {
                 @Override
                 public void onSuccess() {
-                    Toast.makeText(ProfileActivity.this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(ProfileActivity.this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
@@ -856,7 +856,7 @@ public class ProfileActivity extends AppCompatActivity {
                 }
                 @Override
                 public void onError(String message) {
-                    Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+                    UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
                     buttonDelete.setEnabled(true);
                 }
             });

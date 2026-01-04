@@ -131,7 +131,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                                 invalidateOptionsMenu();
                             }
                         } else if (documentSnapshot != null && !documentSnapshot.exists()) {
-                            Toast.makeText(this, R.string.error_list_deleted_by_owner, Toast.LENGTH_LONG).show();
+                            UiUtils.makeCustomToast(this, R.string.error_list_deleted_by_owner, Toast.LENGTH_LONG).show();
                             finish();
                         }
                     });
@@ -162,7 +162,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private void toggleCloudSync() {
         if (mAuth.getCurrentUser() == null) {
-            Toast.makeText(this, R.string.auth_required, Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(this, R.string.auth_required, Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -185,7 +185,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                         
                         firebaseListId = currentShoppingList.getFirebaseId();
                         updateSyncIcon(R.drawable.ic_cloud_synced_24);
-                        Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
+                        UiUtils.makeCustomToast(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
                         refreshItemList();
                     });
                 }, null);
@@ -239,7 +239,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private void performSafeUnsync() {
         if (firebaseListId == null) return;
         isUnsyncing = true; // Set early here!
-        Toast.makeText(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
+        UiUtils.makeCustomToast(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
         // Remove listeners immediately to prevent any updates during unsync
         if (listSnapshotListener != null) { listSnapshotListener.remove(); listSnapshotListener = null; }
@@ -266,7 +266,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
             // 5. Update UI immediately
             updateSyncIcon(R.drawable.ic_cloud_unsynced_24);
-            Toast.makeText(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
             
             // Force adapter recreation to switch to local mode
             adapter = null; 
@@ -368,7 +368,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 dialog.show();
             }
             @Override
-            public void onError(String error) { Toast.makeText(EinkaufslisteActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show(); }
+            public void onError(String error) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show(); }
         });
     }
 
@@ -422,15 +422,15 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     public void onUserFound(String uid) {
                         shoppingListRepository.addMemberToList(firebaseListId, uid, new ShoppingListRepository.OnMemberAddListener() {
                             @Override
-                            public void onMemberAdded() { Toast.makeText(EinkaufslisteActivity.this, getString(R.string.user_invited, username), Toast.LENGTH_SHORT).show(); dialog.dismiss(); }
+                            public void onMemberAdded() { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.user_invited, username), Toast.LENGTH_SHORT).show(); dialog.dismiss(); }
                             @Override
-                            public void onMemberAlreadyExists() { Toast.makeText(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show(); }
+                            public void onMemberAlreadyExists() { UiUtils.makeCustomToast(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show(); }
                             @Override
-                            public void onError(String message) { Toast.makeText(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show(); }
+                            public void onError(String message) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show(); }
                         });
                     }
                     @Override
-                    public void onError(String message) { Toast.makeText(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show(); }
+                    public void onError(String message) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show(); }
                 });
             }
         });
@@ -441,7 +441,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private void shareShoppingList() {
         if (currentShoppingList == null) return;
         if (currentShoppingList.isShared()) {
-            Toast.makeText(this, R.string.error_cannot_share_shared, Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(this, R.string.error_cannot_share_shared, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -464,7 +464,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 jsonList.put("items", jsonItems);
                 String jsonString = jsonList.toString(2);
 
-                Toast.makeText(this, items.size() + " items exported", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, items.size() + " items exported", Toast.LENGTH_SHORT).show();
 
                 String safeName = currentShoppingList.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
                 java.io.File file = new java.io.File(getCacheDir(), safeName + ".json");
@@ -480,7 +480,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_list)));
             } catch (org.json.JSONException | java.io.IOException e) {
                 e.printStackTrace();
-                Toast.makeText(this, R.string.error_create_share_data, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, R.string.error_create_share_data, Toast.LENGTH_SHORT).show();
             }
         };
 
@@ -520,7 +520,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 } else {
                     long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
                     if (newId != -1) { newItem.setId(newId); adapter.addItem(newItem); recyclerView.scrollToPosition(adapter.getItemCount() - 1); }
-                    else Toast.makeText(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
+                    else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
                 }
                 editTextAddItem.setText("");
             }
@@ -550,7 +550,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 updateSyncIcon(R.drawable.ic_cloud_upload_24);
                 shoppingListRepository.clearCheckedItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
             } else shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
-            refreshItemList(); Toast.makeText(this, R.string.toast_items_cleared_done, Toast.LENGTH_SHORT).show();
+            refreshItemList(); UiUtils.makeCustomToast(this, R.string.toast_items_cleared_done, Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
 
@@ -559,7 +559,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 updateSyncIcon(R.drawable.ic_cloud_upload_24);
                 shoppingListRepository.clearAllItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
             } else shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
-            refreshItemList(); Toast.makeText(this, R.string.toast_items_cleared_all, Toast.LENGTH_SHORT).show();
+            refreshItemList(); UiUtils.makeCustomToast(this, R.string.toast_items_cleared_all, Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
 

@@ -129,11 +129,11 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             int currentPos = viewHolder.getBindingAdapterPosition();
             if (currentPos == RecyclerView.NO_POSITION) return;
             if (isPending) {
-                Toast.makeText(context, R.string.toast_pending_invite, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(context, R.string.toast_pending_invite, Toast.LENGTH_SHORT).show();
                 return;
             }
             if (editingPosition != -1 && editingPosition == currentPos){
-                Toast.makeText(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                 return;
             }
             if (interactionListener != null) {
@@ -217,7 +217,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         if (!newName.isEmpty() && !newName.equals(list.getName())) {
             list.setName(newName); 
             shoppingListManager.updateShoppingList(list);
-            Toast.makeText(context, context.getString(R.string.toast_renamed, newName), Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(context, context.getString(R.string.toast_renamed, newName), Toast.LENGTH_SHORT).show();
         }
         editingPosition = -1;
         notifyItemChanged(currentPosition);

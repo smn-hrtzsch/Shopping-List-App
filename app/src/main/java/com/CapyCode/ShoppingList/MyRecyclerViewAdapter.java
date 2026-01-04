@@ -242,12 +242,12 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             checkBox.setChecked(item.isDone());
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (editingItemPosition != -1 && editingItemPosition != getBindingAdapterPosition()) {
-                    Toast.makeText(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
                 if (editingItemPosition != -1 && editingItemPosition == getBindingAdapterPosition()) {
-                    Toast.makeText(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
@@ -266,14 +266,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
             buttonEdit.setOnClickListener(v -> {
                 if (item.isDone()) {
-                    Toast.makeText(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 int currentPos = getBindingAdapterPosition();
                 if (currentPos == RecyclerView.NO_POSITION) return;
 
                 if (editingItemPosition != -1 && editingItemPosition != currentPos) {
-                    Toast.makeText(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -299,7 +299,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int currentPos = getBindingAdapterPosition();
                 if (currentPos != RecyclerView.NO_POSITION) {
                     if (editingItemPosition == currentPos) {
-                        Toast.makeText(context, R.string.toast_finish_editing_delete, Toast.LENGTH_SHORT).show();
+                        UiUtils.makeCustomToast(context, R.string.toast_finish_editing_delete, Toast.LENGTH_SHORT).show();
                         return;
                     }
                     onItemDismiss(currentPos);
@@ -317,7 +317,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             String newName = editTextName.getText().toString().trim();
 
             if (newName.isEmpty()) {
-                Toast.makeText(context, R.string.invalid_item_name, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(context, R.string.invalid_item_name, Toast.LENGTH_SHORT).show();
                 return;
             }
             item.setName(newName);

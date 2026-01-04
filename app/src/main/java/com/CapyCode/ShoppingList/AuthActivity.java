@@ -195,7 +195,7 @@ public class AuthActivity extends AppCompatActivity {
 
     void handleLoginError(Task<?> task) {
         String errorMsg = AuthErrorMapper.getErrorMessage(this, task.getException());
-        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+        UiUtils.makeCustomToast(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
     }
 
     private void registerUser() {
@@ -241,7 +241,7 @@ public class AuthActivity extends AppCompatActivity {
                         if (task.getException() instanceof FirebaseAuthUserCollisionException) {
                             errorMsg = getString(R.string.error_email_collision_link);
                         }
-                        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                        UiUtils.makeCustomToast(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -254,7 +254,7 @@ public class AuthActivity extends AppCompatActivity {
                     } else {
                         showLoading(false);
                         String errorMsg = AuthErrorMapper.getErrorMessage(this, task.getException());
-                        Toast.makeText(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                        UiUtils.makeCustomToast(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -266,7 +266,7 @@ public class AuthActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         showVerificationDialog(user, isLinkedAccount);
                     } else {
-                        Toast.makeText(this, getString(R.string.error_send_email_failed, task.getException().getMessage()), Toast.LENGTH_LONG).show();
+                        UiUtils.makeCustomToast(this, getString(R.string.error_send_email_failed, task.getException().getMessage()), Toast.LENGTH_LONG).show();
                         revertRegistration(user, isLinkedAccount);
                     }
                 });
@@ -300,10 +300,10 @@ public class AuthActivity extends AppCompatActivity {
                         dialog.dismiss();
                         finishAuth(true, true);
                     } else {
-                        Toast.makeText(AuthActivity.this, R.string.toast_email_not_verified, Toast.LENGTH_SHORT).show();
+                        UiUtils.makeCustomToast(AuthActivity.this, R.string.toast_email_not_verified, Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(AuthActivity.this, getString(R.string.error_check_failed, reloadTask.getException().getMessage()), Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(AuthActivity.this, getString(R.string.error_check_failed, reloadTask.getException().getMessage()), Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -348,9 +348,9 @@ public class AuthActivity extends AppCompatActivity {
                     .addOnCompleteListener(task -> {
                         showLoading(false);
                         if (task.isSuccessful()) {
-                            Toast.makeText(AuthActivity.this, R.string.toast_link_cancelled, Toast.LENGTH_SHORT).show();
+                            UiUtils.makeCustomToast(AuthActivity.this, R.string.toast_link_cancelled, Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(AuthActivity.this, R.string.error_revert_failed, Toast.LENGTH_LONG).show();
+                            UiUtils.makeCustomToast(AuthActivity.this, R.string.error_revert_failed, Toast.LENGTH_LONG).show();
                         }
                     });
         } else {
@@ -358,7 +358,7 @@ public class AuthActivity extends AppCompatActivity {
                     .addOnCompleteListener(task -> {
                         showLoading(false);
                         if (task.isSuccessful()) {
-                            Toast.makeText(AuthActivity.this, R.string.toast_registration_aborted, Toast.LENGTH_SHORT).show();
+                            UiUtils.makeCustomToast(AuthActivity.this, R.string.toast_registration_aborted, Toast.LENGTH_SHORT).show();
                         }
                     });
         }
@@ -382,10 +382,10 @@ public class AuthActivity extends AppCompatActivity {
             .addOnCompleteListener(resetTask -> {
                 showLoading(false);
                 if (resetTask.isSuccessful()) {
-                    Toast.makeText(AuthActivity.this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(AuthActivity.this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
                 } else {
                      String msg = AuthErrorMapper.getErrorMessage(this, resetTask.getException());
-                     Toast.makeText(AuthActivity.this, msg, Toast.LENGTH_SHORT).show();
+                     UiUtils.makeCustomToast(AuthActivity.this, msg, Toast.LENGTH_SHORT).show();
                 }
             });
     }
@@ -398,9 +398,9 @@ public class AuthActivity extends AppCompatActivity {
 
     private void finishAuth(boolean success, boolean shouldSync) {
         if (success) {
-            Toast.makeText(AuthActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(AuthActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
             if (shouldSync) {
-                Toast.makeText(AuthActivity.this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(AuthActivity.this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
                 ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
                 repository.migrateLocalListsToCloud(() -> {
                     android.util.Log.d("Auth", "Local lists migrated to cloud.");
