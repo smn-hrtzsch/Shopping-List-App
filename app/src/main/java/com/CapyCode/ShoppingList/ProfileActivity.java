@@ -516,8 +516,14 @@ public class ProfileActivity extends AppCompatActivity {
         };
         if (mAuth.getCurrentUser() == null) {
             mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
-                if (task.isSuccessful()) fetchProfileData.run();
-                else {
+                if (task.isSuccessful()) {
+                    FirebaseUser user = mAuth.getCurrentUser();
+                    if (user != null) {
+                        user.reload().addOnCompleteListener(t -> fetchProfileData.run());
+                    } else {
+                        fetchProfileData.run();
+                    }
+                } else {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
                     Toast.makeText(ProfileActivity.this, "Auth failed", Toast.LENGTH_LONG).show();

@@ -55,7 +55,8 @@
             android:id="@+id/edit_text_invite_username"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textNoSuggestions"
+            android:inputType="text|textNoSuggestions"
+            android:importantForAutofill="no"
             android:textColor="?attr/colorOnSurface"
             android:maxLines="1"/>
 

@@ -53,7 +53,15 @@
 - [ ] **Offline-Modus:** Visueller Indikator, wenn die App offline ist und Änderungen nur lokal gespeichert sind
 - [ ] **Passwort-Manager:** App Icon wird nicht korrekt angezeigt im Google Passwort Manager
 
-## Bugfixes
+## Bugs
+
+- [ ] Edit Profile Dialog öffnet automatisch, wenn man Profile Activity öffnet ohne Username festgelegt zu haben.
+- [ ] Ablehnen Button bei Einladung hat nicht mehr die korrekte Farbe colorError
+- [ ] Unsynced Cloud Icon sollte bei Einladung in der Main Activity nicht sichtbar sein. Ist es aber aktuelle noch.
+- [ ] Nach Abmeldung werden manchmal fälschlicherweise die unlink Icons in den Anmeldungs Buttons angezeigt anstatt des Email oder Google Icons.
+- [ ] Beim Input für das Einladen eines Members werden Passwort Manager Vorschläge angezeigt (sollte nicht sein).
+
+## Fixed Bugs
 
 - [x] Einkaufsliste Activity schließt / stürzt ab, wenn man eine Liste unsyncen möchte.
 - [x] Nach Abmelden von Account nicht direkt Edit Profile Dialog anzeigen.
@@ -61,5 +69,3 @@
 - [x] Email Icon Farbe für den Mit Email Anmelden Button ist noch falsch.
 - [x] Unsynced Cloud Symbol ist im Hintergrund bei Einladung in der Main Activity sichtbar und überlappt mit Annehmen Button.
 - [x] Umrandung für Ablehnen Button bei Einladung zu geteilter Liste fehlt noch (Nutzung des Styles muss noch korrekt angewendet werden).
-- [x] Nach Abmeldung werden manchmal fälschlicherweise die unlink Icons in den Anmeldungs Buttons angezeigt anstatt des Email oder Google Icons.
-- [x] Beim Input für das Einladen eines Members werden Passwort Manager Vorschläge angezeigt (sollte nicht sein).
