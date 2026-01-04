@@ -223,7 +223,7 @@
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="60dp"
-                        android:layout_marginBottom="8dp"
+                        android:layout_marginBottom="4dp"
                         android:text="@string/action_sign_in_email"
                         app:icon="@drawable/ic_email"
                         app:iconGravity="textStart"
@@ -239,7 +239,7 @@
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="60dp"
-                        android:layout_marginBottom="8dp"
+                        android:layout_marginBottom="4dp"
                         android:text="@string/sign_in_google"
                         app:icon="@drawable/ic_google_logo"
                         app:iconGravity="textStart"
@@ -256,7 +256,7 @@
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="60dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginBottom="4dp"
                     android:text="@string/button_sign_out"
                     app:icon="@drawable/ic_logout_24"
                     app:iconGravity="textStart"
@@ -281,7 +281,7 @@
                     android:textColor="?attr/colorError"
                     app:strokeColor="?attr/colorError"
                     app:cornerRadius="30dp"
-                    android:layout_marginBottom="12dp"/>
+                    android:layout_marginBottom="4dp"/>
 
                 <!-- Warning -->
                 <TextView

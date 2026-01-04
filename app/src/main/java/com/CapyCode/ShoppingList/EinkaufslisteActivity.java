@@ -353,7 +353,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     text.setText(content); text.setTextColor(isMe ? highlightColor : textColor); text.setTextSize(16); row.addView(text);
                     container.addView(row);
                 }
-                buttonAdd.setOnClickListener(v -> { dialog.dismiss(); showInviteUserDialog(); });
+                buttonAdd.setOnClickListener(v -> { showInviteUserDialog(); });
                 buttonClose.setOnClickListener(v -> dialog.dismiss());
                 dialog.show();
             }
@@ -425,7 +425,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             }
         });
         btnClose.setOnClickListener(v -> dialog.dismiss());
-        dialog.setOnDismissListener(d -> showMembersDialog());
         dialog.show();
     }
 
