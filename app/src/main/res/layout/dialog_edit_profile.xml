@@ -39,7 +39,7 @@
 
     <include
         android:id="@+id/include_username_input_dialog"
-        layout="@layout/merge_username_input" />
+        layout="@layout/merge_input_with_button" />
 
     <TextView
         android:layout_width="wrap_content"

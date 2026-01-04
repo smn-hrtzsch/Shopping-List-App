@@ -56,14 +56,13 @@
 
 ## Bugs
 
-- [ ] Einkaufslisten, die man gerade gesynced hat, werden in der Main Activity dann ganz am Ende der Liste angezeigt, obwohl sie an der Position bleiben sollten, an der sie vor dem syncen waren.
-- [ ] Beim erstellen einer Liste sollte der Curser Fokus automatisch im EditText für den Listennamen sein und die Tastatur geöffnet werden (sowohl für private als auch geteilte Listen).
+- [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
 
 ## Fixed Bugs
 
-- [x] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
-
-- [x] Nach Abmelden von Account nicht direkt Edit Profile Dialog anzeigen.
+- [x] Einkaufslisten, die man gerade gesynced hat, werden in der Main Activity dann ganz am Ende der Liste angezeigt, obwohl sie an der Position bleiben sollten, an der sie vor dem syncen waren.
+- [x] Beim erstellen einer Liste sollte der Curser Fokus automatisch im EditText für den Listennamen sein und die Tastatur geöffnet werden (sowohl für private als auch geteilte Listen).
+- [x] Nach Abmelden von Account nicht direkt Edit Profile Dialog anzeigen.
 - [x] Beim Erstellen einer geteilten Liste ohne vorher User Name fesgelegt zu haben, Liste nach korrekter Vergabe auch speichern und nicht verwerfen.
 - [x] Email Icon Farbe für den Mit Email Anmelden Button ist noch falsch.
 - [x] Unsynced Cloud Symbol ist im Hintergrund bei Einladung in der Main Activity sichtbar und überlappt mit Annehmen Button.

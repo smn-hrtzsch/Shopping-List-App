@@ -163,8 +163,10 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         shoppingLists = new ArrayList<>();
 
         addListInputLayout = findViewById(R.id.add_list_input_layout);
-        editTextNewListName = findViewById(R.id.edit_text_new_list_name);
-        buttonConfirmAddList = findViewById(R.id.button_confirm_add_list);
+        // editTextNewListName = findViewById(R.id.edit_text_new_list_name); // Unused
+        // buttonConfirmAddList = findViewById(R.id.button_confirm_add_list); // Unused
+        if(addListInputLayout != null) addListInputLayout.setVisibility(View.GONE); // Hide it permanently if it exists in layout
+
         emptyView = findViewById(R.id.empty_view_main);
 
         recyclerView = findViewById(R.id.list_recycler_view);
@@ -185,13 +187,9 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (addListInputLayout.getVisibility() == View.VISIBLE) {
-                    toggleAddListInput(false); // Assume local if closed without saving
-                } else {
-                    if (isEnabled()) {
-                        setEnabled(false);
-                        getOnBackPressedDispatcher().onBackPressed();
-                    }
+                if (isEnabled()) {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
                 }
             }
         });
@@ -212,13 +210,13 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         cardPrivate.setOnClickListener(v -> {
-            toggleAddListInput(false);
             dialog.dismiss();
+            showNameInputDialog(false);
         });
 
         cardShared.setOnClickListener(v -> {
-            toggleAddListInput(true);
             dialog.dismiss();
+            showNameInputDialog(true);
         });
 
         if (btnClose != null) {
@@ -228,37 +226,66 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         dialog.show();
     }
 
-    private void toggleAddListInput(boolean isShared) {
-        if (addListInputLayout.getVisibility() == View.GONE) {
-            addListInputLayout.setVisibility(View.VISIBLE);
-            fab.hide();
-            editTextNewListName.requestFocus();
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(editTextNewListName, InputMethodManager.SHOW_IMPLICIT);
-            buttonConfirmAddList.setOnClickListener(v -> addNewList(isShared));
-            editTextNewListName.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    addNewList(isShared);
-                    return true;
-                }
-                return false;
-            });
-        } else {
-            addListInputLayout.setVisibility(View.GONE);
-            fab.show();
-            editTextNewListName.setText("");
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
+    private void showNameInputDialog(boolean isShared) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.merge_input_with_button, null);
+        builder.setView(view);
+        AlertDialog dialog = builder.create();
+        
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
+
+        // Adjust padding for dialog usage since the merge layout might not have dialog-specific padding
+        view.setPadding(32, 32, 32, 32); 
+        // actually standard dialog padding is handled by background or parent, but raw inflate might need it. 
+        // Let's rely on the layout's internal structure or add a container if needed. 
+        // The merge layout has root LinearLayout without padding in the previous file content? 
+        // Let's check merge_input_with_button.xml content.
+        // It has NO padding on root. Dialogs usually need padding. 
+        // I'll wrap it or set padding.
+        view.setPadding(
+            (int)(24 * getResources().getDisplayMetrics().density), 
+            (int)(24 * getResources().getDisplayMetrics().density), 
+            (int)(24 * getResources().getDisplayMetrics().density), 
+            (int)(24 * getResources().getDisplayMetrics().density)
+        );
+
+        EditText input = view.findViewById(R.id.username_edit_text);
+        input.setHint(R.string.enter_list_name);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        
+        Button btnSave = view.findViewById(R.id.username_action_button);
+        btnSave.setText(R.string.button_save);
+
+        btnSave.setOnClickListener(v -> {
+            String name = input.getText().toString().trim();
+            if (name.isEmpty()) {
+                Toast.makeText(MainActivity.this, R.string.invalid_list_name, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            createList(name, isShared);
+            dialog.dismiss();
+        });
+        
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                btnSave.performClick();
+                return true;
+            }
+            return false;
+        });
+
+        dialog.setOnShowListener(d -> {
+            input.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
+        });
+
+        dialog.show();
     }
 
-    private void addNewList(boolean isShared) {
-        String listName = editTextNewListName.getText().toString().trim();
-        if (listName.isEmpty()) {
-            Toast.makeText(MainActivity.this, R.string.invalid_list_name, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+    private void createList(String listName, boolean isShared) {
         if (isShared) {
             createSharedListInFirestore(listName);
         } else {
@@ -271,12 +298,6 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
             }
         }
-        // Hide keyboard and input field
-        addListInputLayout.setVisibility(View.GONE);
-        fab.show();
-        editTextNewListName.setText("");
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
     }
 
     private void syncPrivateListIfEnabled() {
@@ -480,23 +501,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     }
 
     private void setupCloseEditorOnTouchOutside() {
-        emptyView.setOnClickListener(v -> {
-            if (addListInputLayout.getVisibility() == View.VISIBLE) {
-                toggleAddListInput(false); // Assume local if closed without saving
-            }
-        });
-
-        recyclerView.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {
-            @Override
-            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
-                // Diese Bedingung stellt sicher, dass der Klick nicht auf den Editor selbst erfolgt
-                if (addListInputLayout.getVisibility() == View.VISIBLE && e.getY() > addListInputLayout.getBottom()) {
-                    toggleAddListInput(false); // Assume local if closed without saving
-                    return true;
-                }
-                return false;
-            }
-        });
+        // No inline editor anymore
     }
 
 
@@ -710,6 +715,6 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
     @Override
     public void onEditFinished() {
-        if (fab != null && addListInputLayout.getVisibility() != View.VISIBLE) fab.show();
+        if (fab != null) fab.show();
     }
 }

@@ -178,6 +178,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 showCustomDialog(getString(R.string.dialog_enable_sync_title), getString(R.string.dialog_enable_sync_message), getString(R.string.button_enable_sync), () -> {
                     updateSyncIcon(R.drawable.ic_cloud_upload_24);
                     shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
+                        
+                        // Fix order: Replace local ID with Firebase ID in saved preference
+                        ShoppingListManager manager = new ShoppingListManager(this);
+                        manager.updateListIdInOrder(String.valueOf(currentShoppingListId), currentShoppingList.getFirebaseId());
+                        
                         firebaseListId = currentShoppingList.getFirebaseId();
                         updateSyncIcon(R.drawable.ic_cloud_synced_24);
                         Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
