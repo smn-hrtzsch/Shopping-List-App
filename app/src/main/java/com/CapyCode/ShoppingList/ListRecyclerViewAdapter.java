@@ -37,6 +37,8 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         void onJoinClicked(ShoppingList list);
         void onDeclineClicked(ShoppingList list);
         void onLeaveClicked(ShoppingList list);
+        void onEditStarted();
+        void onEditFinished();
     }
 
 
@@ -45,6 +47,14 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         localDataSet = dataSet; 
         shoppingListManager = manager;
         this.interactionListener = listener;
+    }
+    
+    public void resetEditingPosition() {
+        if (editingPosition != -1) {
+            editingPosition = -1;
+            notifyDataSetChanged();
+            if (interactionListener != null) interactionListener.onEditFinished();
+        }
     }
 
     @NonNull
@@ -157,6 +167,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
                     notifyItemChanged(previousEditingPosition);
                 }
                 notifyItemChanged(editingPosition);
+                if (interactionListener != null) interactionListener.onEditStarted();
             }
         });
 
@@ -210,6 +221,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         }
         editingPosition = -1;
         notifyItemChanged(currentPosition);
+        if (interactionListener != null) interactionListener.onEditFinished();
     }
 
 

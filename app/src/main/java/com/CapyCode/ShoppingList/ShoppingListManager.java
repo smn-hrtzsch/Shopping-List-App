@@ -41,6 +41,23 @@ public class ShoppingListManager {
         sharedPreferences.edit().putString(KEY_LIST_ORDER, order).apply();
     }
 
+    public void updateListIdInOrder(String oldId, String newId) {
+        String orderString = sharedPreferences.getString(KEY_LIST_ORDER, null);
+        if (orderString != null && !orderString.isEmpty()) {
+            String[] orderedIds = orderString.split(",");
+            List<String> newOrder = new ArrayList<>();
+            for (String id : orderedIds) {
+                if (id.equals(oldId)) {
+                    newOrder.add(newId);
+                } else {
+                    newOrder.add(id);
+                }
+            }
+            String newOrderString = String.join(",", newOrder);
+            sharedPreferences.edit().putString(KEY_LIST_ORDER, newOrderString).apply();
+        }
+    }
+
     public List<ShoppingList> sortListsBasedOnSavedOrder(List<ShoppingList> lists) {
         String orderString = sharedPreferences.getString(KEY_LIST_ORDER, null);
         Map<String, Integer> orderMap = new HashMap<>();
@@ -51,7 +68,15 @@ public class ShoppingListManager {
             }
         }
 
+        String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+
         Collections.sort(lists, (l1, l2) -> {
+            boolean isPending1 = l1.isCurrentUserPending(currentUid);
+            boolean isPending2 = l2.isCurrentUserPending(currentUid);
+
+            if (isPending1 && !isPending2) return 1;
+            if (!isPending1 && isPending2) return -1;
+
             String id1 = l1.getFirebaseId() != null ? l1.getFirebaseId() : String.valueOf(l1.getId());
             String id2 = l2.getFirebaseId() != null ? l2.getFirebaseId() : String.valueOf(l2.getId());
             

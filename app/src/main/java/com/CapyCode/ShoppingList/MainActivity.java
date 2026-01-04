@@ -702,4 +702,14 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         negativeButton.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
+
+    @Override
+    public void onEditStarted() {
+        if (fab != null) fab.hide();
+    }
+
+    @Override
+    public void onEditFinished() {
+        if (fab != null && addListInputLayout.getVisibility() != View.VISIBLE) fab.show();
+    }
 }

@@ -56,16 +56,11 @@
 
 ## Bugs
 
-- [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
-- [ ] Einkaufslisten, die man gerade unsynced hat, werden in der Main Activity dann ganz am Ende der Liste angezeigt, obwohl sie an der Position bleiben sollten, an der sie vor dem Unsyncen waren.
-- [ ] Position der Einladungs-Benachrichtigung in der Main Activity ist falsch, sie sollten am Ende der Listen auftauchen, aber sie erscheinen irgendwo random (zumindest kann ich kein Muster erkennen).
-- [ ] Beim Bearbeiten eines Listennamens, kanne es vorkommen, dass der +-Button zum Hinzufügen einer Liste den Speichern-Button überdeckt. Beim Bearbeiten eines Listennamens, sollte der +-Button ausgeblendet werden.
-- [ ] Konto wechseln? - Dialog sollte nicht angezeigt werden, wenn zum Zeitpunkt der Anmeldung kein Profil vorhanden ist, welches durch die Anmeldung Datenverlust erleiden würde. Auch die Nachricht ergibt irgendwie nicht so wirklich, warum wird das Google Konto erwähnt, wenn der Dialog bei der Anmeldung mit Email/Passwort erscheint?  
-
-- [x] Der Abstand in @app/src/main/res/layout/dialog_edit_profile.xml zwischen Speichern Button und dem Titel von Profilbild ist zu klein. Es wirkt etwas gequetscht.
-- [x] Außerdem finde ich den Abstand zwischen den Buttons in der ProfilActivity zu groß, also zwischen Email Button, Google Button, Abmelden Button und Konto Löschen Button, das kannst du etwas enger machen.
-- [x] Der Sprache Button funktioniert nicht und du solltest auch nicht so einen text button machen sondern @app/src/main/res/layout/menu_item_language.xml nutzen, also einfach genauso wie in der ProfileActivity.
-- [x] Dann möchte ich noch den Übergang zwischen @app/src/main/res/layout/dialog_members_list.xml und @app/src/main/res/layout/dialog_invite_user.xml smoother machen. Momentan flackert es da kurz, weil der eine Dialog geschlossen wird und der andere geöffnet, genauso beim Übergang zurück. Aber es wäre viel eleganter und Smoother, wenn der Dialog nicht schließ, sondern einfach nur überdeckt wird, so flackert es nicht, ist es möglich das umzusetzen?
+- [x] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
+- [x] Einkaufslisten, die man gerade unsynced hat, werden in der Main Activity dann ganz am Ende der Liste angezeigt, obwohl sie an der Position bleiben sollten, an der sie vor dem Unsyncen waren.
+- [x] Position der Einladungs-Benachrichtigung in der Main Activity ist falsch, sie sollten am Ende der Listen auftauchen, aber sie erscheinen irgendwo random (zumindest kann ich kein Muster erkennen).
+- [x] Beim Bearbeiten eines Listennamens, kanne es vorkommen, dass der +-Button zum Hinzufügen einer Liste den Speichern-Button überdeckt. Beim Bearbeiten eines Listennamens, sollte der +-Button ausgeblendet werden.
+- [x] Konto wechseln? - Dialog sollte nicht angezeigt werden, wenn zum Zeitpunkt der Anmeldung kein Profil vorhanden ist, welches durch die Anmeldung Datenverlust erleiden würde. Auch die Nachricht ergibt irgendwie nicht so wirklich, warum wird das Google Konto erwähnt, wenn der Dialog bei der Anmeldung mit Email/Passwort erscheint?  
 
 ## Fixed Bugs
 
@@ -79,3 +74,7 @@
 - [x] Unsynced Cloud Icon sollte bei Einladung in der Main Activity nicht sichtbar sein. Ist es aber aktuelle noch.
 - [x] Nach Abmeldung werden manchmal fälschlicherweise die unlink Icons in den Anmeldungs Buttons angezeigt anstatt des Email oder Google Icons.
 - [x] Beim Input für das Einladen eines Members werden Passwort Manager Vorschläge angezeigt (sollte nicht sein).
+- [x] Der Abstand in @app/src/main/res/layout/dialog_edit_profile.xml zwischen Speichern Button und dem Titel von Profilbild ist zu klein. Es wirkt etwas gequetscht.
+- [x] Außerdem finde ich den Abstand zwischen den Buttons in der ProfilActivity zu groß, also zwischen Email Button, Google Button, Abmelden Button und Konto Löschen Button, das kannst du etwas enger machen.
+- [x] Der Sprache Button funktioniert nicht und du solltest auch nicht so einen text button machen sondern @app/src/main/res/layout/menu_item_language.xml nutzen, also einfach genauso wie in der ProfileActivity.
+- [x] Dann möchte ich noch den Übergang zwischen @app/src/main/res/layout/dialog_members_list.xml und @app/src/main/res/layout/dialog_invite_user.xml smoother machen. Momentan flackert es da kurz, weil der eine Dialog geschlossen wird und der andere geöffnet, genauso beim Übergang zurück. Aber es wäre viel eleganter und Smoother, wenn der Dialog nicht schließ, sondern einfach nur überdeckt wird, so flackert es nicht, ist es möglich das umzusetzen?

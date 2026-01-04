@@ -186,8 +186,10 @@
     <string name="error_login_user_not_found">E-Mail oder Passwort falsch.</string>
     <string name="error_login_wrong_password">E-Mail oder Passwort falsch.</string>
     <string name="dialog_switch_account_title">Konto wechseln?</string>
-    <string name="dialog_switch_account_message">Ein Konto mit der E-Mail dieses Google-Accounts existiert bereits.\n\nMöchtest du dich stattdessen in dieses Konto einloggen? Dabei wird dein Google-Konto mit dem bestehenden Account verknüpft (und deine aktuellen Gast-Daten ersetzt).</string>
-    <string name="button_switch_and_link">Wechseln &amp; Verknüpfen</string>
+    <string name="dialog_switch_account_message">Du bist dabei, dich mit einem anderen Konto anzumelden. Deine aktuellen lokalen Listen und Daten werden gelöscht.\n\nMöchtest du wirklich das Konto wechseln?</string>
+    <string name="dialog_switch_account_message_guest">Dieses Konto ist bereits mit einem anderen Nutzer verknüpft.\n\nMöchtest du stattdessen zu diesem Konto wechseln? Achtung: Deine aktuellen lokalen Listen (Gast-Daten) werden gelöscht.</string>
+    <string name="dialog_switch_account_message_conflict">Dieses Konto ist bereits mit einem anderen Nutzer verknüpft.\n\nDu kannst es nicht mit deinem aktuellen Profil verknüpfen. Möchtest du dich abmelden und stattdessen mit diesem Konto anmelden?</string>
+    <string name="button_switch_and_link">Konto wechseln</string>
     <string name="action_link_email">Mit E-Mail verknüpfen</string>
     <string name="action_link_google">Mit Google verknüpfen</string>
     <string name="linked_google">Google: %s</string>

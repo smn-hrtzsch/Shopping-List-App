@@ -353,9 +353,13 @@ public class ProfileActivity extends AppCompatActivity {
                                          performGoogleSignIn(credential);
                                      } else {
                                          progressBarLoading.setVisibility(View.GONE);
+                                         int messageId = mAuth.getCurrentUser().isAnonymous() 
+                                             ? R.string.dialog_switch_account_message_guest 
+                                             : R.string.dialog_switch_account_message_conflict;
+                                         
                                          showCustomDialog(
                                              getString(R.string.dialog_switch_account_title),
-                                             getString(R.string.dialog_switch_account_message),
+                                             getString(messageId),
                                              getString(R.string.button_switch_and_link),
                                              () -> performGoogleSignIn(credential)
                                          );

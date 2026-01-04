@@ -252,6 +252,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             currentShoppingList.setFirebaseId(null);
             currentShoppingList.setShared(false);
             currentShoppingList.setOwnerId(null);
+            
+            // Update saved order in Manager: Replace Firebase ID with Local ID
+            ShoppingListManager manager = new ShoppingListManager(this);
+            manager.updateListIdInOrder(listToDeleteId, String.valueOf(currentShoppingListId));
+            
             firebaseListId = null;
 
             // 5. Update UI immediately

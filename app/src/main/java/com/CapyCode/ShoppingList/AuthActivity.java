@@ -142,7 +142,7 @@ public class AuthActivity extends AppCompatActivity {
                             // Credentials are correct. Now show the warning.
                             showCustomDialog(
                                 getString(R.string.dialog_switch_account_title),
-                                getString(R.string.dialog_switch_account_message),
+                                getString(R.string.dialog_switch_account_message_guest),
                                 getString(R.string.button_switch_and_link),
                                 () -> performLogin(email, password)
                             );
@@ -166,27 +166,13 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
-        userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
-            @Override
-            public void onLoaded(String username, String imageUrl) {
-                if (username != null && !username.isEmpty()) {
-                    listener.onResult(false);
-                    return;
-                }
-                
-                ShoppingListRepository listRepo = new ShoppingListRepository(AuthActivity.this);
-                if (listRepo.getLocalListCount() > 0) {
-                     listener.onResult(false);
-                } else {
-                     listener.onResult(true);
-                }
-            }
-
-            @Override
-            public void onError(String error) {
-                listener.onResult(false);
-            }
-        });
+        // Only check for lists. Losing a username on an account with no lists is considered acceptable/trivial.
+        ShoppingListRepository listRepo = new ShoppingListRepository(AuthActivity.this);
+        if (listRepo.getLocalListCount() > 0) {
+             listener.onResult(false);
+        } else {
+             listener.onResult(true);
+        }
     }
 
     private void performLogin(String email, String password) {
