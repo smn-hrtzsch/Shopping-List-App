@@ -197,8 +197,17 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null) return;
 
-        // Check if anonymous
-        if (user.isAnonymous()) {
+        boolean hasProvider = false;
+        for (com.google.firebase.auth.UserInfo profile : user.getProviderData()) {
+            if (com.google.firebase.auth.GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) || 
+                com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                hasProvider = true;
+                break;
+            }
+        }
+
+        // Check if anonymous or no providers
+        if (user.isAnonymous() || !hasProvider) {
             showCustomDialog(
                     getString(R.string.dialog_auth_required_title),
                     getString(R.string.dialog_auth_required_message),
@@ -387,8 +396,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
-        com.google.android.material.textfield.TextInputEditText editText = dialogView.findViewById(R.id.edit_text_invite_username);
-        View btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        
+        View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
+        com.google.android.material.textfield.TextInputEditText editText = includeDialog.findViewById(R.id.username_edit_text);
+        com.google.android.material.button.MaterialButton btnPositive = includeDialog.findViewById(R.id.username_action_button);
+        btnPositive.setText(R.string.invite_button); // Set correct text for invite action
+        
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
         btnPositive.setOnClickListener(v -> {
             String username = editText.getText().toString().trim();

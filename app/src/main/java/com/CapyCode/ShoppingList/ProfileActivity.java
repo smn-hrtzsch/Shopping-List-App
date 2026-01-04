@@ -164,8 +164,9 @@ public class ProfileActivity extends AppCompatActivity {
         layoutLinkedMethods = findViewById(R.id.layout_linked_methods);
         layoutViewMode = findViewById(R.id.layout_view_mode);
         layoutEditMode = findViewById(R.id.layout_edit_mode);
-        editTextUsernameInline = findViewById(R.id.edit_text_username_inline);
-        buttonSaveUsernameInline = findViewById(R.id.button_save_username_inline);
+        View includeInline = findViewById(R.id.include_username_input_inline);
+        editTextUsernameInline = includeInline.findViewById(R.id.username_edit_text);
+        buttonSaveUsernameInline = includeInline.findViewById(R.id.username_action_button);
         imageProfile = findViewById(R.id.image_profile);
         cardSyncPreferences = findViewById(R.id.card_sync_preferences);
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
@@ -257,10 +258,11 @@ public class ProfileActivity extends AppCompatActivity {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
-        EditText editText = dialogView.findViewById(R.id.edit_text_username_dialog);
+        View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
+        EditText editText = includeDialog.findViewById(R.id.username_edit_text);
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
         View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
-        View btnSave = dialogView.findViewById(R.id.button_save_profile_dialog);
+        View btnSave = includeDialog.findViewById(R.id.username_action_button);
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         editText.setText(currentLoadedUsername != null ? currentLoadedUsername : "");

@@ -109,36 +109,9 @@
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="8dp"/>
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:theme="@style/AccentInputTheme"
-                        app:boxStrokeColor="@color/input_stroke_selector"
-                        app:boxCornerRadiusTopStart="12dp"
-                        app:boxCornerRadiusTopEnd="12dp"
-                        app:boxCornerRadiusBottomStart="12dp"
-                        app:boxCornerRadiusBottomEnd="12dp"
-                        android:layout_marginBottom="12dp">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/edit_text_username_inline"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textPersonName"
-                            android:textColor="?attr/colorOnSurface"
-                            android:maxLines="1"
-                            android:imeOptions="actionDone"/>
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_save_username_inline"
-                        style="@style/ButtonStyle.Solid"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:text="@string/button_save"
-                        android:textAllCaps="false"
-                        app:cornerRadius="28dp"/>
+                    <include
+                        android:id="@+id/include_username_input_inline"
+                        layout="@layout/merge_username_input" />
                 </LinearLayout>
 
                 <!-- Sync Preferences -->
