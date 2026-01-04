@@ -182,7 +182,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
         if (interactionListener != null) {
             View anchor = interactionListener.getSnackbarAnchorView();
-            if (anchor != null) {
+            if (anchor != null && anchor.getVisibility() == View.VISIBLE) {
                 snackbar.setAnchorView(anchor);
             }
         }

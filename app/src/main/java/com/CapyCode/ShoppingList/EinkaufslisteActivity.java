@@ -86,9 +86,14 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         ViewCompat.setOnApplyWindowInsetsListener(activityRootView, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            boolean isKeyboardVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
             int bottomInset = Math.max(systemBars.bottom, ime.bottom);
             appBarLayout.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             addItemBarContainer.setPadding(systemBars.left, 0, systemBars.right, bottomInset);
+            
+            if (isKeyboardVisible) {
+                scrollToBottom();
+            }
             return insets;
         });
 
@@ -517,9 +522,14 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     updateSyncIcon(R.drawable.ic_cloud_upload_24);
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
                     shoppingListRepository.updateListTimestamp(firebaseListId, null);
+                    scrollToBottom();
                 } else {
                     long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
-                    if (newId != -1) { newItem.setId(newId); adapter.addItem(newItem); recyclerView.scrollToPosition(adapter.getItemCount() - 1); }
+                    if (newId != -1) { 
+                        newItem.setId(newId); 
+                        adapter.addItem(newItem); 
+                        scrollToBottom(); 
+                    }
                     else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
                 }
                 editTextAddItem.setText("");
@@ -530,6 +540,16 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             if (actionId == EditorInfo.IME_ACTION_DONE) { if (buttonAddItem.isEnabled()) addItemAction.onClick(v); return true; }
             return false;
         });
+    }
+
+    private void scrollToBottom() {
+        if (adapter != null && adapter.getItemCount() > 0) {
+            recyclerView.postDelayed(() -> {
+                if (recyclerView != null && adapter != null) {
+                    recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                }
+            }, 100);
+        }
     }
 
     private void showClearListOptionsDialog() {
