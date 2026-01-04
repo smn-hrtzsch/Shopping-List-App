@@ -271,8 +271,8 @@
     <string name="button_enable_sync">Sync aktivieren</string>
 
     <string name="dialog_auth_required_title">Registrierung erforderlich</string>
-    <string name="dialog_auth_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du dein Konto registrieren/verknüpfen UND einen Benutzernamen festlegen.</string>
-    <string name="button_register">Registrieren &amp; Name setzen</string>
+    <string name="dialog_auth_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du dich registrieren oder dein Konto verknüpfen.</string>
+    <string name="button_register">Registrieren</string>
     <string name="dialog_username_required_title">Benutzername erforderlich</string>
     <string name="dialog_username_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du einen Benutzernamen festlegen, damit andere dich finden können.</string>
     <string name="button_set_username">Benutzernamen festlegen</string>

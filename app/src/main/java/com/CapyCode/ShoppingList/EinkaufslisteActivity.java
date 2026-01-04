@@ -205,7 +205,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     getString(R.string.button_register),
                     () -> {
                         Intent intent = new Intent(EinkaufslisteActivity.this, ProfileActivity.class);
-                        intent.putExtra("EXTRA_OPEN_EDIT_PROFILE", true);
+                        // We still open profile, but maybe we don't need to trigger edit profile automatically if username is not required?
+                        // User said "The button to register should open ProfileActivity directly with open Edit Profile Dialog...".
+                        // But now that username is not required, maybe we just open ProfileActivity normally?
+                        // However, the previous instruction was about "Register & Set Name".
+                        // Now it's just "Register".
+                        // So I will remove the EXTRA_OPEN_EDIT_PROFILE to just let them register/link.
                         startActivity(intent);
                     },
                     null
@@ -213,32 +218,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             return;
         }
 
-        // Check username
-        UserRepository userRepo = new UserRepository(this);
-        userRepo.getCurrentUsername(new UserRepository.OnUsernameLoadedListener() {
-            @Override
-            public void onLoaded(String username) {
-                if (username == null || username.trim().isEmpty()) {
-                    showCustomDialog(
-                            getString(R.string.dialog_username_required_title),
-                            getString(R.string.dialog_username_required_message),
-                            getString(R.string.button_set_username),
-                            () -> {
-                                Intent intent = new Intent(EinkaufslisteActivity.this, ProfileActivity.class);
-                                intent.putExtra("EXTRA_OPEN_EDIT_PROFILE", true);
-                                startActivity(intent);
-                            },
-                            null
-                    );
-                } else {
-                    onRequirementsMet.run();
-                }
-            }
-            @Override
-            public void onError(String error) {
-                Toast.makeText(EinkaufslisteActivity.this, error, Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Username not required for private lists anymore
+        onRequirementsMet.run();
     }
 
     private void performSafeUnsync() {
