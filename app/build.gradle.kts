@@ -30,7 +30,12 @@ android {
 
     // --- TEIL 2: Signing Config definieren ---
     signingConfigs {
-        // Wir erstellen eine Konfiguration namens "release"
+        create("configDebug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             // Wir lesen die Werte sicher aus den Properties
             // Hinweis: Das "as String" ist in Kotlin notwendig
@@ -46,6 +51,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("configDebug")
+        }
         release {
             // --- TEIL 3: Signing Config anwenden ---
             // Hier sagen wir dem Release-Build, dass er die Config von oben nutzen soll

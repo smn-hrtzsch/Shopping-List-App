@@ -363,7 +363,9 @@ public class ShoppingListRepository {
         db.collection("shopping_lists").document(firebaseListId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
+                        @SuppressWarnings("unchecked")
                         List<String> members = (List<String>) documentSnapshot.get("members");
+                        @SuppressWarnings("unchecked")
                         List<String> pending = (List<String>) documentSnapshot.get("pending_members");
                         if ((members != null && members.contains(userId)) || (pending != null && pending.contains(userId))) {
                             listener.onMemberAlreadyExists();
@@ -420,7 +422,9 @@ public class ShoppingListRepository {
                     listener.onError("Liste nicht gefunden.");
                     return;
                 }
+                @SuppressWarnings("unchecked")
                 List<String> memberIds = (List<String>) doc.get("members");
+                @SuppressWarnings("unchecked")
                 List<String> pendingIds = (List<String>) doc.get("pending_members");
                 
                 List<String> allIds = new ArrayList<>();
