@@ -203,7 +203,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     getString(R.string.dialog_auth_required_title),
                     getString(R.string.dialog_auth_required_message),
                     getString(R.string.button_register),
-                    () -> startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class)),
+                    () -> {
+                        Intent intent = new Intent(EinkaufslisteActivity.this, ProfileActivity.class);
+                        intent.putExtra("EXTRA_OPEN_EDIT_PROFILE", true);
+                        startActivity(intent);
+                    },
                     null
             );
             return;
@@ -219,7 +223,11 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                             getString(R.string.dialog_username_required_title),
                             getString(R.string.dialog_username_required_message),
                             getString(R.string.button_set_username),
-                            () -> startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class)),
+                            () -> {
+                                Intent intent = new Intent(EinkaufslisteActivity.this, ProfileActivity.class);
+                                intent.putExtra("EXTRA_OPEN_EDIT_PROFILE", true);
+                                startActivity(intent);
+                            },
                             null
                     );
                 } else {

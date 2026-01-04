@@ -167,6 +167,21 @@ public class ProfileActivity extends AppCompatActivity {
 
         loadCurrentProfile();
 
+        if (getIntent().getBooleanExtra("EXTRA_OPEN_EDIT_PROFILE", false)) {
+            // Delay slightly to ensure UI is ready or just call it. 
+            // Better to check after profile load? 
+            // Actually, if we want to set username, we can show it immediately, 
+            // but pre-filling with current username requires profile load.
+            // Let's rely on loadCurrentProfile finishing or just show it blank/pending.
+            // Since loadCurrentProfile is async, we can't wait for it easily here without callbacks.
+            // But showEditProfileDialog uses currentLoadedUsername.
+            // Let's hook into the success of loadCurrentProfile? 
+            // Or just set a flag.
+            
+            // Simpler: Just post it.
+            containerContent.postDelayed(this::showEditProfileDialog, 500); 
+        }
+
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
         buttonRegisterEmail.setOnClickListener(v -> {
             Intent intent = new Intent(this, AuthActivity.class);
@@ -508,9 +523,15 @@ public class ProfileActivity extends AppCompatActivity {
                 public void onError(String error) {
                     progressBarLoading.setVisibility(View.GONE);
                     containerContent.setVisibility(View.VISIBLE);
-                    Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
+                    // Ignore "offline" error for new users who might not have a doc yet
+                    if (error != null && !error.toLowerCase().contains("offline")) {
+                        Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
+                    }
                     isInitialProfileCreation = true;
                     isSigningOut = false;
+                    // Ensure UI updates even if fetch failed (e.g. assume no profile data)
+                    if (currentLoadedUsername == null) textViewCurrentUsername.setText("...");
+                    updateAuthUI();
                 }
             });
         };
