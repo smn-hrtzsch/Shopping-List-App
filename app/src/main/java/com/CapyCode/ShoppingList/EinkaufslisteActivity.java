@@ -1,6 +1,7 @@
 package com.CapyCode.ShoppingList;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.Editable;
@@ -174,21 +175,65 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         }
 
         if (firebaseListId == null) {
-            showCustomDialog(getString(R.string.dialog_enable_sync_title), getString(R.string.dialog_enable_sync_message), getString(R.string.button_enable_sync), () -> {
-                updateSyncIcon(R.drawable.ic_cloud_upload_24);
-                shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
-                    firebaseListId = currentShoppingList.getFirebaseId();
-                    updateSyncIcon(R.drawable.ic_cloud_synced_24);
-                    Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
-                    refreshItemList();
-                });
-            }, null);
+            checkUserRequirementsForSync(() -> {
+                showCustomDialog(getString(R.string.dialog_enable_sync_title), getString(R.string.dialog_enable_sync_message), getString(R.string.button_enable_sync), () -> {
+                    updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                    shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
+                        firebaseListId = currentShoppingList.getFirebaseId();
+                        updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                        Toast.makeText(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
+                        refreshItemList();
+                    });
+                }, null);
+            });
         } else {
             showCustomDialog(getString(R.string.dialog_stop_sync_title), getString(R.string.dialog_stop_sync_message), getString(R.string.button_stop_sync), () -> {
                 isUnsyncing = true; // Set early here!
                 performSafeUnsync();
             }, null);
         }
+    }
+
+    private void checkUserRequirementsForSync(Runnable onRequirementsMet) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        // Check if anonymous
+        if (user.isAnonymous()) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.dialog_auth_required_title)
+                    .setMessage(R.string.dialog_auth_required_message)
+                    .setPositiveButton(R.string.button_register, (dialog, which) -> {
+                        startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class));
+                    })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            return;
+        }
+
+        // Check username
+        UserRepository userRepo = new UserRepository(this);
+        userRepo.getCurrentUsername(new UserRepository.OnUsernameLoadedListener() {
+            @Override
+            public void onLoaded(String username) {
+                if (username == null || username.trim().isEmpty()) {
+                    new MaterialAlertDialogBuilder(EinkaufslisteActivity.this)
+                            .setTitle(R.string.dialog_username_required_title)
+                            .setMessage(R.string.dialog_username_required_message)
+                            .setPositiveButton(R.string.button_set_username, (dialog, which) -> {
+                                startActivity(new Intent(EinkaufslisteActivity.this, ProfileActivity.class));
+                            })
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+                } else {
+                    onRequirementsMet.run();
+                }
+            }
+            @Override
+            public void onError(String error) {
+                Toast.makeText(EinkaufslisteActivity.this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void performSafeUnsync() {

@@ -269,4 +269,11 @@
     <string name="dialog_enable_sync_title">Cloud-Sync aktivieren?</string>
     <string name="dialog_enable_sync_message">Möchtest du diese Liste in die Cloud hochladen, um von anderen Geräten darauf zuzugreifen?</string>
     <string name="button_enable_sync">Sync aktivieren</string>
+
+    <string name="dialog_auth_required_title">Registrierung erforderlich</string>
+    <string name="dialog_auth_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du dich zuerst registrieren oder dein Konto verknüpfen.</string>
+    <string name="button_register">Registrieren</string>
+    <string name="dialog_username_required_title">Benutzername erforderlich</string>
+    <string name="dialog_username_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du einen Benutzernamen festlegen.</string>
+    <string name="button_set_username">Benutzernamen festlegen</string>
 </resources>

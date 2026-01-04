@@ -248,4 +248,11 @@
     <string name="dialog_enable_sync_title">Enable Cloud Sync?</string>
     <string name="dialog_enable_sync_message">Do you want to upload this list to the cloud to access it from other devices?</string>
     <string name="button_enable_sync">Enable Sync</string>
+
+    <string name="dialog_auth_required_title">Registration required</string>
+    <string name="dialog_auth_required_message">To enable cloud synchronization, you must first register or link your account.</string>
+    <string name="button_register">Register</string>
+    <string name="dialog_username_required_title">Username required</string>
+    <string name="dialog_username_required_message">To enable cloud synchronization, you must set a username.</string>
+    <string name="button_set_username">Set Username</string>
 </resources>
