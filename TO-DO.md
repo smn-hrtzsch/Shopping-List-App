@@ -55,9 +55,9 @@
 
 ## Bugs
 
-- [ ] Edit Profile Dialog öffnet automatisch, wenn man Profile Activity öffnet ohne Username festgelegt zu haben.
-- [ ] Ablehnen Button bei Einladung hat nicht mehr die korrekte Farbe colorError
-- [ ] Unsynced Cloud Icon sollte bei Einladung in der Main Activity nicht sichtbar sein. Ist es aber aktuelle noch.
+- [x] Edit Profile Dialog öffnet automatisch, wenn man Profile Activity öffnet ohne Username festgelegt zu haben.
+- [x] Ablehnen Button bei Einladung hat nicht mehr die korrekte Farbe colorError
+- [x] Unsynced Cloud Icon sollte bei Einladung in der Main Activity nicht sichtbar sein. Ist es aber aktuelle noch.
 - [ ] Nach Abmeldung werden manchmal fälschlicherweise die unlink Icons in den Anmeldungs Buttons angezeigt anstatt des Email oder Google Icons.
 - [ ] Beim Input für das Einladen eines Members werden Passwort Manager Vorschläge angezeigt (sollte nicht sein).
 

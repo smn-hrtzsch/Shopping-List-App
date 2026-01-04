@@ -62,6 +62,10 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView textViewCurrentUsername;
     private TextView textViewWarning;
     private LinearLayout layoutLinkedMethods;
+    private LinearLayout layoutViewMode;
+    private LinearLayout layoutEditMode;
+    private EditText editTextUsernameInline;
+    private MaterialButton buttonSaveUsernameInline;
     private ImageView imageProfile;
     private View containerContent;
     private ProgressBar progressBarLoading;
@@ -158,6 +162,10 @@ public class ProfileActivity extends AppCompatActivity {
         textViewCurrentUsername = findViewById(R.id.text_view_current_username);
         textViewWarning = findViewById(R.id.text_view_warning_anonymous);
         layoutLinkedMethods = findViewById(R.id.layout_linked_methods);
+        layoutViewMode = findViewById(R.id.layout_view_mode);
+        layoutEditMode = findViewById(R.id.layout_edit_mode);
+        editTextUsernameInline = findViewById(R.id.edit_text_username_inline);
+        buttonSaveUsernameInline = findViewById(R.id.button_save_username_inline);
         imageProfile = findViewById(R.id.image_profile);
         cardSyncPreferences = findViewById(R.id.card_sync_preferences);
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
@@ -189,6 +197,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
         buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
         buttonSignOut.setOnClickListener(v -> confirmSignOut());
+        buttonSaveUsernameInline.setOnClickListener(v -> saveUsername(editTextUsernameInline.getText().toString().trim(), null));
         
         imageProfile.setOnClickListener(v -> {
             if (currentImageUrl != null && !currentImageUrl.isEmpty()) {
@@ -277,19 +286,35 @@ public class ProfileActivity extends AppCompatActivity {
         if (username.length() < 3) { Toast.makeText(this, R.string.profile_error_short, Toast.LENGTH_SHORT).show(); return; }
         if (username.contains(" ")) { Toast.makeText(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
         
+        progressBarLoading.setVisibility(View.VISIBLE);
         userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
+                progressBarLoading.setVisibility(View.GONE);
                 Toast.makeText(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
                 currentLoadedUsername = username;
                 textViewCurrentUsername.setText(username);
                 setResult(RESULT_OK);
-                dialog.dismiss();
+                if (dialog != null) dialog.dismiss();
+                updateUIForUsername();
                 if (isInitialProfileCreation) { loadCurrentProfile(); }
             }
             @Override
-            public void onError(String message) { Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); }
+            public void onError(String message) { 
+                progressBarLoading.setVisibility(View.GONE);
+                Toast.makeText(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); 
+            }
         });
+    }
+
+    private void updateUIForUsername() {
+        if (currentLoadedUsername != null && !currentLoadedUsername.isEmpty()) {
+            layoutViewMode.setVisibility(View.VISIBLE);
+            layoutEditMode.setVisibility(View.GONE);
+        } else {
+            layoutViewMode.setVisibility(View.GONE);
+            layoutEditMode.setVisibility(View.VISIBLE);
+        }
     }
 
     private void signInWithGoogle() {
@@ -517,6 +542,7 @@ public class ProfileActivity extends AppCompatActivity {
                         textViewCurrentUsername.setText("...");
                     }
                     isSigningOut = false;
+                    updateUIForUsername();
                     updateAuthUI();
                 }
                 @Override
@@ -531,6 +557,7 @@ public class ProfileActivity extends AppCompatActivity {
                     isSigningOut = false;
                     // Ensure UI updates even if fetch failed (e.g. assume no profile data)
                     if (currentLoadedUsername == null) textViewCurrentUsername.setText("...");
+                    updateUIForUsername();
                     updateAuthUI();
                 }
             });
