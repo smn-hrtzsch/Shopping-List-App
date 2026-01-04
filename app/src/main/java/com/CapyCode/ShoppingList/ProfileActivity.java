@@ -645,11 +645,16 @@ public class ProfileActivity extends AppCompatActivity {
             findViewById(R.id.layout_auth_buttons).setVisibility(View.VISIBLE);
             boolean shouldShowLinkText = currentLoadedUsername != null && !currentLoadedUsername.isEmpty();
             buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
+            buttonRegisterEmail.setIconResource(R.drawable.ic_email);
+            int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
+            buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
             buttonRegisterEmail.setOnClickListener(v -> {
                 Intent intent = new Intent(this, AuthActivity.class);
                 authActivityLauncher.launch(intent);
             });
             buttonRegisterGoogle.setText(shouldShowLinkText ? R.string.action_link_google : R.string.sign_in_google);
+            buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
+            buttonRegisterGoogle.setIconTint(null);
             buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
             buttonSignOut.setVisibility(View.GONE);
         }
