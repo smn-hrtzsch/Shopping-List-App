@@ -56,7 +56,7 @@
 
 ## Bugs
 
-- [ ] Einkaufsliste Activity schließt / stürzt ab, wenn man eine Liste unsyncen möchte.
+- [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
 - [ ] Einkaufslisten, die man gerade unsynced hat, werden in der Main Activity dann ganz am Ende der Liste angezeigt, obwohl sie an der Position bleiben sollten, an der sie vor dem Unsyncen waren.
 - [ ] Position der Einladungs-Benachrichtigung in der Main Activity ist falsch, sie sollten am Ende der Listen auftauchen, aber sie erscheinen irgendwo random (zumindest kann ich kein Muster erkennen).
 - [ ] Beim Bearbeiten eines Listennamens, kanne es vorkommen, dass der +-Button zum Hinzufügen einer Liste den Speichern-Button überdeckt. Beim Bearbeiten eines Listennamens, sollte der +-Button ausgeblendet werden.
