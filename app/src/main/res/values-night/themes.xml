@@ -42,14 +42,14 @@
 
     <style name="AppSnackbarStyle" parent="Widget.MaterialComponents.Snackbar">
         <item name="materialThemeOverlay">@style/AppSnackbarThemeOverlay</item>
-        <item name="backgroundTint">@color/dark_gray</item>
+        <item name="backgroundTint">?attr/colorSurfaceSecondary</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.Snackbar</item>
         <item name="android:layout_margin">16dp</item>
     </style>
 
     <style name="AppSnackbarThemeOverlay" parent="ThemeOverlay.MaterialComponents.Dark">
-        <item name="colorPrimary">@color/teal_200</item>
-        <item name="colorOnSurface">@color/white</item>
+        <item name="colorOnSurface">?attr/colorOnSurface</item>
+        <item name="colorPrimary">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="ShapeAppearance.App.Snackbar" parent="">
