@@ -650,6 +650,47 @@ public class ShoppingListRepository {
             });
     }
 
+    public void unsyncAllLists(Runnable onComplete) {
+        List<ShoppingList> allLists = dbHelper.getAllShoppingLists();
+        List<ShoppingList> syncedLists = new ArrayList<>();
+        for (ShoppingList list : allLists) {
+            if (list.getFirebaseId() != null) {
+                syncedLists.add(list);
+            }
+        }
+        
+        if (syncedLists.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        unsyncNextListRecursive(syncedLists, 0, onComplete);
+    }
+
+    private void unsyncNextListRecursive(List<ShoppingList> lists, int index, Runnable onComplete) {
+        if (index >= lists.size()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        ShoppingList list = lists.get(index);
+        String firebaseId = list.getFirebaseId();
+
+        // 1. Fetch items from cloud one last time to be sure we have latest (optional but good practice)
+        // For simplicity and speed, and since we are "forcing" unsync, we might skip fetch and just keep local if we assume they are in sync.
+        // But to be safe like 'performSafeUnsync', let's fetch.
+        fetchItemsFromCloudOneTime(firebaseId, (cloudItems, hasPending) -> {
+             // 2. Decouple local list
+             // We reuse decouple logic but we need to ensure we use the fetched items
+             decoupleListAndReplaceItems(list.getId(), cloudItems);
+             
+             // 3. Delete from cloud
+             deleteSingleListFromCloud(firebaseId, () -> {
+                 unsyncNextListRecursive(lists, index + 1, onComplete);
+             });
+        });
+    }
+
     public void updateProfileImage(String url, UserRepository.OnProfileActionListener listener) {
         Map<String, Object> updateData = new HashMap<>();
         updateData.put("profileImageUrl", url);

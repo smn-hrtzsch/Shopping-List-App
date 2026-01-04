@@ -671,7 +671,29 @@ public class ProfileActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                     Toast.makeText(this, R.string.toast_unlinked, Toast.LENGTH_SHORT).show();
                     if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) mGoogleSignInClient.signOut();
-                    user.reload().addOnCompleteListener(reloadTask -> loadCurrentProfile());
+                    
+                    user.reload().addOnCompleteListener(reloadTask -> {
+                        // Check if we need to unsync all lists
+                        boolean hasProvider = false;
+                        for (UserInfo profile : user.getProviderData()) {
+                            if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) || 
+                                EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                                hasProvider = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!hasProvider) {
+                             progressBarLoading.setVisibility(View.VISIBLE);
+                             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+                             repo.unsyncAllLists(() -> {
+                                 progressBarLoading.setVisibility(View.GONE);
+                                 loadCurrentProfile();
+                             });
+                        } else {
+                             loadCurrentProfile();
+                        }
+                    });
                 } else {
                     if (task.getException() instanceof FirebaseAuthRecentLoginRequiredException) {
                         if (GoogleAuthProvider.PROVIDER_ID.equals(providerId)) {
