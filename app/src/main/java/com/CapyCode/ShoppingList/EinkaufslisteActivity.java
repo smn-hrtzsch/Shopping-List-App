@@ -425,6 +425,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             }
         });
         btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.setOnDismissListener(d -> showMembersDialog());
         dialog.show();
     }
 

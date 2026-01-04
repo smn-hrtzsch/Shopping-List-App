@@ -25,6 +25,7 @@
 
     <!-- New Adaptive Colors -->
     <color name="button_background_adaptive">#E0E0E0</color>
+    <color name="button_background_adaptive_light">#BDBDBD</color>
     <color name="input_stroke_adaptive">#808080</color>
     <color name="input_stroke_inactive_adaptive">#BDBDBD</color>
     <color name="input_stroke_focused_adaptive">#757575</color>

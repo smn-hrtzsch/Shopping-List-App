@@ -56,7 +56,7 @@
     </style>
 
     <style name="ButtonStyle.Solid" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/button_background_adaptive</item>
+        <item name="backgroundTint">@color/button_background_adaptive_light</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="rippleColor">?attr/colorOnSurfaceSecondary</item>
     </style>

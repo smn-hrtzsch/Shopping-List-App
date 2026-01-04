@@ -513,8 +513,27 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         } else {
             themeItem.setIcon(R.drawable.ic_moon_outlined);
         }
+
+        MenuItem languageItem = menu.findItem(R.id.action_switch_language);
+        if (languageItem != null) {
+            View actionView = languageItem.getActionView();
+            if (actionView != null) {
+                TextView langText = actionView.findViewById(R.id.text_language_code);
+                String currentLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+                langText.setText(currentLang.toUpperCase());
+                actionView.setOnClickListener(v -> switchLanguage());
+            }
+        }
         
         return true;
+    }
+
+    private void switchLanguage() {
+        String currentLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+        String newLang = currentLang.equals("en") ? "de" : "en";
+        
+        sharedPreferences.edit().putString(KEY_LANGUAGE, newLang).apply();
+        recreate();
     }
 
     @Override
