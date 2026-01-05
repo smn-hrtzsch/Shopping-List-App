@@ -33,6 +33,10 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     protected void initLoadingOverlay(ViewGroup container, int skeletonLayoutResId) {
+        initLoadingOverlay(container, skeletonLayoutResId, 6);
+    }
+
+    protected void initLoadingOverlay(ViewGroup container, int skeletonLayoutResId, int skeletonCount) {
         if (loadingOverlay != null) {
             container.removeView(loadingOverlay);
         }
@@ -41,7 +45,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         ViewGroup skeletonContainer = loadingOverlay.findViewById(R.id.skeleton_content_container);
         if (skeletonContainer != null) {
             skeletonContainer.removeAllViews();
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < skeletonCount; i++) {
                 getLayoutInflater().inflate(skeletonLayoutResId, skeletonContainer, true);
             }
         }

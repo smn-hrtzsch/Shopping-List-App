@@ -105,7 +105,7 @@
                 android:textSize="12sp"
                 android:visibility="gone"
                 android:layout_marginStart="4dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="32dp"
                 app:drawableStartCompat="@drawable/ic_error_outline_24"
                 android:drawablePadding="8dp"
                 app:drawableTint="?attr/colorError"
@@ -119,11 +119,19 @@
                 android:textSize="12sp"
                 android:visibility="gone"
                 android:layout_marginStart="4dp"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="32dp"
                 app:drawableStartCompat="@drawable/ic_error_outline_24"
                 android:drawablePadding="8dp"
                 app:drawableTint="?attr/colorError"
                 android:gravity="center_vertical"/>
+
+            <ProgressBar
+                android:id="@+id/auth_progress_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp"
+                android:indeterminateTint="?attr/colorOnSurface"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_login"

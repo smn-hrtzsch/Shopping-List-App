@@ -160,7 +160,7 @@ public class ProfileActivity extends BaseActivity {
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
         containerContent = findViewById(R.id.container_content);
-        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile);
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showSkeleton(false);
 
         loadCurrentProfile();
@@ -201,6 +201,7 @@ public class ProfileActivity extends BaseActivity {
         TextView errorTextEmail = dialogView.findViewById(R.id.error_text_email);
         TextView errorTextPassword = dialogView.findViewById(R.id.error_text_password);
         TextView errorTextGeneral = dialogView.findViewById(R.id.error_text_general);
+        android.widget.ProgressBar progressBar = dialogView.findViewById(R.id.auth_progress_bar);
         View buttonLogin = dialogView.findViewById(R.id.button_login);
         View buttonRegister = dialogView.findViewById(R.id.button_register);
         View textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
@@ -218,23 +219,24 @@ public class ProfileActivity extends BaseActivity {
         editTextEmail.addTextChangedListener(clearErrorWatcher);
         editTextPassword.addTextChangedListener(clearErrorWatcher);
 
-        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral));
-        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral));
-        textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail));
+        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, progressBar, buttonLogin, buttonRegister));
+        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, progressBar, buttonLogin, buttonRegister));
+        textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail, progressBar));
         buttonClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
 
-    private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral) {
+    private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, android.widget.ProgressBar progressBar, View btnLogin, View btnRegister) {
         String input = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
 
         if (input.isEmpty()) { showError(errorEmail, getString(R.string.error_email_or_username_required)); return; }
         if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
 
-        dialog.hide();
-        showLoading(getString(R.string.loading_signing_in), true, true);
+        progressBar.setVisibility(View.VISIBLE);
+        btnLogin.setEnabled(false);
+        btnRegister.setEnabled(false);
 
         Runnable onLoginSuccess = () -> {
             dialog.dismiss();
@@ -247,8 +249,9 @@ public class ProfileActivity extends BaseActivity {
         };
         
         Runnable onError = () -> {
-             hideLoading();
-             dialog.show();
+             progressBar.setVisibility(View.GONE);
+             btnLogin.setEnabled(true);
+             btnRegister.setEnabled(true);
         };
 
         if (AuthValidator.isValidEmail(input)) {
@@ -334,68 +337,131 @@ public class ProfileActivity extends BaseActivity {
                 });
     }
 
-    private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral) {
-        String email = emailField.getText().toString().trim();
-        String password = passwordField.getText().toString().trim();
+        private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, android.widget.ProgressBar progressBar, View btnLogin, View btnRegister) {
 
-        if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
-        if (!AuthValidator.isValidEmail(email)) { showError(errorEmail, getString(R.string.error_invalid_email)); return; }
-        if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
-        if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
+            String email = emailField.getText().toString().trim();
 
-        dialog.hide();
-        showLoading(getString(R.string.loading_creating_account), true, true);
-        
-        Runnable onError = () -> {
-             hideLoading();
-             dialog.show();
-        };
+            String password = passwordField.getText().toString().trim();
 
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
-            AuthCredential credential = EmailAuthProvider.getCredential(email, password);
-            currentUser.linkWithCredential(credential)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        startVerificationFlow(currentUser, true, dialog);
-                    } else {
-                        onError.run();
-                        String msg = AuthErrorMapper.getErrorMessage(this, task.getException());
-                        if (task.getException() instanceof FirebaseAuthUserCollisionException) msg = getString(R.string.error_email_collision_link);
-                        showError(errorEmail, msg);
-                    }
-                });
-        } else {
-            mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        startVerificationFlow(task.getResult().getUser(), false, dialog);
-                    } else {
-                        onError.run();
-                        showError(errorEmail, AuthErrorMapper.getErrorMessage(this, task.getException()));
-                    }
-                });
+    
+
+            if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
+
+            if (!AuthValidator.isValidEmail(email)) { showError(errorEmail, getString(R.string.error_invalid_email)); return; }
+
+            if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
+
+            if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
+
+    
+
+            progressBar.setVisibility(View.VISIBLE);
+
+            btnLogin.setEnabled(false);
+
+            btnRegister.setEnabled(false);
+
+            
+
+            Runnable onError = () -> {
+
+                 progressBar.setVisibility(View.GONE);
+
+                 btnLogin.setEnabled(true);
+
+                 btnRegister.setEnabled(true);
+
+            };
+
+    
+
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+
+            if (currentUser != null) {
+
+                AuthCredential credential = EmailAuthProvider.getCredential(email, password);
+
+                currentUser.linkWithCredential(credential)
+
+                    .addOnCompleteListener(this, task -> {
+
+                        if (task.isSuccessful()) {
+
+                            startVerificationFlow(currentUser, true, dialog);
+
+                        } else {
+
+                            onError.run();
+
+                            String msg = AuthErrorMapper.getErrorMessage(this, task.getException());
+
+                            if (task.getException() instanceof FirebaseAuthUserCollisionException) msg = getString(R.string.error_email_collision_link);
+
+                            showError(errorEmail, msg);
+
+                        }
+
+                    });
+
+            } else {
+
+                mAuth.createUserWithEmailAndPassword(email, password)
+
+                    .addOnCompleteListener(this, task -> {
+
+                        if (task.isSuccessful()) {
+
+                            startVerificationFlow(task.getResult().getUser(), false, dialog);
+
+                        } else {
+
+                            onError.run();
+
+                            showError(errorEmail, AuthErrorMapper.getErrorMessage(this, task.getException()));
+
+                        }
+
+                    });
+
+            }
+
         }
-    }
 
-    private void startVerificationFlow(FirebaseUser user, boolean isLinkedAccount, androidx.appcompat.app.AlertDialog authDialog) {
-        userRepository.syncEmailToFirestore();
-        user.sendEmailVerification()
-                .addOnCompleteListener(task -> {
-                    hideLoading();
-                    if (task.isSuccessful()) {
+    
+
+        private void startVerificationFlow(FirebaseUser user, boolean isLinkedAccount, androidx.appcompat.app.AlertDialog authDialog) {
+
+            userRepository.syncEmailToFirestore();
+
+            user.sendEmailVerification()
+
+                    .addOnCompleteListener(task -> {
+
+                        // Dialog remains open but loading finished? Or dismiss dialog and show verification dialog?
+
+                        // We dismiss authDialog here.
+
                         authDialog.dismiss();
-                        showVerificationDialog(user, isLinkedAccount);
-                    } else {
-                        UiUtils.makeCustomToast(this, getString(R.string.error_send_email_failed, task.getException().getMessage()), Toast.LENGTH_LONG).show();
-                        revertRegistration(user, isLinkedAccount);
-                    }
-                });
-    }
+
+                        if (task.isSuccessful()) {
+
+                            showVerificationDialog(user, isLinkedAccount);
+
+                        } else {
+
+                            UiUtils.makeCustomToast(this, getString(R.string.error_send_email_failed, task.getException().getMessage()), Toast.LENGTH_LONG).show();
+
+                            revertRegistration(user, isLinkedAccount);
+
+                        }
+
+                    });
+
+        }
+
+    
 
     private void showVerificationDialog(FirebaseUser user, boolean isLinkedAccount) {
-        // Reuse existing dialog helper or creating new one?
-        // Let's create one similar to AuthActivity's
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
         builder.setView(dialogView);
@@ -430,8 +496,6 @@ public class ProfileActivity extends BaseActivity {
         });
 
         btnNegative.setOnClickListener(v -> {
-             // ... Abort logic similar to AuthActivity ...
-             // Simplified for brevity: just dismiss and revert
              dialog.dismiss();
              revertRegistration(user, isLinkedAccount);
         });
@@ -447,16 +511,27 @@ public class ProfileActivity extends BaseActivity {
         }
     }
 
-    private void performDialogResetPassword(EditText emailField, TextView errorEmail) {
-        String email = emailField.getText().toString().trim();
-        if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
-        showLoading(getString(R.string.loading), true, true);
-        mAuth.sendPasswordResetEmail(email).addOnCompleteListener(t -> {
-            hideLoading();
-            if (t.isSuccessful()) UiUtils.makeCustomToast(this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
-            else showError(errorEmail, AuthErrorMapper.getErrorMessage(this, t.getException()));
-        });
-    }
+    private void performDialogResetPassword(EditText emailField, TextView errorEmail, android.widget.ProgressBar progressBar) {
+
+            String email = emailField.getText().toString().trim();
+
+            if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
+
+            
+
+            progressBar.setVisibility(View.VISIBLE);
+
+            mAuth.sendPasswordResetEmail(email).addOnCompleteListener(t -> {
+
+                progressBar.setVisibility(View.GONE);
+
+                if (t.isSuccessful()) UiUtils.makeCustomToast(this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
+
+                else showError(errorEmail, AuthErrorMapper.getErrorMessage(this, t.getException()));
+
+            });
+
+        }
 
     private void showError(TextView errorView, String message) {
         if (errorView != null) {
