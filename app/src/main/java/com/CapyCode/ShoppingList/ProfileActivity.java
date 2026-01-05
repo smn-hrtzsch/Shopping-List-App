@@ -513,7 +513,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void loadCurrentProfile() {
-        showLoading(getString(R.string.loading_profile), false, true);
+        showLoading(getString(R.string.loading_profile), true, true);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
             userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
