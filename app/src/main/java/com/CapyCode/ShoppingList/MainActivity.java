@@ -660,18 +660,28 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
     @Override
     public void onDeclineClicked(ShoppingList list) {
         if (list.getFirebaseId() == null) return;
-        shoppingListRepository.declineInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
-            @Override
-            public void onSuccess() {
-                UiUtils.makeCustomToast(MainActivity.this, R.string.toast_invitation_declined, Toast.LENGTH_SHORT).show();
-                loadShoppingLists();
-            }
+        
+        showCustomDialog(
+            getString(R.string.dialog_decline_invitation_title),
+            getString(R.string.dialog_decline_invitation_message, list.getName()),
+            getString(R.string.button_decline),
+            getString(R.string.button_cancel),
+            () -> {
+                shoppingListRepository.declineInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        UiUtils.makeCustomToast(MainActivity.this, R.string.toast_invitation_declined, Toast.LENGTH_SHORT).show();
+                        loadShoppingLists();
+                    }
 
-            @Override
-            public void onError(String message) {
-                UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
+                    }
+                });
+            },
+            null
+        );
     }
 
     @Override

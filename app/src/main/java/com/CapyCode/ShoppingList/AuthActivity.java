@@ -78,15 +78,11 @@ public class AuthActivity extends BaseActivity {
     }
 
     private void loginUser() {
-        String email = editTextEmail.getText().toString().trim();
+        String input = editTextEmail.getText().toString().trim();
         String password = editTextPassword.getText().toString().trim();
 
-        if (TextUtils.isEmpty(email)) {
-            editTextEmail.setError(getString(R.string.error_email_required));
-            return;
-        }
-        if (!AuthValidator.isValidEmail(email)) {
-            editTextEmail.setError(getString(R.string.error_invalid_email));
+        if (TextUtils.isEmpty(input)) {
+            editTextEmail.setError(getString(R.string.error_email_or_username_required));
             return;
         }
         if (TextUtils.isEmpty(password)) {
@@ -96,8 +92,27 @@ public class AuthActivity extends BaseActivity {
 
         showLoading(true, R.string.loading_signing_in);
 
-        // Directly attempt to login/verify, bypassing fetchSignInMethodsForEmail
-        // which might be blocked by Email Enumeration Protection.
+        if (AuthValidator.isValidEmail(input)) {
+            // It's an email
+            proceedWithLogin(input, password);
+        } else {
+            // Assume it's a username, resolve email first
+            userRepository.findEmailByUsername(input, new UserRepository.OnEmailLoadedListener() {
+                @Override
+                public void onLoaded(String email) {
+                    proceedWithLogin(email, password);
+                }
+
+                @Override
+                public void onError(String error) {
+                    showLoading(false);
+                    editTextEmail.setError(error); // Show "User not found" or similar on the input field
+                }
+            });
+        }
+    }
+
+    private void proceedWithLogin(String email, String password) {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.isAnonymous()) {
             verifyCredentialsAndLogin(email, password);
@@ -260,6 +275,9 @@ public class AuthActivity extends BaseActivity {
     }
 
     private void startVerificationFlow(FirebaseUser user, boolean isLinkedAccount) {
+        // Sync email to Firestore user document so username login/invite works
+        userRepository.syncEmailToFirestore();
+        
         user.sendEmailVerification()
                 .addOnCompleteListener(task -> {
                     showLoading(false);

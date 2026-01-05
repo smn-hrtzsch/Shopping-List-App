@@ -158,6 +158,57 @@ public class UserRepository {
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
 
+    public void syncEmailToFirestore() {
+        if (!isAuthenticated()) return;
+        String email = auth.getCurrentUser().getEmail();
+        if (email != null) {
+            Map<String, Object> update = new HashMap<>();
+            update.put("email", email);
+            db.collection("users").document(getCurrentUserId())
+                    .set(update, com.google.firebase.firestore.SetOptions.merge());
+        }
+    }
+
+    public void findUidByEmail(String email, OnUserSearchListener listener) {
+        db.collection("users")
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        listener.onUserFound(queryDocumentSnapshots.getDocuments().get(0).getId());
+                    } else {
+                        listener.onError(context.getString(R.string.user_not_found, email));
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    public interface OnEmailLoadedListener {
+        void onLoaded(String email);
+        void onError(String error);
+    }
+
+    public void findEmailByUsername(String username, OnEmailLoadedListener listener) {
+        db.collection("users")
+                .whereEqualTo("username", username)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        String email = queryDocumentSnapshots.getDocuments().get(0).getString("email");
+                        if (email != null) {
+                            listener.onLoaded(email);
+                        } else {
+                            listener.onError(context.getString(R.string.error_user_no_email));
+                        }
+                    } else {
+                        listener.onError(context.getString(R.string.user_not_found, username));
+                    }
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
     public void findUidByUsername(String username, OnUserSearchListener listener) {
         db.collection("users")
                 .whereEqualTo("username", username)

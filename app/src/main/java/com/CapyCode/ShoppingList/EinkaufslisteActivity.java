@@ -338,59 +338,73 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
 
     private void showMembersDialog() {
         if (firebaseListId == null) return;
+        
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(EinkaufslisteActivity.this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        
+        View buttonAdd = dialogView.findViewById(R.id.button_add_member);
+        View buttonClose = dialogView.findViewById(R.id.button_close_dialog);
+        
+        buttonAdd.setOnClickListener(v -> showInviteUserDialog(() -> populateMembersList(dialogView, dialog)));
+        buttonClose.setOnClickListener(v -> dialog.dismiss());
+        
+        populateMembersList(dialogView, dialog);
+        dialog.show();
+    }
+
+    private void populateMembersList(View dialogView, androidx.appcompat.app.AlertDialog dialog) {
+        android.widget.LinearLayout container = dialogView.findViewById(R.id.container_members_list);
+        container.removeAllViews(); // Clear existing
+        
         shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
             @Override
             public void onLoaded(List<Map<String, String>> membersWithNames) {
-                androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(EinkaufslisteActivity.this);
-                View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
-                builder.setView(dialogView);
-                androidx.appcompat.app.AlertDialog dialog = builder.create();
-                if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-                android.widget.LinearLayout container = dialogView.findViewById(R.id.container_members_list);
-                View buttonAdd = dialogView.findViewById(R.id.button_add_member);
-                View buttonClose = dialogView.findViewById(R.id.button_close_dialog);
-                String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
-                for (Map<String, String> member : membersWithNames) {
-                    android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
-                    row.setOrientation(android.widget.LinearLayout.HORIZONTAL); row.setGravity(android.view.Gravity.CENTER_VERTICAL); row.setPadding(0, 24, 0, 24);
-                    ImageView icon = new ImageView(EinkaufslisteActivity.this); 
-                    
-                    String imageUrl = member.get("profileImageUrl");
-                    if (imageUrl != null && !imageUrl.isEmpty()) {
-                        Glide.with(EinkaufslisteActivity.this)
-                             .load(imageUrl)
-                             .apply(RequestOptions.circleCropTransform())
-                             .into(icon);
-                        icon.setOnClickListener(v -> showImagePreviewDialog(imageUrl, member.get("username")));
-                    } else {
-                        icon.setImageResource(R.drawable.ic_account_circle_24);
+                if (dialog.isShowing()) {
+                    String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                    for (Map<String, String> member : membersWithNames) {
+                        android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
+                        row.setOrientation(android.widget.LinearLayout.HORIZONTAL); row.setGravity(android.view.Gravity.CENTER_VERTICAL); row.setPadding(0, 24, 0, 24);
+                        ImageView icon = new ImageView(EinkaufslisteActivity.this); 
+                        
+                        String imageUrl = member.get("profileImageUrl");
+                        if (imageUrl != null && !imageUrl.isEmpty()) {
+                            Glide.with(EinkaufslisteActivity.this)
+                                 .load(imageUrl)
+                                 .apply(RequestOptions.circleCropTransform())
+                                 .into(icon);
+                            icon.setOnClickListener(v -> showImagePreviewDialog(imageUrl, member.get("username")));
+                        } else {
+                            icon.setImageResource(R.drawable.ic_account_circle_24);
+                            int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
+                            int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
+                            String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
+                            icon.setColorFilter(isMe ? highlightColor : textColor);
+                        }
+                        
+                        android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); iconParams.setMargins(0, 0, 32, 0);
+                        row.addView(icon, iconParams);
+                        TextView text = new TextView(EinkaufslisteActivity.this);
+                        String role = member.get("role"); String username = member.get("username");
+                        String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
+                        if (isMe) username += getString(R.string.member_is_me);
+                        android.text.SpannableString content = new android.text.SpannableString(username + "\n" + role);
+                        content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);
+                        content.setSpan(new android.text.style.RelativeSizeSpan(0.85f), username.length() + 1, content.length(), 0);
+                        content.setSpan(new android.text.style.ForegroundColorSpan(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurfaceVariant)), username.length() + 1, content.length(), 0);
                         int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
                         int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
-                        String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
-                        icon.setColorFilter(isMe ? highlightColor : textColor);
+                        text.setText(content); text.setTextColor(isMe ? highlightColor : textColor); text.setTextSize(16); row.addView(text);
+                        container.addView(row);
                     }
-                    
-                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); iconParams.setMargins(0, 0, 32, 0);
-                    row.addView(icon, iconParams);
-                    TextView text = new TextView(EinkaufslisteActivity.this);
-                    String role = member.get("role"); String username = member.get("username");
-                    String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
-                    if (isMe) username += getString(R.string.member_is_me);
-                    android.text.SpannableString content = new android.text.SpannableString(username + "\n" + role);
-                    content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);
-                    content.setSpan(new android.text.style.RelativeSizeSpan(0.85f), username.length() + 1, content.length(), 0);
-                    content.setSpan(new android.text.style.ForegroundColorSpan(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurfaceVariant)), username.length() + 1, content.length(), 0);
-                    int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
-                    int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
-                    text.setText(content); text.setTextColor(isMe ? highlightColor : textColor); text.setTextSize(16); row.addView(text);
-                    container.addView(row);
                 }
-                buttonAdd.setOnClickListener(v -> { showInviteUserDialog(); });
-                buttonClose.setOnClickListener(v -> dialog.dismiss());
-                dialog.show();
             }
             @Override
-            public void onError(String error) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show(); }
+            public void onError(String error) { 
+                if (dialog.isShowing()) UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show(); 
+            }
         });
     }
 
@@ -420,7 +434,7 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         dialog.show();
     }
 
-    private void showInviteUserDialog() {
+    private void showInviteUserDialog(Runnable onSuccess) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_invite_user, null);
         builder.setView(dialogView);
@@ -431,20 +445,30 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         
         View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
         com.google.android.material.textfield.TextInputEditText editText = includeDialog.findViewById(R.id.username_edit_text);
+        com.google.android.material.textfield.TextInputLayout inputLayout = includeDialog.findViewById(R.id.username_input_layout); // Fixed ID
         com.google.android.material.button.MaterialButton btnPositive = includeDialog.findViewById(R.id.username_action_button);
-        btnPositive.setText(R.string.invite_button); // Set correct text for invite action
+        TextView messageView = dialogView.findViewById(R.id.dialog_message);
+        
+        btnPositive.setText(R.string.invite_button);
+        if (inputLayout != null) inputLayout.setHint(getString(R.string.invite_user_hint_mixed));
+        if (messageView != null) messageView.setText(getString(R.string.invite_user_message_mixed));
         
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
         btnPositive.setOnClickListener(v -> {
-            String username = editText.getText().toString().trim();
-            if (!username.isEmpty()) {
+            String input = editText.getText().toString().trim();
+            if (!input.isEmpty()) {
                 UserRepository userRepository = new UserRepository(this);
-                userRepository.findUidByUsername(username, new UserRepository.OnUserSearchListener() {
+                
+                UserRepository.OnUserSearchListener searchListener = new UserRepository.OnUserSearchListener() {
                     @Override
                     public void onUserFound(String uid) {
                         shoppingListRepository.addMemberToList(firebaseListId, uid, new ShoppingListRepository.OnMemberAddListener() {
                             @Override
-                            public void onMemberAdded() { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.user_invited, username), Toast.LENGTH_SHORT).show(); dialog.dismiss(); }
+                            public void onMemberAdded() { 
+                                UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.user_invited, input), Toast.LENGTH_SHORT).show(); 
+                                dialog.dismiss();
+                                if (onSuccess != null) onSuccess.run();
+                            }
                             @Override
                             public void onMemberAlreadyExists() { UiUtils.makeCustomToast(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show(); }
                             @Override
@@ -453,11 +477,21 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
                     }
                     @Override
                     public void onError(String message) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show(); }
-                });
+                };
+
+                if (AuthValidator.isValidEmail(input)) {
+                    userRepository.findUidByEmail(input, searchListener);
+                } else {
+                    userRepository.findUidByUsername(input, searchListener);
+                }
             }
         });
         btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
+    }
+
+    private void showInviteUserDialog() {
+        showInviteUserDialog(null);
     }
 
     private void shareShoppingList() {
