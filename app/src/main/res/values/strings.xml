@@ -92,6 +92,13 @@
     <!-- Profile & User Management -->
     <string name="title_activity_profile">Profile</string>
     <string name="loading">Loading...</string>
+    <string name="loading_lists">Loading lists...</string>
+    <string name="loading_items">Loading items...</string>
+    <string name="loading_profile">Loading profile...</string>
+    <string name="loading_signing_in">Signing in...</string>
+    <string name="loading_creating_account">Creating account...</string>
+    <string name="loading_saving">Saving...</string>
+    <string name="loading_uploading">Uploading...</string>
     <string name="profile_info">To allow others to add you to their lists, please choose a unique username.</string>
     <string name="profile_username_hint">Choose username</string>
     <string name="invite_username_hint">Enter username</string>

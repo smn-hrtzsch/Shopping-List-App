@@ -174,6 +174,8 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         adapter = new ListRecyclerViewAdapter(this, shoppingLists, shoppingListManager, this);
         recyclerView.setAdapter(adapter);
 
+        initLoadingOverlay(findViewById(R.id.main_activity_root));
+
         fab.setOnClickListener(view -> showAddListDialog());
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
@@ -181,7 +183,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         touchHelper.attachToRecyclerView(recyclerView);
 
         setupCloseEditorOnTouchOutside();
-        showLoading();
+        showLoading(R.string.loading_lists);
         loadShoppingLists();
         handleIntent(getIntent());
 
@@ -329,7 +331,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
     }
 
     private void createSharedListInFirestore(String listName) {
-        showLoading();
+        showLoading(R.string.loading_saving);
         ensureAuthenticated(() -> {
             FirebaseUser currentUser = mAuth.getCurrentUser();
             // Check if user has a username profile
@@ -573,6 +575,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
             fab.show();
             editTextNewListName.setText("");
         }
+        showLoading(R.string.loading_lists);
         loadShoppingLists();
     }
 
@@ -588,7 +591,10 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
     private void checkEmptyView() {
         if (shoppingLists != null && shoppingLists.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
-            if (emptyView != null) emptyView.setVisibility(View.VISIBLE);
+            // Only show empty view if we are not currently showing the loading overlay
+            if (emptyView != null) {
+                emptyView.setVisibility(View.VISIBLE);
+            }
         } else {
             recyclerView.setVisibility(View.VISIBLE);
             if (emptyView != null) emptyView.setVisibility(View.GONE);

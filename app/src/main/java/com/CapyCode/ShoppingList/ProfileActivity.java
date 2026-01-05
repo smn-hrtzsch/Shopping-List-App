@@ -170,6 +170,8 @@ public class ProfileActivity extends BaseActivity {
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
         containerContent = findViewById(R.id.container_content);
+        initLoadingOverlay(findViewById(R.id.profile_root));
+        showSkeleton(false);
 
         loadCurrentProfile();
 
@@ -285,7 +287,7 @@ public class ProfileActivity extends BaseActivity {
         if (username.length() < 3) { UiUtils.makeCustomToast(this, R.string.profile_error_short, Toast.LENGTH_SHORT).show(); return; }
         if (username.contains(" ")) { UiUtils.makeCustomToast(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
         
-        showLoading();
+        showLoading(R.string.loading_saving);
         userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
@@ -510,7 +512,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void loadCurrentProfile() {
-        showLoading();
+        showLoading(R.string.loading_profile);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
             userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
@@ -800,7 +802,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void uploadImage(Uri imageUri) {
-        showLoading();
+        showLoading(R.string.loading_uploading);
         userRepository.uploadProfileImage(imageUri, new UserRepository.OnImageUploadListener() {
             @Override
             public void onSuccess(String downloadUrl) {

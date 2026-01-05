@@ -63,6 +63,9 @@ public class AuthActivity extends BaseActivity {
         mAuth = FirebaseAuth.getInstance();
         userRepository = new UserRepository(this);
 
+        initLoadingOverlay(findViewById(android.R.id.content));
+        showSkeleton(false);
+
         editTextEmail = findViewById(R.id.edit_text_email);
         editTextPassword = findViewById(R.id.edit_text_password);
         buttonLogin = findViewById(R.id.button_login);
@@ -91,7 +94,7 @@ public class AuthActivity extends BaseActivity {
             return;
         }
 
-        showLoading(true);
+        showLoading(true, R.string.loading_signing_in);
 
         // Directly attempt to login/verify, bypassing fetchSignInMethodsForEmail
         // which might be blocked by Email Enumeration Protection.
@@ -216,7 +219,7 @@ public class AuthActivity extends BaseActivity {
             return;
         }
 
-        showLoading(true);
+        showLoading(true, R.string.loading_creating_account);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
@@ -388,8 +391,12 @@ public class AuthActivity extends BaseActivity {
     }
 
     private void showLoading(boolean show) {
+        showLoading(show, R.string.loading);
+    }
+
+    private void showLoading(boolean show, int messageResId) {
         if (show) {
-            super.showLoading();
+            super.showLoading(messageResId);
         } else {
             super.hideLoading();
         }

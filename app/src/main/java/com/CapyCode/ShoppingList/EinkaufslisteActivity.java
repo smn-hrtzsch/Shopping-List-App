@@ -161,12 +161,14 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
         recyclerView.setAdapter(adapter);
 
+        initLoadingOverlay(findViewById(R.id.einkaufsliste_activity_root));
+
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(recyclerView);
 
         setupAddItemBar();
-        showLoading();
+        showLoading(R.string.loading_items);
         refreshItemList();
     }
 
@@ -644,7 +646,12 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         }
     }
 
-    private void checkEmptyViewItems(boolean isEmpty) { if (emptyView != null) { emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE); recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE); } }
+    private void checkEmptyViewItems(boolean isEmpty) { 
+        if (emptyView != null) { 
+            emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE); 
+            recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE); 
+        } 
+    }
 
     @Override
     public boolean onSupportNavigateUp() { getOnBackPressedDispatcher().onBackPressed(); return true; }
