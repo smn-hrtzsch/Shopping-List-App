@@ -125,13 +125,52 @@
                 app:drawableTint="?attr/colorError"
                 android:gravity="center_vertical"/>
 
-            <ProgressBar
-                android:id="@+id/auth_progress_bar"
+            <LinearLayout
+                android:id="@+id/auth_loading_container"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
                 android:visibility="gone"
-                android:layout_marginBottom="16dp"
-                android:indeterminateTint="?attr/colorOnSurface"/>
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:id="@+id/dots_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <View
+                        android:id="@+id/dot1"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:background="@drawable/loading_dot" />
+
+                    <View
+                        android:id="@+id/dot2"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/loading_dot" />
+
+                    <View
+                        android:id="@+id/dot3"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/loading_dot" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/loading"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_login"

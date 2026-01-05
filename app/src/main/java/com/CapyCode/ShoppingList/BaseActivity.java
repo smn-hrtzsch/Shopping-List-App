@@ -123,12 +123,16 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     private void startDotsAnimation() {
-        animateDot(dot1, 0);
-        animateDot(dot2, 150);
-        animateDot(dot3, 300);
+        startDotsAnimation(dot1, dot2, dot3);
     }
 
-    private void animateDot(View dot, int delay) {
+    public static void startDotsAnimation(View d1, View d2, View d3) {
+        animateDot(d1, 0);
+        animateDot(d2, 150);
+        animateDot(d3, 300);
+    }
+
+    protected static void animateDot(View dot, int delay) {
         if (dot == null) return;
         dot.clearAnimation();
         AnimationSet set = new AnimationSet(true);

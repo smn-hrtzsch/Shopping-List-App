@@ -201,7 +201,10 @@ public class ProfileActivity extends BaseActivity {
         TextView errorTextEmail = dialogView.findViewById(R.id.error_text_email);
         TextView errorTextPassword = dialogView.findViewById(R.id.error_text_password);
         TextView errorTextGeneral = dialogView.findViewById(R.id.error_text_general);
-        android.widget.ProgressBar progressBar = dialogView.findViewById(R.id.auth_progress_bar);
+        View authLoadingContainer = dialogView.findViewById(R.id.auth_loading_container);
+        View dot1 = dialogView.findViewById(R.id.dot1);
+        View dot2 = dialogView.findViewById(R.id.dot2);
+        View dot3 = dialogView.findViewById(R.id.dot3);
         View buttonLogin = dialogView.findViewById(R.id.button_login);
         View buttonRegister = dialogView.findViewById(R.id.button_register);
         View textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
@@ -219,22 +222,24 @@ public class ProfileActivity extends BaseActivity {
         editTextEmail.addTextChangedListener(clearErrorWatcher);
         editTextPassword.addTextChangedListener(clearErrorWatcher);
 
-        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, progressBar, buttonLogin, buttonRegister));
-        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, progressBar, buttonLogin, buttonRegister));
-        textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail, progressBar));
+        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
+        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
+        textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail, authLoadingContainer, dot1, dot2, dot3));
         buttonClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
 
-    private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, android.widget.ProgressBar progressBar, View btnLogin, View btnRegister) {
+    private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
         String input = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
 
         if (input.isEmpty()) { showError(errorEmail, getString(R.string.error_email_or_username_required)); return; }
         if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
 
-        progressBar.setVisibility(View.VISIBLE);
+        hideKeyboard();
+        loadingContainer.setVisibility(View.VISIBLE);
+        BaseActivity.startDotsAnimation(d1, d2, d3);
         btnLogin.setEnabled(false);
         btnRegister.setEnabled(false);
 
@@ -249,7 +254,8 @@ public class ProfileActivity extends BaseActivity {
         };
         
         Runnable onError = () -> {
-             progressBar.setVisibility(View.GONE);
+             loadingContainer.setVisibility(View.GONE);
+             d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
              btnLogin.setEnabled(true);
              btnRegister.setEnabled(true);
         };
