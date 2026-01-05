@@ -1,4 +1,6 @@
 - Nach jeder Änderung, die du machst, soll eine aussagekräftige Commit Message verfasst werden und mit dieser die Änderung commitet werden.
+- Jedes neue Feature muss auf einem dedizierten Branch entwickelt werden.
+- Sobald ein Feature abgeschlossen ist und ein erfolgreiches Feedback vom User vorliegt, muss die Änderung über einen Pull Request auf den Haupt-Branch gemergt und der obsolete Branch anschließend gelöscht werden. Zum Erstellen und Mergen des Pull Requests kann die GitHub CLI (`gh`) genutzt werden.
 - Texte müssen IMMER korrekt als String-Variablen in den 'strings.xml' Dateien festgelegt werden. Verwende NIEMALS hartcodierte Strings im Java-Code oder in Layout-Dateien, um die Lokalisierung zu gewährleisten.
 - Nach JEDER Code-Änderung muss zwingend ein manueller Compile-Vorgang (z.B. './gradlew assembleDebug') durchgeführt werden, um sicherzustellen, dass der Build fehlerfrei läuft.
 - Du musst zum starten eines manuellen Compile-Vorgangs IMMER sicherstellen, dass du die korrekte Java-Version für den Build nutzt. Setze dazu manuell die JAVA_HOME Umgebungsvariable auf die passende JDK-Version. 
