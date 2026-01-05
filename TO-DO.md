@@ -3,10 +3,12 @@
 ## Allgemein
 
 - [ ] Impressum und Datenschutzrichtlinie erstellen und in der App verlinken
+- [ ] Ladebildschirm / Splash Screen beim Laden von Daten, wenn UI noch nicht ready oder während längerer Ladezeiten (Anmeldung, Account Wechsel, etc.) Momentan wird manchmal ein Lade Kreis angezeigt, der aber dann über die UI gelegt wird, was nicht so toll aussieht.
 
 ## Fixes
 
-- [x] Ladezeit der MainActivity optimieren, lokale Kopie der Clouda Datenbank verwenden
+- [x] Ladezeit der MainActivity optimieren, lokale Kopie der Cloud Datenbank verwenden
+- [ ] Während Ladezeit (z.B. nach Account Wechsel) einen Ladebildschirm anzeigen
 
 ## Accounts
 
