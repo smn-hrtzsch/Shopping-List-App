@@ -6,8 +6,14 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.TranslateAnimation;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -15,14 +21,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public abstract class BaseActivity extends AppCompatActivity {
 
-    private View loadingOverlay;
+    protected View loadingOverlay;
     private TextView loadingTextView;
     private View dot1, dot2, dot3;
     private final android.os.Handler loadingHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable showLoadingRunnable;
     private static final int LOADING_DELAY_MS = 250;
 
-    protected void initLoadingOverlay(android.view.ViewGroup container) {
+    protected void initLoadingOverlay(ViewGroup container) {
         if (loadingOverlay != null) {
             container.removeView(loadingOverlay);
         }
@@ -37,15 +43,6 @@ public abstract class BaseActivity extends AppCompatActivity {
         dot3 = loadingOverlay.findViewById(R.id.dot3);
     }
 
-    protected void showSkeleton(boolean show) {
-        if (loadingOverlay != null) {
-            View skeleton = loadingOverlay.findViewById(R.id.skeleton_container);
-            if (skeleton != null) {
-                skeleton.setVisibility(show ? View.VISIBLE : View.GONE);
-            }
-        }
-    }
-
     public void showLoading() {
         showLoading(getString(R.string.loading));
     }
@@ -55,38 +52,56 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     public void showLoading(String message) {
-        showLoading(message, true);
+        showLoading(message, true, false);
     }
-    
+
     public void showLoading(String message, boolean showSkeleton) {
+        showLoading(message, showSkeleton, false);
+    }
+
+    public void showLoading(String message, boolean showSkeleton, boolean immediate) {
         if (isFinishing() || loadingOverlay == null) return;
         
         hideKeyboard();
         
-        // Show skeleton immediately if requested to prevent flickering of empty views
-        if (showSkeleton) {
-            showSkeleton(true);
-            loadingOverlay.setVisibility(View.VISIBLE);
-            loadingOverlay.setAlpha(1f);
+        loadingHandler.removeCallbacks(showLoadingRunnable);
+        
+        // Immediate show if skeleton or immediate requested
+        if (showSkeleton || immediate) {
+            showSkeleton(showSkeleton);
+            if (loadingOverlay.getVisibility() != View.VISIBLE) {
+                loadingOverlay.setVisibility(View.VISIBLE);
+                loadingOverlay.setAlpha(1f);
+                loadingOverlay.bringToFront();
+            }
         }
 
-        loadingHandler.removeCallbacks(showLoadingRunnable);
         showLoadingRunnable = () -> {
             if (loadingTextView != null) {
                 loadingTextView.setText(message);
             }
             if (loadingOverlay.getVisibility() != View.VISIBLE) {
                 loadingOverlay.setVisibility(View.VISIBLE);
-                loadingOverlay.animate().alpha(1f).setDuration(300).start();
+                loadingOverlay.setAlpha(0f);
+                loadingOverlay.animate().alpha(1f).setDuration(250).start();
+                loadingOverlay.bringToFront();
             }
             startDotsAnimation();
         };
         
-        if (showSkeleton) {
-            // If skeleton is already shown, just run the text update/animation logic
+        if (showSkeleton || immediate) {
             loadingHandler.post(showLoadingRunnable);
         } else {
             loadingHandler.postDelayed(showLoadingRunnable, LOADING_DELAY_MS);
+        }
+    }
+
+    protected void showSkeleton(boolean show) {
+        if (loadingOverlay != null) {
+            View skeleton = loadingOverlay.findViewById(R.id.skeleton_container);
+            if (skeleton != null) {
+                skeleton.setVisibility(show ? View.VISIBLE : View.GONE);
+            }
         }
     }
 
@@ -99,19 +114,23 @@ public abstract class BaseActivity extends AppCompatActivity {
     private void animateDot(View dot, int delay) {
         if (dot == null) return;
         dot.clearAnimation();
-        android.view.animation.AnimationSet set = new android.view.animation.AnimationSet(true);
+        AnimationSet set = new AnimationSet(true);
         
-        android.view.animation.TranslateAnimation move = new android.view.animation.TranslateAnimation(0, 0, 0, -15);
+        // Jump animation (Translate)
+        TranslateAnimation move = new TranslateAnimation(
+                Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0,
+                Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, -1.2f);
         move.setDuration(400);
         move.setStartOffset(delay);
-        move.setRepeatMode(android.view.animation.Animation.REVERSE);
-        move.setRepeatCount(android.view.animation.Animation.INFINITE);
+        move.setRepeatMode(Animation.REVERSE);
+        move.setRepeatCount(Animation.INFINITE);
         
-        android.view.animation.AlphaAnimation fade = new android.view.animation.AlphaAnimation(1.0f, 0.4f);
+        // Fade animation (Alpha)
+        AlphaAnimation fade = new AlphaAnimation(1.0f, 0.4f);
         fade.setDuration(400);
         fade.setStartOffset(delay);
-        fade.setRepeatMode(android.view.animation.Animation.REVERSE);
-        fade.setRepeatCount(android.view.animation.Animation.INFINITE);
+        fade.setRepeatMode(Animation.REVERSE);
+        fade.setRepeatCount(Animation.INFINITE);
 
         set.addAnimation(move);
         set.addAnimation(fade);
@@ -121,13 +140,22 @@ public abstract class BaseActivity extends AppCompatActivity {
     public void hideLoading() {
         loadingHandler.removeCallbacks(showLoadingRunnable);
         if (loadingOverlay != null && loadingOverlay.getVisibility() == View.VISIBLE) {
-            loadingOverlay.animate().alpha(0f).setDuration(300).withEndAction(() -> {
+            loadingOverlay.animate().alpha(0f).setDuration(200).withEndAction(() -> {
                 loadingOverlay.setVisibility(View.GONE);
                 if (dot1 != null) dot1.clearAnimation();
                 if (dot2 != null) dot2.clearAnimation();
                 if (dot3 != null) dot3.clearAnimation();
+                onLoadingHidden();
             }).start();
+        } else if (loadingOverlay != null) {
+            loadingOverlay.setVisibility(View.GONE);
         }
+    }
+
+    protected void onLoadingHidden() { }
+
+    protected boolean isLoadingOverlayVisible() {
+        return loadingOverlay != null && loadingOverlay.getVisibility() == View.VISIBLE;
     }
 
     @Override
@@ -139,7 +167,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void hideKeyboard() {
         View view = this.getCurrentFocus();
         if (view != null) {
-            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
                 imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
             }

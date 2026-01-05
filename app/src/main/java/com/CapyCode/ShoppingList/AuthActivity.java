@@ -193,6 +193,7 @@ public class AuthActivity extends BaseActivity {
     }
 
     void handleLoginError(Task<?> task) {
+        showLoading(false);
         String errorMsg = AuthErrorMapper.getErrorMessage(this, task.getException());
         UiUtils.makeCustomToast(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
     }

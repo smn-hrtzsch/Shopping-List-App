@@ -13,7 +13,8 @@
         android:id="@+id/skeleton_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:alpha="0.6">
         <include layout="@layout/skeleton_list_row" />
         <include layout="@layout/skeleton_list_row" />
         <include layout="@layout/skeleton_list_row" />
@@ -28,7 +29,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:cardCornerRadius="28dp"
-        app:cardElevation="12dp"
+        app:cardElevation="8dp"
         app:cardBackgroundColor="?attr/colorSurface"
         app:strokeWidth="1dp"
         app:strokeColor="?attr/colorOnSurfaceSecondary"
@@ -45,8 +46,8 @@
             android:minWidth="220dp"
             android:paddingStart="32dp"
             android:paddingEnd="32dp"
-            android:paddingTop="20dp"
-            android:paddingBottom="20dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="24dp"
             android:clipChildren="false"
             android:clipToPadding="false">
 
@@ -56,10 +57,9 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:paddingTop="16dp"
-                android:paddingBottom="8dp"
                 android:clipChildren="false"
-                android:clipToPadding="false">
+                android:clipToPadding="false"
+                android:paddingTop="12dp">
 
                 <View
                     android:id="@+id/dot1"

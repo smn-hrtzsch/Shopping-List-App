@@ -653,11 +653,15 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         super.showLoading(message, showSkeleton);
     }
 
+    @Override
+    protected void onLoadingHidden() {
+        if (shoppingItems != null) checkEmptyViewItems(shoppingItems.isEmpty());
+    }
+
     private void checkEmptyViewItems(boolean isEmpty) { 
         if (emptyView != null) { 
             // Only show empty view if we are NOT loading
-            View overlay = findViewById(R.id.loading_overlay_root);
-            if (overlay != null && overlay.getVisibility() == View.VISIBLE) {
+            if (isLoadingOverlayVisible()) {
                 emptyView.setVisibility(View.GONE);
                 return;
             }
