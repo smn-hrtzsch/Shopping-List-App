@@ -710,7 +710,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 float shift = height > 0 ? height : 200f;
                 undoBar.setTranslationY(shift);
                 undoBar.animate().alpha(1f).translationY(0f).setDuration(300).start();
-                updateRecyclerViewMargin(height > 0 ? height + 16 : 200); // Add a bit extra padding
+                // Add exact height as margin, no extra padding to keep it tight
+                updateRecyclerViewMargin(height > 0 ? height : 200); 
             });
         }
         
