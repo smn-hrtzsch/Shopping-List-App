@@ -154,8 +154,15 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             return false;
         }
 
-        ShoppingItem movedItem = items.remove(fromPosition);
-        items.add(toPosition, movedItem);
+        if (fromPosition < toPosition) {
+            for (int i = fromPosition; i < toPosition; i++) {
+                Collections.swap(items, i, i + 1);
+            }
+        } else {
+            for (int i = fromPosition; i > toPosition; i--) {
+                Collections.swap(items, i, i - 1);
+            }
+        }
         notifyItemMoved(fromPosition, toPosition);
         return true;
     }
