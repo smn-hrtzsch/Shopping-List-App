@@ -94,15 +94,21 @@ public class ShoppingItem {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ShoppingItem that = (ShoppingItem) o;
-        if (id != 0 && that.id != 0) return id == that.id;
+        
+        // If both have firebaseId, compare them
         if (firebaseId != null && that.firebaseId != null) return firebaseId.equals(that.firebaseId);
-        return false;
+        // If both have id, compare them
+        if (id != 0 && that.id != 0) return id == that.id;
+        
+        // Fallback for optimistic items: if one has neither, compare by name and listId
+        // This prevents flickering when the cloud version with a firebaseId arrives
+        return name != null && name.equals(that.name) && listId == that.listId;
     }
 
     @Override
     public int hashCode() {
-        if (id != 0) return (int) (id ^ (id >>> 32));
         if (firebaseId != null) return firebaseId.hashCode();
-        return super.hashCode();
+        if (id != 0) return (int) (id ^ (id >>> 32));
+        return name != null ? name.hashCode() : super.hashCode();
     }
 }
