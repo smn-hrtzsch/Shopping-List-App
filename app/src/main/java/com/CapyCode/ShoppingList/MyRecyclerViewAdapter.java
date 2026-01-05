@@ -98,7 +98,9 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         // Sort the new list before comparing
         Collections.sort(newList, (item1, item2) -> {
             if (item1.isDone() == item2.isDone()) {
-                return Integer.compare(item1.getPosition(), item2.getPosition());
+                int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
+                if (posComp != 0) return posComp;
+                return Long.compare(item1.getId(), item2.getId());
             }
             return item1.isDone() ? 1 : -1;
         });
@@ -137,7 +139,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private void sortItemsLocal() {
         Collections.sort(items, (item1, item2) -> {
             if (item1.isDone() == item2.isDone()) {
-                return Integer.compare(item1.getPosition(), item2.getPosition());
+                int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
+                if (posComp != 0) return posComp;
+                // Tie-breaker using ID to ensure stable sort order even with conflicting positions
+                return Long.compare(item1.getId(), item2.getId());
             }
             return item1.isDone() ? 1 : -1;
         });
@@ -222,8 +227,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         if (interactionListener != null) {
             String message = "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted);
             interactionListener.showUndoBar(message, () -> {
-                // Determine insertion index based on position value, not just index
-                int reInsertPos = Math.min(deletedPosition, items.size());
                 
                 if (firebaseListId != null) {
                     // Use restore to keep ID if possible
@@ -234,17 +237,44 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     itemToDelete.setId(newId);
                 }
 
-                // Add back to local list at exact index
-                if (reInsertPos >= 0 && reInsertPos <= items.size()) {
-                    items.add(reInsertPos, itemToDelete);
-                    notifyItemInserted(reInsertPos);
-                } else {
-                    items.add(itemToDelete);
-                    notifyItemInserted(items.size() - 1);
+                // Create a new list with the restored item and let DiffUtil handle the insertion
+                List<ShoppingItem> newList = new ArrayList<>(items);
+                
+                // Shift existing items to make space for the restored item at its original position
+                // This prevents conflicts if other items have moved into that position (e.g. by drag & drop)
+                int targetPos = itemToDelete.getPosition();
+                for (ShoppingItem item : newList) {
+                    if (item.getPosition() >= targetPos) {
+                        item.setPosition(item.getPosition() + 1);
+                    }
                 }
                 
-                // Do NOT call sortItemsLocal here to preserve exact restored position
-                // Also do NOT call requestItemResort immediately to avoid jump
+                newList.add(itemToDelete);
+                
+                // Sort with tie-breaker
+                Collections.sort(newList, (item1, item2) -> {
+                    if (item1.isDone() == item2.isDone()) {
+                        int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
+                        if (posComp != 0) return posComp;
+                        return Long.compare(item1.getId(), item2.getId());
+                    }
+                    return item1.isDone() ? 1 : -1;
+                });
+
+                // Renormalize positions to fix any gaps or duplicates
+                for (int i = 0; i < newList.size(); i++) {
+                    newList.get(i).setPosition(i);
+                }
+                
+                // Persist new positions
+                repository.updateItemPositions(newList);
+                if (firebaseListId != null) {
+                    repository.updateItemPositionsInCloud(firebaseListId, newList, null);
+                }
+
+                setItems(newList);
+                
+                // requestItemResort is implicit via setItems/DiffUtil logic or handled by cloud update listener
             });
         }
     }

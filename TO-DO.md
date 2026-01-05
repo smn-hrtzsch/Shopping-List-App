@@ -79,4 +79,11 @@
 - [x] Einkaufslisten, die man gerade unsynced hat, werden in der Main Activity dann ganz am Ende der Liste angezeigt, obwohl sie an der Position bleiben sollten, an der sie vor dem Unsyncen waren.
 - [x] Position der Einladungs-Benachrichtigung in der Main Activity ist falsch, sie sollten am Ende der Listen auftauchen, aber sie erscheinen irgendwo random (zumindest kann ich kein Muster erkennen).
 - [x] Beim Bearbeiten eines Listennamens, kanne es vorkommen, dass der +-Button zum Hinzufügen einer Liste den Speichern-Button überdeckt. Beim Bearbeiten eines Listennamens, sollte der +-Button ausgeblendet werden.
-- [x] Konto wechseln? - Dialog sollte nicht angezeigt werden, wenn zum Zeitpunkt der Anmeldung kein Profil vorhanden ist, welches durch die Anmeldung Datenverlust erleiden würde. Auch die Nachricht ergibt irgendwie nicht so wirklich, warum wird das Google Konto erwähnt, wenn der Dialog bei der Anmeldung mit Email/Passwort erscheint?  
+- [x] Konto wechseln? - Dialog sollte nicht angezeigt werden, wenn zum Zeitpunkt der Anmeldung kein Profil vorhanden ist, welches durch die Anmeldung Datenverlust erleiden würde. Auch die Nachricht ergibt irgendwie nicht so wirklich, warum wird das Google Konto erwähnt, wenn der Dialog bei der Anmeldung mit Email/Passwort erscheint?
+- [x] Hinzufügen von Artikeln wirkte ruckelig -> Optimiert durch DiffUtil und optimistisches Einfügen mit postDelayed.
+- [x] Drag & Drop Positionen sprangen zurück -> Behoben durch Batch-Updates und Collections.swap.
+- [x] Snackbar verdeckte Listeninhalte und führte zu Abstürzen -> Ersetzt durch stabile Undo-Bar mit dynamischem Margin.
+- [x] Inkonsistente Positionen beim "Undo" (Wiederherstellen) -> Behoben durch Beibehaltung der Item-ID.
+- [x] Hinzufügen während Bearbeitung möglich -> Blockiert mit Hinweis.
+- [x] Undo-Bar Abstand zu groß -> Layout angepasst und margin optimiert.
+- [x] Unnötige Toasts entfernt -> Export-Meldung bereinigt.
