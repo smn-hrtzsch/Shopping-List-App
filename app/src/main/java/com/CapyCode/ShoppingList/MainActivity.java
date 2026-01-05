@@ -581,11 +581,18 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
     }
 
     private void loadShoppingLists() {
-        shoppingListManager.getAllShoppingLists(loadedLists -> {
+        shoppingListManager.getAllShoppingLists((loadedLists, fromServer) -> {
             this.shoppingLists = shoppingListManager.sortListsBasedOnSavedOrder(loadedLists);
             adapter.updateLists(shoppingLists);
             checkEmptyView();
-            hideLoading();
+            
+            // Hide loading only if:
+            // 1. We have data to show (optimistic UI)
+            // 2. OR the data comes from server (so it's "final" for now)
+            // 3. OR the user is anonymous (handled by repository passing fromServer=true for anon)
+            if (!this.shoppingLists.isEmpty() || fromServer) {
+                hideLoading();
+            }
         });
     }
 

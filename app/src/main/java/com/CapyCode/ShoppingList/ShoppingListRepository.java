@@ -20,7 +20,7 @@ public class ShoppingListRepository {
     private Context context;
 
     public interface OnListsLoadedListener {
-        void onListsLoaded(List<ShoppingList> shoppingLists);
+        void onListsLoaded(List<ShoppingList> shoppingLists, boolean fromServer);
     }
 
     public interface OnItemsLoadedListener {
@@ -51,9 +51,11 @@ public class ShoppingListRepository {
     }
 
     public void getAllShoppingLists(OnListsLoadedListener listener) {
-        listener.onListsLoaded(dbHelper.getAllShoppingLists());
-
         FirebaseUser currentUser = mAuth.getCurrentUser();
+        
+        // If no user, local data is "final" (treated as fromServer/authoritative)
+        listener.onListsLoaded(dbHelper.getAllShoppingLists(), currentUser == null);
+
         if (currentUser == null) return;
 
         String userId = currentUser.getUid();
@@ -61,6 +63,9 @@ public class ShoppingListRepository {
         com.google.firebase.firestore.EventListener<com.google.firebase.firestore.QuerySnapshot> syncListener = (value, e) -> {
             if (e != null) {
                 Log.w("Firestore", "Listen for lists failed.", e);
+                // On failure, we might want to signal that "loading" is done (failed) so UI doesn't hang
+                // but for now let's keep it silent or maybe send current local data as "fromServer"?
+                // listener.onListsLoaded(dbHelper.getAllShoppingLists(), true); 
                 return;
             }
             refreshAllListsFromServer(userId, listener);
@@ -86,7 +91,7 @@ public class ShoppingListRepository {
     private void processServerLists(List<QueryDocumentSnapshot> docs, OnListsLoadedListener listener) {
         if (docs.isEmpty()) {
             dbHelper.deleteObsoleteCloudLists(new ArrayList<>());
-            listener.onListsLoaded(dbHelper.getAllShoppingLists());
+            listener.onListsLoaded(dbHelper.getAllShoppingLists(), true);
             return;
         }
 
@@ -129,7 +134,7 @@ public class ShoppingListRepository {
                             dbHelper.upsertCloudList(list);
                             if (counter.incrementAndGet() == listCount) {
                                 dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
-                                listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                                listener.onListsLoaded(dbHelper.getAllShoppingLists(), true);
                             }
                         })
                         .addOnFailureListener(failure -> {
@@ -137,7 +142,7 @@ public class ShoppingListRepository {
                             dbHelper.upsertCloudList(list);
                             if (counter.incrementAndGet() == listCount) {
                                 dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
-                                listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                                listener.onListsLoaded(dbHelper.getAllShoppingLists(), true);
                             }
                         });
                 })
@@ -150,7 +155,7 @@ public class ShoppingListRepository {
                             dbHelper.upsertCloudList(list);
                             if (counter.incrementAndGet() == listCount) {
                                 dbHelper.deleteObsoleteCloudLists(activeFirebaseIds);
-                                listener.onListsLoaded(dbHelper.getAllShoppingLists());
+                                listener.onListsLoaded(dbHelper.getAllShoppingLists(), true);
                             }
                         });
                 });
