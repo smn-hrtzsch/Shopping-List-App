@@ -91,14 +91,16 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             appBarLayout.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             addItemBarContainer.setPadding(systemBars.left, 0, systemBars.right, bottomInset);
             
-            // Only scroll if keyboard is actually opening (bottomInset increased)
-            // and don't over-scroll if it's already there.
             if (isKeyboardVisible) {
-                recyclerView.postDelayed(() -> {
-                    if (adapter != null && adapter.getItemCount() > 0) {
-                        recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
-                    }
-                }, 150);
+                // Only scroll to bottom if the "Add Item" bar has focus
+                View focusedView = getCurrentFocus();
+                if (focusedView != null && focusedView.getId() == R.id.edit_text_add_item_bar) {
+                    recyclerView.postDelayed(() -> {
+                        if (adapter != null && adapter.getItemCount() > 0) {
+                            recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                        }
+                    }, 150);
+                }
             }
             return insets;
         });
@@ -651,6 +653,42 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     @Override
     public View getSnackbarAnchorView() { return findViewById(R.id.add_item_bar_container); }
+
+    private final Runnable hideUndoBarRunnable = () -> {
+        View undoBar = findViewById(R.id.undo_bar);
+        if (undoBar != null) {
+            undoBar.animate().alpha(0f).translationY(undoBar.getHeight()).setDuration(300).withEndAction(() -> undoBar.setVisibility(View.GONE)).start();
+        }
+    };
+
+    @Override
+    public void showUndoBar(String message, Runnable undoAction) {
+        View undoBar = findViewById(R.id.undo_bar);
+        if (undoBar == null) return;
+
+        TextView undoText = undoBar.findViewById(R.id.undo_text);
+        View undoButton = undoBar.findViewById(R.id.undo_button);
+        
+        undoText.setText(message);
+        undoButton.setOnClickListener(v -> {
+            undoAction.run();
+            syncIconHandler.removeCallbacks(hideUndoBarRunnable);
+            hideUndoBarRunnable.run();
+        });
+
+        syncIconHandler.removeCallbacks(hideUndoBarRunnable);
+        
+        if (undoBar.getVisibility() != View.VISIBLE) {
+            undoBar.setAlpha(0f);
+            undoBar.setVisibility(View.VISIBLE);
+            undoBar.post(() -> {
+                undoBar.setTranslationY(undoBar.getHeight());
+                undoBar.animate().alpha(1f).translationY(0f).setDuration(300).start();
+            });
+        }
+        
+        syncIconHandler.postDelayed(hideUndoBarRunnable, 5000);
+    }
 
     private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);

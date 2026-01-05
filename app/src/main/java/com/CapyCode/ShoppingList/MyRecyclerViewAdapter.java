@@ -36,6 +36,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         void requestItemResort();
         View getCoordinatorLayout();
         View getSnackbarAnchorView();
+        void showUndoBar(String message, Runnable undoAction);
     }
 
     public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, OnItemInteractionListener listener, String firebaseListId) {
@@ -110,27 +111,25 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         ShoppingItem movedItem = items.remove(fromPosition);
         items.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
+        return true;
+    }
 
-        // Update positions based on the current list order
+    @Override
+    public void onDragFinished() {
+        // Update positions based on the current list order once drag is finished
         for (int i = 0; i < items.size(); i++) {
             items.get(i).setPosition(i);
         }
         
         repository.updateItemPositions(items);
         
-        // If it's a cloud list, we need to update the positions on the server as well
+        // If it's a cloud list, update positions on server
         if (firebaseListId != null) {
-            // We only update the moved item and its neighbors to save bandwidth, 
-            // but for simplicity and correctness in this small app, we update the moved item's new state.
-            // Actually, to be truly correct, we should update all positions in Firestore if we want to persist the exact order.
-            // Since there is no "batch update positions" for Firestore items yet, we update them individually.
             for (ShoppingItem item : items) {
                 repository.updateItemInList(item, firebaseListId, null);
             }
             repository.updateListTimestamp(firebaseListId, null);
         }
-        
-        return true;
     }
 
     public void addItem(ShoppingItem item) {
@@ -168,46 +167,25 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         items.remove(position);
         notifyItemRemoved(position);
 
-        View anchor = null;
         if (interactionListener != null) {
-            anchor = interactionListener.getSnackbarAnchorView();
-        }
+            String message = "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted);
+            interactionListener.showUndoBar(message, () -> {
+                if (firebaseListId != null) {
+                    repository.addItemToShoppingList(firebaseListId, itemToDelete, null);
+                    repository.updateListTimestamp(firebaseListId, null);
+                } else {
+                    long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
+                    itemToDelete.setId(newId);
+                }
 
-        // Use a more stable approach for the Snackbar
-        // Instead of trying to find the perfect root, we use the anchor if available
-        // as a reference point for the popup.
-        Snackbar snackbar;
-        if (anchor != null) {
-            snackbar = Snackbar.make(anchor,
-                    "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG);
-            snackbar.setAnchorView(anchor);
-        } else {
-            // Ultimate fallback
-            View rootView = ((android.app.Activity) context).findViewById(android.R.id.content);
-            snackbar = Snackbar.make(rootView,
-                    "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted), Snackbar.LENGTH_LONG);
-        }
+                // Correctly re-insert at the deleted position if possible
+                int reInsertPos = Math.min(deletedPosition, items.size());
+                items.add(reInsertPos, itemToDelete);
+                notifyItemInserted(reInsertPos);
 
-        snackbar.setAction(R.string.undo, view -> {
-            if (firebaseListId != null) {
-                repository.addItemToShoppingList(firebaseListId, itemToDelete, null);
-                repository.updateListTimestamp(firebaseListId, null);
-            } else {
-                long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
-                itemToDelete.setId(newId);
-            }
-
-            // Correctly re-insert at the deleted position if possible
-            int reInsertPos = Math.min(deletedPosition, items.size());
-            items.add(reInsertPos, itemToDelete);
-            notifyItemInserted(reInsertPos);
-
-            if (interactionListener != null) {
                 interactionListener.requestItemResort();
-            }
-        });
-
-        snackbar.show();
+            });
+        }
     }
 
     public List<ShoppingItem> getCurrentItems() {

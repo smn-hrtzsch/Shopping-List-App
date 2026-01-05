@@ -261,6 +261,12 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
     public void onItemDismiss(int position) {
     }
 
+    @Override
+    public void onDragFinished() {
+        // Here we could do final persistence if needed, 
+        // but it's already done in onItemMove for local lists.
+    }
+
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         final TextView textViewListName;
