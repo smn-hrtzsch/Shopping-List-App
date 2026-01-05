@@ -71,7 +71,7 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_einkaufsliste);
 
-        initLoadingOverlay(findViewById(R.id.einkaufsliste_activity_root));
+        initLoadingOverlay(findViewById(R.id.einkaufsliste_content_container));
         showSkeleton(true);
 
         mAuth = FirebaseAuth.getInstance();
@@ -647,8 +647,20 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         }
     }
 
+    @Override
+    public void showLoading(String message, boolean showSkeleton) {
+        if (emptyView != null) emptyView.setVisibility(View.GONE);
+        super.showLoading(message, showSkeleton);
+    }
+
     private void checkEmptyViewItems(boolean isEmpty) { 
         if (emptyView != null) { 
+            // Only show empty view if we are NOT loading
+            View overlay = findViewById(R.id.loading_overlay_root);
+            if (overlay != null && overlay.getVisibility() == View.VISIBLE) {
+                emptyView.setVisibility(View.GONE);
+                return;
+            }
             emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE); 
             recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE); 
         } 

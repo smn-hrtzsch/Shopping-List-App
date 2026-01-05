@@ -127,7 +127,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
-        initLoadingOverlay(findViewById(R.id.main_activity_root));
+        initLoadingOverlay(findViewById(R.id.main_content_container));
         showSkeleton(true);
 
         Toolbar toolbar = findViewById(R.id.toolbar_main);
@@ -589,10 +589,21 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         });
     }
 
+    @Override
+    public void showLoading(String message, boolean showSkeleton) {
+        if (emptyView != null) emptyView.setVisibility(View.GONE);
+        super.showLoading(message, showSkeleton);
+    }
+
     private void checkEmptyView() {
         if (shoppingLists != null && shoppingLists.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
             // Only show empty view if we are not currently showing the loading overlay
+            View overlay = findViewById(R.id.loading_overlay_root);
+            if (overlay != null && overlay.getVisibility() == View.VISIBLE) {
+                if (emptyView != null) emptyView.setVisibility(View.GONE);
+                return;
+            }
             if (emptyView != null) {
                 emptyView.setVisibility(View.VISIBLE);
             }

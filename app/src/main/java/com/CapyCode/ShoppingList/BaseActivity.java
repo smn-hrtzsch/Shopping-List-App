@@ -1,6 +1,7 @@
 package com.CapyCode.ShoppingList;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -54,7 +55,20 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     public void showLoading(String message) {
+        showLoading(message, true);
+    }
+    
+    public void showLoading(String message, boolean showSkeleton) {
         if (isFinishing() || loadingOverlay == null) return;
+        
+        hideKeyboard();
+        
+        // Show skeleton immediately if requested to prevent flickering of empty views
+        if (showSkeleton) {
+            showSkeleton(true);
+            loadingOverlay.setVisibility(View.VISIBLE);
+            loadingOverlay.setAlpha(1f);
+        }
 
         loadingHandler.removeCallbacks(showLoadingRunnable);
         showLoadingRunnable = () -> {
@@ -64,10 +78,16 @@ public abstract class BaseActivity extends AppCompatActivity {
             if (loadingOverlay.getVisibility() != View.VISIBLE) {
                 loadingOverlay.setVisibility(View.VISIBLE);
                 loadingOverlay.animate().alpha(1f).setDuration(300).start();
-                startDotsAnimation();
             }
+            startDotsAnimation();
         };
-        loadingHandler.postDelayed(showLoadingRunnable, LOADING_DELAY_MS);
+        
+        if (showSkeleton) {
+            // If skeleton is already shown, just run the text update/animation logic
+            loadingHandler.post(showLoadingRunnable);
+        } else {
+            loadingHandler.postDelayed(showLoadingRunnable, LOADING_DELAY_MS);
+        }
     }
 
     private void startDotsAnimation() {
@@ -114,5 +134,15 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void onDestroy() {
         loadingHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
+    }
+
+    protected void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        }
     }
 }
