@@ -51,7 +51,7 @@
                     android:id="@+id/input_layout_email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="4dp"
                     android:hint="@string/prompt_email"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:theme="@style/AccentInputTheme"
@@ -59,8 +59,6 @@
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:errorEnabled="true"
-                    app:errorIconDrawable="@null"
                     android:clipToOutline="true">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -70,11 +68,25 @@
                         android:inputType="textEmailAddress" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <TextView
+                    android:id="@+id/error_text_email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorError"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginBottom="12dp"
+                    app:drawableStartCompat="@drawable/ic_error_outline_24"
+                    android:drawablePadding="8dp"
+                    app:drawableTint="?attr/colorError"
+                    android:gravity="center_vertical"/>
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/input_layout_password"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="32dp"
+                    android:layout_marginBottom="4dp"
                     android:hint="@string/prompt_password"
                     app:endIconMode="password_toggle"
                     app:errorIconDrawable="@null"
@@ -84,7 +96,6 @@
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:errorEnabled="true"
                     android:clipToOutline="true">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -93,6 +104,20 @@
                         android:layout_height="wrap_content"
                         android:inputType="textPassword" />
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/error_text_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorError"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginBottom="24dp"
+                    app:drawableStartCompat="@drawable/ic_error_outline_24"
+                    android:drawablePadding="8dp"
+                    app:drawableTint="?attr/colorError"
+                    android:gravity="center_vertical"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/button_login"
