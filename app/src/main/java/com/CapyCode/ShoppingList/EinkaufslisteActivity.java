@@ -482,8 +482,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 jsonList.put("items", jsonItems);
                 String jsonString = jsonList.toString(2);
 
-                UiUtils.makeCustomToast(this, items.size() + " items exported", Toast.LENGTH_SHORT).show();
-
                 String safeName = currentShoppingList.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
                 java.io.File file = new java.io.File(getCacheDir(), safeName + ".json");
 
@@ -542,7 +540,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     if (adapter != null) {
                         int pos = adapter.addItem(newItem);
                         // Immediate smooth scroll to the new item
-                        recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 50);
+                        recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 100);
                     }
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
                     shoppingListRepository.updateListTimestamp(firebaseListId, null);
@@ -552,7 +550,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                         newItem.setId(newId); 
                         if (adapter != null) {
                             int pos = adapter.addItem(newItem);
-                            recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 50);
+                            recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 100);
                         }
                     }
                     else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();

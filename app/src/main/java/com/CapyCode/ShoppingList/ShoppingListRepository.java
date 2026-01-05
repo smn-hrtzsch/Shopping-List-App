@@ -275,6 +275,7 @@ public class ShoppingListRepository {
 
     public void restoreItemToShoppingList(String firebaseListId, ShoppingItem item, OnActionListener listener) {
         if (item.getFirebaseId() != null) {
+            // Ensure we set the item with its original position
             db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item)
                 .addOnCompleteListener(task -> {
                     if (listener != null) listener.onActionComplete();

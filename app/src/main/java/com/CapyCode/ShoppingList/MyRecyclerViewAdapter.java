@@ -222,8 +222,8 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         if (interactionListener != null) {
             String message = "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted);
             interactionListener.showUndoBar(message, () -> {
-                // Determine actual re-insertion index to avoid IndexOutOfBounds
-                int reInsertPos = Math.min(deletedPosition, items.size());
+                // Determine insertion index based on position value, not just index
+                // But since we want to restore exact state, re-adding it to the list and re-sorting is safest
                 
                 if (firebaseListId != null) {
                     // Use restore to keep ID if possible
@@ -234,10 +234,20 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     itemToDelete.setId(newId);
                 }
 
-                items.add(reInsertPos, itemToDelete);
-                notifyItemInserted(reInsertPos);
+                // Add back to local list
+                items.add(itemToDelete);
+                // Re-sort to find correct position based on 'done' status and 'position' field
+                sortItemsLocal();
                 
-                // Do NOT call requestItemResort here, as it conflicts with notifyItemInserted
+                // Find where it ended up
+                int newIndex = items.indexOf(itemToDelete);
+                if (newIndex != -1) {
+                    notifyItemInserted(newIndex);
+                } else {
+                    notifyDataSetChanged();
+                }
+                
+                interactionListener.requestItemResort();
             });
         }
     }
