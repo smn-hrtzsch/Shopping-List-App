@@ -37,16 +37,16 @@ android {
             keyPassword = "android"
         }
         create("release") {
-            // Wir lesen die Werte sicher aus den Properties
-            // Hinweis: Das "as String" ist in Kotlin notwendig
-            keyAlias = keystoreProperties["key.alias"] as String? ?: "debug"
-            keyPassword = keystoreProperties["key.password"] as String? ?: "android"
-            storeFile = if (keystoreProperties["store.file"] != null) {
-                file(keystoreProperties["store.file"] as String)
-            } else {
-                null
+            // Wir nutzen 'getProperty' mit Standardwerten, das ist sicherer als der Array-Zugriff
+            keyAlias = keystoreProperties.getProperty("key.alias", "debug")
+            keyPassword = keystoreProperties.getProperty("key.password", "android")
+            storePassword = keystoreProperties.getProperty("store.password", "android")
+
+            // WICHTIG: storeFile nur setzen, wenn ein Pfad existiert UND nicht leer ist
+            val keyStorePath = keystoreProperties.getProperty("store.file")
+            if (!keyStorePath.isNullOrEmpty()) {
+                storeFile = file(keyStorePath)
             }
-            storePassword = keystoreProperties["store.password"] as String? ?: "android"
         }
     }
 
