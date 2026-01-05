@@ -343,6 +343,71 @@ public class ProfileActivity extends BaseActivity {
                 });
     }
 
+    private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
+        String email = emailField.getText().toString().trim();
+        String password = passwordField.getText().toString().trim();
+
+        if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
+        if (!AuthValidator.isValidEmail(email)) { showError(errorEmail, getString(R.string.error_invalid_email)); return; }
+        if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
+        if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
+
+        hideKeyboard();
+        loadingContainer.setVisibility(View.VISIBLE);
+        BaseActivity.startDotsAnimation(d1, d2, d3);
+        btnLogin.setEnabled(false);
+        btnRegister.setEnabled(false);
+        
+        Runnable onError = () -> {
+             loadingContainer.setVisibility(View.GONE);
+             d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+             btnLogin.setEnabled(true);
+             btnRegister.setEnabled(true);
+        };
+
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
+            AuthCredential credential = EmailAuthProvider.getCredential(email, password);
+            currentUser.linkWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        startVerificationFlow(currentUser, true, dialog);
+                    } else {
+                        onError.run();
+                        String msg = AuthErrorMapper.getErrorMessage(this, task.getException());
+                        if (task.getException() instanceof FirebaseAuthUserCollisionException) msg = getString(R.string.error_email_collision_link);
+                        showError(errorEmail, msg);
+                    }
+                });
+        } else {
+            mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        startVerificationFlow(task.getResult().getUser(), false, dialog);
+                    } else {
+                        onError.run();
+                        showError(errorEmail, AuthErrorMapper.getErrorMessage(this, task.getException()));
+                    }
+                });
+        }
+    }
+
+    private void performDialogResetPassword(EditText emailField, TextView errorEmail, View loadingContainer, View d1, View d2, View d3) {
+        String email = emailField.getText().toString().trim();
+        if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
+        
+        hideKeyboard();
+        loadingContainer.setVisibility(View.VISIBLE);
+        BaseActivity.startDotsAnimation(d1, d2, d3);
+        
+        mAuth.sendPasswordResetEmail(email).addOnCompleteListener(t -> {
+            loadingContainer.setVisibility(View.GONE);
+            d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+            if (t.isSuccessful()) UiUtils.makeCustomToast(this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
+            else showError(errorEmail, AuthErrorMapper.getErrorMessage(this, t.getException()));
+        });
+    }
+
         private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, android.widget.ProgressBar progressBar, View btnLogin, View btnRegister) {
 
             String email = emailField.getText().toString().trim();
