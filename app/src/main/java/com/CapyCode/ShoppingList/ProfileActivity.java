@@ -82,6 +82,7 @@ public class ProfileActivity extends BaseActivity {
     private final ActivityResultLauncher<Intent> authActivityLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK) {
+                    showLoading(getString(R.string.loading_profile), true, true);
                     loadCurrentProfile();
                 }
             });
@@ -170,7 +171,7 @@ public class ProfileActivity extends BaseActivity {
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
         containerContent = findViewById(R.id.container_content);
-        initLoadingOverlay(findViewById(R.id.profile_content_container));
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile);
         showSkeleton(false);
 
         loadCurrentProfile();
@@ -771,7 +772,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSafeSignOut() {
-        showLoading();
+        showLoading(getString(R.string.loading), true, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.migrateLocalListsToCloud(() -> {
