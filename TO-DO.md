@@ -4,6 +4,7 @@
 
 - [ ] Impressum und Datenschutzrichtlinie erstellen und in der App verlinken
 - [ ] Ladebildschirm / Splash Screen beim Laden von Daten, wenn UI noch nicht ready oder während längerer Ladezeiten (Anmeldung, Account Wechsel, etc.) Momentan wird manchmal ein Lade Kreis angezeigt, der aber dann über die UI gelegt wird, was nicht so toll aussieht.
+- [ ] Hint in EditText Dialog für den Nutzernamen in Profil Activity hinzufügen, z.B. "Nutzernamen eingeben"
 
 ## Fixes
 

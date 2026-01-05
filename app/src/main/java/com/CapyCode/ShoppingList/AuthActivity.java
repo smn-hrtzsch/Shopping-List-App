@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,12 +31,11 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 
-public class AuthActivity extends AppCompatActivity {
+public class AuthActivity extends BaseActivity {
 
     private TextInputEditText editTextEmail, editTextPassword;
     private MaterialButton buttonLogin, buttonRegister;
     private TextView textForgotPassword;
-    private ProgressBar progressBar;
     private FirebaseAuth mAuth;
     private UserRepository userRepository;
 
@@ -70,7 +68,6 @@ public class AuthActivity extends AppCompatActivity {
         buttonLogin = findViewById(R.id.button_login);
         buttonRegister = findViewById(R.id.button_register);
         textForgotPassword = findViewById(R.id.text_forgot_password);
-        progressBar = findViewById(R.id.progress_bar_auth);
 
         buttonLogin.setOnClickListener(v -> loginUser());
         buttonRegister.setOnClickListener(v -> registerUser());
@@ -391,7 +388,11 @@ public class AuthActivity extends AppCompatActivity {
     }
 
     private void showLoading(boolean show) {
-        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            super.showLoading();
+        } else {
+            super.hideLoading();
+        }
         buttonLogin.setEnabled(!show);
         buttonRegister.setEnabled(!show);
     }

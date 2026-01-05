@@ -42,7 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class EinkaufslisteActivity extends AppCompatActivity implements MyRecyclerViewAdapter.OnItemInteractionListener {
+public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerViewAdapter.OnItemInteractionListener {
 
     private RecyclerView recyclerView;
     private MyRecyclerViewAdapter adapter;
@@ -166,6 +166,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         touchHelper.attachToRecyclerView(recyclerView);
 
         setupAddItemBar();
+        showLoading();
         refreshItemList();
     }
 
@@ -617,6 +618,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
         if (firebaseListId != null) {
             itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
+                hideLoading();
                 updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
                 this.shoppingItems = loadedItems;
                 if (adapter == null) {
@@ -629,6 +631,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             });
         } else {
             shoppingListRepository.getItemsForListId(currentShoppingListId, (loadedItems, hasPendingWrites) -> {
+                hideLoading();
                 this.shoppingItems = loadedItems;
                 if (adapter == null) {
                     adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, null);

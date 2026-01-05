@@ -109,7 +109,8 @@
     <string name="invite_user">Benutzer einladen</string>
 
     <!-- Profile & User Management -->
-    <string name="profile_title">Benutzerprofil</string>
+    <string name="title_activity_profile">Profil</string>
+    <string name="loading">Laden...</string>
     <string name="profile_info">Damit andere dich zu ihren Listen hinzufügen können, wähle bitte einen eindeutigen Nutzernamen.</string>
     <string name="profile_username_hint">Nutzernamen wählen</string>
     <string name="invite_username_hint">Nutzernamen eingeben</string>
