@@ -50,6 +50,15 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         this.repository = repository;
         this.interactionListener = listener;
         this.firebaseListId = firebaseListId;
+        setHasStableIds(true);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        if (position < 0 || position >= items.size()) return RecyclerView.NO_ID;
+        ShoppingItem item = items.get(position);
+        if (item.getFirebaseId() != null) return item.getFirebaseId().hashCode();
+        return item.getId();
     }
 
     public void resetEditingPosition() {
@@ -284,12 +293,15 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             checkBox.setOnCheckedChangeListener(null);
             checkBox.setChecked(item.isDone());
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (editingItemPosition != -1 && editingItemPosition != getBindingAdapterPosition()) {
+                int currentPos = getBindingAdapterPosition();
+                if (currentPos == RecyclerView.NO_POSITION) return;
+
+                if (editingItemPosition != -1 && editingItemPosition != currentPos) {
                     UiUtils.makeCustomToast(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
-                if (editingItemPosition != -1 && editingItemPosition == getBindingAdapterPosition()) {
+                if (editingItemPosition != -1 && editingItemPosition == currentPos) {
                     UiUtils.makeCustomToast(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;

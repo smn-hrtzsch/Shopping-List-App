@@ -150,9 +150,12 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     });
         }
 
-        shoppingItems = new ArrayList<>();
         recyclerView = findViewById(R.id.item_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Disable change animations to prevent flickering during cloud updates
+        if (recyclerView.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
+            ((androidx.recyclerview.widget.SimpleItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
+        }
         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
         recyclerView.setAdapter(adapter);
 
