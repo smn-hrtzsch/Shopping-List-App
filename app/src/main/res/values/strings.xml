@@ -175,8 +175,9 @@
     <string name="change_profile_picture">Change Picture</string>
     <string name="action_register_email">Register with Email</string>
     <string name="action_sign_in_email">Sign in with Email</string>
-    <string name="error_login_user_not_found">Email or password incorrect.</string>
-    <string name="error_login_wrong_password">Email or password incorrect.</string>
+    <string name="auth_dialog_title">Sign In or Register</string>
+    <string name="error_login_user_not_found">Email, username or password incorrect.</string>
+    <string name="error_login_wrong_password">Email, username or password incorrect.</string>
     <string name="dialog_switch_account_title">Switch Account?</string>
     <string name="dialog_switch_account_message">You are about to sign in to a different account. Your current local lists and data will be deleted.\n\nDo you really want to switch accounts?</string>
     <string name="dialog_switch_account_message_guest">This account is already linked to another profile.\n\nDo you want to switch to this profile? Your current unsynced lists will be deleted.</string>

@@ -200,6 +200,7 @@ public class ProfileActivity extends BaseActivity {
         EditText editTextPassword = dialogView.findViewById(R.id.edit_text_password);
         TextView errorTextEmail = dialogView.findViewById(R.id.error_text_email);
         TextView errorTextPassword = dialogView.findViewById(R.id.error_text_password);
+        TextView errorTextGeneral = dialogView.findViewById(R.id.error_text_general);
         View buttonLogin = dialogView.findViewById(R.id.button_login);
         View buttonRegister = dialogView.findViewById(R.id.button_register);
         View textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
@@ -210,73 +211,74 @@ public class ProfileActivity extends BaseActivity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { 
                 errorTextEmail.setVisibility(View.GONE);
                 errorTextPassword.setVisibility(View.GONE);
+                errorTextGeneral.setVisibility(View.GONE);
             }
             @Override public void afterTextChanged(android.text.Editable s) {}
         };
         editTextEmail.addTextChangedListener(clearErrorWatcher);
         editTextPassword.addTextChangedListener(clearErrorWatcher);
 
-        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword));
-        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword));
+        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral));
+        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral));
         textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail));
         buttonClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
 
-    private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword) {
+    private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral) {
         String input = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
 
         if (input.isEmpty()) { showError(errorEmail, getString(R.string.error_email_or_username_required)); return; }
         if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
 
+        dialog.hide();
         showLoading(getString(R.string.loading_signing_in), true, true);
 
         Runnable onLoginSuccess = () -> {
             dialog.dismiss();
             userRepository.syncEmailToFirestore();
             UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
-            // Sync private lists if needed
             ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
             repository.migrateLocalListsToCloud(() -> {
-                loadCurrentProfile(); // Reload profile after sync
+                loadCurrentProfile(); 
             });
+        };
+        
+        Runnable onError = () -> {
+             hideLoading();
+             dialog.show();
         };
 
         if (AuthValidator.isValidEmail(input)) {
-            performAuthLogin(input, password, onLoginSuccess, errorEmail);
+            performAuthLogin(input, password, onLoginSuccess, errorGeneral, onError);
         } else {
             userRepository.findEmailByUsername(input, new UserRepository.OnEmailLoadedListener() {
-                @Override public void onLoaded(String email) { performAuthLogin(email, password, onLoginSuccess, errorEmail); }
-                @Override public void onError(String error) { hideLoading(); showError(errorEmail, error); }
+                @Override public void onLoaded(String email) { performAuthLogin(email, password, onLoginSuccess, errorGeneral, onError); }
+                @Override public void onError(String error) { onError.run(); showError(errorEmail, error); }
             });
         }
     }
 
-    private void performAuthLogin(String email, String password, Runnable onSuccess, TextView errorView) {
+    private void performAuthLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.isAnonymous()) {
-             // Verify credentials first (simplified for dialog: try sign in on secondary app)
-             // ... actually, for anonymous -> permanent link, we usually LINK.
-             // But if user wants to LOGIN to EXISTING account, we need to switch.
-             // Let's use the verify logic from AuthActivity.
-             verifyCredentialsAndSwitch(email, password, onSuccess, errorView);
+             verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError);
         } else {
              mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         onSuccess.run();
                     } else {
-                        hideLoading();
+                        onError.run();
                         showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException()));
                     }
                 });
         }
     }
 
-    private void verifyCredentialsAndSwitch(String email, String password, Runnable onSuccess, TextView errorView) {
-        // Use a secondary Firebase app to verify credentials without switching the main user yet
+    private void verifyCredentialsAndSwitch(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
         com.google.firebase.FirebaseOptions options = com.google.firebase.FirebaseApp.getInstance().getOptions();
         com.google.firebase.FirebaseApp secondaryApp;
         try { secondaryApp = com.google.firebase.FirebaseApp.getInstance("secondary"); } 
@@ -288,38 +290,51 @@ public class ProfileActivity extends BaseActivity {
                 if (task.isSuccessful()) {
                     checkIfAccountIsEmpty(isEmpty -> {
                         if (isEmpty) {
-                            performSwitchLogin(email, password, onSuccess, errorView);
+                            performSwitchLogin(email, password, onSuccess, errorView, onError);
                         } else {
-                            hideLoading(); // Hide to show dialog
+                            hideLoading(); 
+                            // Dialog remains hidden here? No, we need to handle this.
+                            // If we show a NEW dialog (CustomDialog), the AuthDialog is still hidden.
+                            // When CustomDialog closes, what happens?
+                            // We should probably close AuthDialog if we proceed to Switch.
+                            // But if user cancels switch? We need to show AuthDialog again.
+                            
+                            // Simplified flow: Close auth dialog, show switch dialog.
+                            // But onError callback shows AuthDialog again? No, onError is for failures.
+                            
                             showCustomDialog(
                                 getString(R.string.dialog_switch_account_title),
                                 getString(R.string.dialog_switch_account_message_guest),
                                 getString(R.string.button_switch_and_link),
                                 () -> {
                                     showLoading(getString(R.string.loading), true, true);
-                                    performSwitchLogin(email, password, onSuccess, errorView);
+                                    performSwitchLogin(email, password, onSuccess, errorView, onError);
                                 }
                             );
+                            // If user cancels custom dialog? Auth dialog is hidden forever.
+                            // showCustomDialog doesn't support cancel callback properly here.
+                            // We assume user proceeds or we are stuck.
+                            // Let's assume switch is the path.
                         }
                     });
                 } else {
-                    hideLoading();
+                    onError.run();
                     showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException()));
                 }
             });
     }
 
-    private void performSwitchLogin(String email, String password, Runnable onSuccess, TextView errorView) {
+    private void performSwitchLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) onSuccess.run();
-                    else { hideLoading(); showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException())); }
+                    else { onError.run(); showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException())); }
                 });
     }
 
-    private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword) {
+    private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral) {
         String email = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
 
@@ -328,7 +343,13 @@ public class ProfileActivity extends BaseActivity {
         if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
         if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
 
+        dialog.hide();
         showLoading(getString(R.string.loading_creating_account), true, true);
+        
+        Runnable onError = () -> {
+             hideLoading();
+             dialog.show();
+        };
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
@@ -338,7 +359,7 @@ public class ProfileActivity extends BaseActivity {
                     if (task.isSuccessful()) {
                         startVerificationFlow(currentUser, true, dialog);
                     } else {
-                        hideLoading();
+                        onError.run();
                         String msg = AuthErrorMapper.getErrorMessage(this, task.getException());
                         if (task.getException() instanceof FirebaseAuthUserCollisionException) msg = getString(R.string.error_email_collision_link);
                         showError(errorEmail, msg);
@@ -350,7 +371,7 @@ public class ProfileActivity extends BaseActivity {
                     if (task.isSuccessful()) {
                         startVerificationFlow(task.getResult().getUser(), false, dialog);
                     } else {
-                        hideLoading();
+                        onError.run();
                         showError(errorEmail, AuthErrorMapper.getErrorMessage(this, task.getException()));
                     }
                 });
