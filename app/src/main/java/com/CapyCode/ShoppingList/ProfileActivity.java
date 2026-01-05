@@ -84,6 +84,8 @@ public class ProfileActivity extends BaseActivity {
                 if (result.getResultCode() == RESULT_OK) {
                     showLoading(getString(R.string.loading_profile), true, true);
                     loadCurrentProfile();
+                } else {
+                    hideLoading();
                 }
             });
 
@@ -193,6 +195,7 @@ public class ProfileActivity extends BaseActivity {
 
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
         buttonRegisterEmail.setOnClickListener(v -> {
+            showLoading(getString(R.string.loading), true, true);
             Intent intent = new Intent(this, AuthActivity.class);
             authActivityLauncher.launch(intent);
         });
@@ -682,6 +685,7 @@ public class ProfileActivity extends BaseActivity {
             int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
             buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
             buttonRegisterEmail.setOnClickListener(v -> {
+                showLoading(getString(R.string.loading), true, true);
                 Intent intent = new Intent(this, AuthActivity.class);
                 authActivityLauncher.launch(intent);
             });
