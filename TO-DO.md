@@ -83,7 +83,7 @@
 - [x] Hinzufügen von Artikeln wirkte ruckelig -> Optimiert durch DiffUtil und optimistisches Einfügen mit postDelayed.
 - [x] Drag & Drop Positionen sprangen zurück -> Behoben durch Batch-Updates und Collections.swap.
 - [x] Snackbar verdeckte Listeninhalte und führte zu Abstürzen -> Ersetzt durch stabile Undo-Bar mit dynamischem Margin.
-- [x] Inkonsistente Positionen beim "Undo" (Wiederherstellen) -> Behoben durch Beibehaltung der Item-ID.
+- [x] Positionswiederherstellung korrigiert -> Explizite ID-Nutzung und Positions-Shift bei Konflikten.
 - [x] Hinzufügen während Bearbeitung möglich -> Blockiert mit Hinweis.
 - [x] Undo-Bar Abstand zu groß -> Layout angepasst und margin optimiert.
 - [x] Unnötige Toasts entfernt -> Export-Meldung bereinigt.

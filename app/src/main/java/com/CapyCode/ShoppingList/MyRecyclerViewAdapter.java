@@ -1,18 +1,4 @@
-package com.CapyCode.ShoppingList;
-
-import android.content.Context;
-import android.graphics.Paint;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
-import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.color.MaterialColors;
@@ -22,13 +8,30 @@ import java.util.List;
 
 public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.ItemViewHolder> implements ItemTouchHelperAdapter {
 
-    private final List<ShoppingItem> items;
     private final Context context;
     private final ShoppingListRepository repository;
     private final OnItemInteractionListener interactionListener;
     private final String firebaseListId;
 
     private int editingItemPosition = -1;
+
+    private static final DiffUtil.ItemCallback<ShoppingItem> DIFF_CALLBACK = new DiffUtil.ItemCallback<ShoppingItem>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull ShoppingItem oldItem, @NonNull ShoppingItem newItem) {
+            return oldItem.equals(newItem);
+        }
+
+        @Override
+        public boolean areContentsTheSame(@NonNull ShoppingItem oldItem, @NonNull ShoppingItem newItem) {
+            return java.util.Objects.equals(oldItem.getName(), newItem.getName()) &&
+                   oldItem.isDone() == newItem.isDone() &&
+                   oldItem.getPosition() == newItem.getPosition() &&
+                   java.util.Objects.equals(oldItem.getQuantity(), newItem.getQuantity()) &&
+                   java.util.Objects.equals(oldItem.getUnit(), newItem.getUnit());
+        }
+    };
+
+    private final AsyncListDiffer<ShoppingItem> mDiffer = new AsyncListDiffer<>(this, DIFF_CALLBACK);
 
     public interface OnItemInteractionListener {
         void onItemCheckboxChanged(ShoppingItem item, boolean isChecked);
@@ -40,27 +43,25 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
     public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, OnItemInteractionListener listener, String firebaseListId) {
         this.context = context;
-        this.items = new ArrayList<>();
-        if (items != null) {
-            this.items.addAll(items);
-            sortItemsLocal();
-        }
         this.repository = repository;
         this.interactionListener = listener;
         this.firebaseListId = firebaseListId;
         setHasStableIds(true);
+        if (items != null) {
+            setItems(items);
+        }
     }
 
     @Override
     public long getItemId(int position) {
-        if (position < 0 || position >= items.size()) return RecyclerView.NO_ID;
-        ShoppingItem item = items.get(position);
+        if (position < 0 || position >= mDiffer.getCurrentList().size()) return RecyclerView.NO_ID;
+        ShoppingItem item = mDiffer.getCurrentList().get(position);
         if (item.getFirebaseId() != null) return item.getFirebaseId().hashCode();
         return item.getId();
     }
 
     public void resetEditingPosition() {
-        if (editingItemPosition != -1 && editingItemPosition < items.size()) {
+        if (editingItemPosition != -1 && editingItemPosition < mDiffer.getCurrentList().size()) {
             int oldEditingPosition = editingItemPosition;
             editingItemPosition = -1;
             notifyItemChanged(oldEditingPosition);
@@ -82,66 +83,43 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
-        ShoppingItem currentItem = items.get(position);
+        ShoppingItem currentItem = mDiffer.getCurrentList().get(position);
         holder.bind(currentItem, position == editingItemPosition);
     }
 
     @Override
     public int getItemCount() {
-        return items.size();
+        return mDiffer.getCurrentList().size();
     }
 
     public void setItems(List<ShoppingItem> newItems) {
-        final List<ShoppingItem> oldList = new ArrayList<>(this.items);
-        final List<ShoppingItem> newList = new ArrayList<>(newItems);
-        
-        // Sort the new list before comparing
-        Collections.sort(newList, (item1, item2) -> {
-            if (item1.isDone() == item2.isDone()) {
-                int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
-                if (posComp != 0) return posComp;
-                return Long.compare(item1.getId(), item2.getId());
-            }
-            return item1.isDone() ? 1 : -1;
-        });
+        // Use a background thread for sorting before submitting to differ
+        new Thread(() -> {
+            final List<ShoppingItem> sortedList = new ArrayList<>(newItems);
+            Collections.sort(sortedList, (item1, item2) -> {
+                if (item1.isDone() == item2.isDone()) {
+                    int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
+                    if (posComp != 0) return posComp;
+                    return Long.compare(item1.getId(), item2.getId());
+                }
+                return item1.isDone() ? 1 : -1;
+            });
 
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-            @Override
-            public int getOldListSize() { return oldList.size(); }
-            @Override
-            public int getNewListSize() { return newList.size(); }
-            @Override
-            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
-            }
-            @Override
-            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                ShoppingItem oldItem = oldList.get(oldItemPosition);
-                ShoppingItem newItem = newList.get(newItemPosition);
-                
-                return java.util.Objects.equals(oldItem.getName(), newItem.getName()) &&
-                       oldItem.isDone() == newItem.isDone() &&
-                       oldItem.getPosition() == newItem.getPosition() &&
-                       java.util.Objects.equals(oldItem.getQuantity(), newItem.getQuantity()) &&
-                       java.util.Objects.equals(oldItem.getUnit(), newItem.getUnit());
-            }
-        });
-
-        this.items.clear();
-        this.items.addAll(newList);
-        diffResult.dispatchUpdatesTo(this);
-        
-        if (interactionListener != null) {
-            interactionListener.onDataSetChanged();
-        }
+            // Submit to AsyncListDiffer (it will handle background diffing)
+            mDiffer.submitList(sortedList, () -> {
+                if (interactionListener != null) {
+                    interactionListener.onDataSetChanged();
+                }
+            });
+        }).start();
     }
 
     private void sortItemsLocal() {
-        Collections.sort(items, (item1, item2) -> {
+        // This is now redundant as setItems handles sorting, but we keep it for in-memory swaps during drag
+        Collections.sort(mDiffer.getCurrentList(), (item1, item2) -> {
             if (item1.isDone() == item2.isDone()) {
                 int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
                 if (posComp != 0) return posComp;
-                // Tie-breaker using ID to ensure stable sort order even with conflicting positions
                 return Long.compare(item1.getId(), item2.getId());
             }
             return item1.isDone() ? 1 : -1;
@@ -150,68 +128,71 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
     @Override
     public boolean onItemMove(int fromPosition, int toPosition) {
-        if (fromPosition >= items.size() || toPosition >= items.size() || fromPosition < 0 || toPosition < 0) {
+        List<ShoppingItem> currentList = new ArrayList<>(mDiffer.getCurrentList());
+        if (fromPosition >= currentList.size() || toPosition >= currentList.size() || fromPosition < 0 || toPosition < 0) {
             return false;
         }
         
-        // Prevent moving across done/not-done boundaries if we want to keep that strict
-        if (items.get(fromPosition).isDone() != items.get(toPosition).isDone()) {
+        if (currentList.get(fromPosition).isDone() != currentList.get(toPosition).isDone()) {
             return false;
         }
 
         if (fromPosition < toPosition) {
             for (int i = fromPosition; i < toPosition; i++) {
-                Collections.swap(items, i, i + 1);
+                Collections.swap(currentList, i, i + 1);
             }
         } else {
             for (int i = fromPosition; i > toPosition; i--) {
-                Collections.swap(items, i, i - 1);
+                Collections.swap(currentList, i, i - 1);
             }
         }
+        
+        // Use submitList to keep internal list in sync while dragging
+        mDiffer.submitList(currentList);
         notifyItemMoved(fromPosition, toPosition);
         return true;
     }
 
     @Override
     public void onDragFinished() {
+        List<ShoppingItem> currentList = mDiffer.getCurrentList();
         // Update positions based on the current list order once drag is finished
-        for (int i = 0; i < items.size(); i++) {
-            items.get(i).setPosition(i);
+        for (int i = 0; i < currentList.size(); i++) {
+            currentList.get(i).setPosition(i);
         }
         
-        repository.updateItemPositions(items);
+        repository.updateItemPositions(currentList);
         
-        // If it's a cloud list, update positions on server using a batch
         if (firebaseListId != null) {
-            repository.updateItemPositionsInCloud(firebaseListId, items, () -> {
-                repository.updateListTimestamp(firebaseListId, null);
-            });
+            repository.updateItemPositionsInCloud(firebaseListId, currentList, null);
         }
     }
 
     public int addItem(ShoppingItem item) {
+        List<ShoppingItem> newList = new ArrayList<>(mDiffer.getCurrentList());
         int insertPosition = 0;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).isDone()) {
+        for (int i = 0; i < newList.size(); i++) {
+            if (newList.get(i).isDone()) {
                 break;
             }
             insertPosition = i + 1;
         }
-        items.add(insertPosition, item);
-        notifyItemInserted(insertPosition);
-        if (interactionListener != null) {
-            interactionListener.onDataSetChanged();
-        }
+        newList.add(insertPosition, item);
+        mDiffer.submitList(newList, () -> {
+            if (interactionListener != null) {
+                interactionListener.onDataSetChanged();
+            }
+        });
         return insertPosition;
     }
 
     @Override
     public void onItemDismiss(int position) {
-        if (position < 0 || position >= items.size()) {
+        if (position < 0 || position >= mDiffer.getCurrentList().size()) {
             return;
         }
 
-        final ShoppingItem itemToDelete = items.get(position);
+        final ShoppingItem itemToDelete = mDiffer.getCurrentList().get(position);
         final int deletedPosition = position;
 
         if (firebaseListId != null) {
@@ -221,15 +202,16 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             repository.deleteItemFromList(itemToDelete.getId());
         }
 
-        items.remove(position);
-        notifyItemRemoved(position);
+        List<ShoppingItem> newListAfterRemoval = new ArrayList<>(mDiffer.getCurrentList());
+        newListAfterRemoval.remove(position);
+        mDiffer.submitList(newListAfterRemoval);
 
         if (interactionListener != null) {
             String message = "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted);
             interactionListener.showUndoBar(message, () -> {
+                int reInsertPos = Math.min(deletedPosition, mDiffer.getCurrentList().size());
                 
                 if (firebaseListId != null) {
-                    // Use restore to keep ID if possible
                     repository.restoreItemToShoppingList(firebaseListId, itemToDelete, null);
                     repository.updateListTimestamp(firebaseListId, null);
                 } else {
@@ -237,50 +219,31 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     itemToDelete.setId(newId);
                 }
 
-                // Create a new list with the restored item and let DiffUtil handle the insertion
-                List<ShoppingItem> newList = new ArrayList<>(items);
+                List<ShoppingItem> newListWithRestored = new ArrayList<>(mDiffer.getCurrentList());
                 
-                // Shift existing items to make space for the restored item at its original position
-                // This prevents conflicts if other items have moved into that position (e.g. by drag & drop)
+                // Shift existing items logic
                 int targetPos = itemToDelete.getPosition();
-                for (ShoppingItem item : newList) {
+                for (ShoppingItem item : newListWithRestored) {
                     if (item.getPosition() >= targetPos) {
                         item.setPosition(item.getPosition() + 1);
                     }
                 }
-                
-                newList.add(itemToDelete);
-                
-                // Sort with tie-breaker
-                Collections.sort(newList, (item1, item2) -> {
-                    if (item1.isDone() == item2.isDone()) {
-                        int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
-                        if (posComp != 0) return posComp;
-                        return Long.compare(item1.getId(), item2.getId());
-                    }
-                    return item1.isDone() ? 1 : -1;
-                });
 
-                // Renormalize positions to fix any gaps or duplicates
-                for (int i = 0; i < newList.size(); i++) {
-                    newList.get(i).setPosition(i);
+                // Add back to local list
+                if (reInsertPos >= 0 && reInsertPos <= newListWithRestored.size()) {
+                    newListWithRestored.add(reInsertPos, itemToDelete);
+                } else {
+                    newListWithRestored.add(itemToDelete);
                 }
                 
-                // Persist new positions
-                repository.updateItemPositions(newList);
-                if (firebaseListId != null) {
-                    repository.updateItemPositionsInCloud(firebaseListId, newList, null);
-                }
-
-                setItems(newList);
-                
-                // requestItemResort is implicit via setItems/DiffUtil logic or handled by cloud update listener
+                // Submit update to differ (will handle sorting and notify)
+                setItems(newListWithRestored);
             });
         }
     }
 
     public List<ShoppingItem> getCurrentItems() {
-        return new ArrayList<>(this.items);
+        return new ArrayList<>(mDiffer.getCurrentList());
     }
 
     public class ItemViewHolder extends RecyclerView.ViewHolder {
@@ -358,7 +321,8 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 item.setDone(isChecked);
                 if (firebaseListId != null) {
                     repository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked, null);
-                } else {
+                }
+                else {
                     repository.updateItemInList(item, firebaseListId, null);
                 }
                 if (interactionListener != null) {
