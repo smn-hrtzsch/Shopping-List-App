@@ -13,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.snackbar.Snackbar;
@@ -41,11 +42,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
     public MyRecyclerViewAdapter(Context context, List<ShoppingItem> items, ShoppingListRepository repository, OnItemInteractionListener listener, String firebaseListId) {
         this.context = context;
-        this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
+        this.items = new ArrayList<>();
+        if (items != null) {
+            this.items.addAll(items);
+            sortItemsLocal();
+        }
         this.repository = repository;
         this.interactionListener = listener;
         this.firebaseListId = firebaseListId;
-        sortItemsLocal();
     }
 
     public void resetEditingPosition() {
@@ -77,12 +81,42 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     }
 
     public void setItems(List<ShoppingItem> newItems) {
+        final List<ShoppingItem> oldList = new ArrayList<>(this.items);
+        final List<ShoppingItem> newList = new ArrayList<>(newItems);
+        
+        // Sort the new list before comparing
+        Collections.sort(newList, (item1, item2) -> {
+            if (item1.isDone() == item2.isDone()) {
+                return Integer.compare(item1.getPosition(), item2.getPosition());
+            }
+            return item1.isDone() ? 1 : -1;
+        });
+
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() { return oldList.size(); }
+            @Override
+            public int getNewListSize() { return newList.size(); }
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
+            }
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                ShoppingItem oldItem = oldList.get(oldItemPosition);
+                ShoppingItem newItem = newList.get(newItemPosition);
+                return oldItem.getName().equals(newItem.getName()) &&
+                       oldItem.isDone() == newItem.isDone() &&
+                       oldItem.getPosition() == newItem.getPosition() &&
+                       oldItem.getQuantity().equals(newItem.getQuantity()) &&
+                       oldItem.getUnit().equals(newItem.getUnit());
+            }
+        });
+
         this.items.clear();
-        if (newItems != null) {
-            this.items.addAll(newItems);
-        }
-        sortItemsLocal();
-        notifyDataSetChanged();
+        this.items.addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
+        
         if (interactionListener != null) {
             interactionListener.onDataSetChanged();
         }
@@ -132,7 +166,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         }
     }
 
-    public void addItem(ShoppingItem item) {
+    public int addItem(ShoppingItem item) {
         int insertPosition = 0;
         for (int i = 0; i < items.size(); i++) {
             if (items.get(i).isDone()) {
@@ -145,6 +179,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         if (interactionListener != null) {
             interactionListener.onDataSetChanged();
         }
+        return insertPosition;
     }
 
     @Override

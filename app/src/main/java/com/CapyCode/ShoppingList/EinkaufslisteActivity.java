@@ -525,19 +525,27 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             if (!name.isEmpty()) {
                 int nextPosition = 0;
                 if(shoppingItems != null) for (ShoppingItem existingItem : shoppingItems) if (!existingItem.isDone()) nextPosition = Math.max(nextPosition, existingItem.getPosition() + 1);
+                
+                // Pre-create the item for optimistic update
                 ShoppingItem newItem = new ShoppingItem(name, "1", "", false, currentShoppingListId, "", nextPosition);
+                
                 if (firebaseListId != null) {
                     updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                    // Optimistic update: add to adapter immediately
+                    if (adapter != null) {
+                        int pos = adapter.addItem(newItem);
+                        recyclerView.smoothScrollToPosition(pos);
+                    }
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
                     shoppingListRepository.updateListTimestamp(firebaseListId, null);
-                    // Cloud refresh will trigger update, but we can pre-scroll
-                    scrollToBottom();
                 } else {
                     long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
                     if (newId != -1) { 
                         newItem.setId(newId); 
-                        adapter.addItem(newItem); 
-                        scrollToBottom(); 
+                        if (adapter != null) {
+                            int pos = adapter.addItem(newItem);
+                            recyclerView.smoothScrollToPosition(pos);
+                        }
                     }
                     else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
                 }

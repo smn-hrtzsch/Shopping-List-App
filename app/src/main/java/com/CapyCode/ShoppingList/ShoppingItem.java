@@ -88,4 +88,21 @@ public class ShoppingItem {
     public String getFirebaseId() { return firebaseId; }
     @Exclude
     public void setFirebaseId(String firebaseId) { this.firebaseId = firebaseId; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShoppingItem that = (ShoppingItem) o;
+        if (id != 0 && that.id != 0) return id == that.id;
+        if (firebaseId != null && that.firebaseId != null) return firebaseId.equals(that.firebaseId);
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        if (id != 0) return (int) (id ^ (id >>> 32));
+        if (firebaseId != null) return firebaseId.hashCode();
+        return super.hashCode();
+    }
 }
