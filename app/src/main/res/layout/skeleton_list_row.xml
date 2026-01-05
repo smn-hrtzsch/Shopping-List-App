@@ -27,7 +27,9 @@
             android:alpha="0.15"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginTop="4dp"/>
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintVertical_bias="0.2"/>
 
         <!-- Subtitle/ItemCount Skeleton -->
         <View
@@ -38,35 +40,31 @@
             android:backgroundTint="?attr/colorOnSurfaceSecondary"
             android:alpha="0.15"
             app:layout_constraintTop_toBottomOf="@+id/skeleton_title"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginTop="8dp"/>
+            app:layout_constraintStart_toStartOf="@+id/skeleton_title"
+            android:layout_marginTop="4dp"/>
 
-        <!-- Action Buttons Area Skeleton (Right side) -->
-        
-        <!-- Simulate "Edit" button position -->
+        <!-- Action Buttons Area Skeleton (Right side) - Matching real buttons -->
         <View
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:background="@drawable/bg_dialog_rounded"
-            android:backgroundTint="?attr/colorOnSurfaceSecondary"
-            android:alpha="0.15"
-            app:layout_constraintEnd_toStartOf="@+id/skeleton_action_2"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="16dp"/>
-
-        <!-- Simulate "Delete" button position -->
-        <View
-            android:id="@+id/skeleton_action_2"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:id="@+id/skeleton_action_delete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@drawable/bg_dialog_rounded"
             android:backgroundTint="?attr/colorOnSurfaceSecondary"
             android:alpha="0.15"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="8dp"/>
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <View
+            android:id="@+id/skeleton_action_edit"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            app:layout_constraintEnd_toStartOf="@+id/skeleton_action_delete"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
