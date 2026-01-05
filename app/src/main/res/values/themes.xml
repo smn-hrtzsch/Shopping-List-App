@@ -61,6 +61,9 @@
         <item name="colorControlActivated">?attr/colorOnSurface</item>
         <item name="colorAccent">?attr/colorOnSurface</item>
         <item name="colorPrimary">?attr/colorOnSurface</item>
+        <item name="colorError">?attr/colorError</item>
+        <item name="boxStrokeErrorColor">?attr/colorError</item>
+        <item name="errorTextColor">?attr/colorError</item>
     </style>
 
     <style name="ButtonStyle.Solid" parent="Widget.MaterialComponents.Button">
