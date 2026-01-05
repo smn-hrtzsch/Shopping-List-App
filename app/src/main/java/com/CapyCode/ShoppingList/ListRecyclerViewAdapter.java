@@ -15,20 +15,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerViewAdapter.ViewHolder> implements ItemTouchHelperAdapter {
 
-    private List<ShoppingList> localDataSet;
-    private ShoppingListManager shoppingListManager;
-    private Context context;
-    private OnListInteractionListener interactionListener;
+    private final List<ShoppingList> localDataSet;
+    private final ShoppingListManager shoppingListManager;
+    private final Context context;
+    private final OnListInteractionListener interactionListener;
     private int editingPosition = -1;
-
 
     public interface OnListInteractionListener {
         void onListClicked(ShoppingList list);
@@ -41,18 +42,30 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         void onEditFinished();
     }
 
-
     public ListRecyclerViewAdapter(Context context, List<ShoppingList> dataSet, ShoppingListManager manager, OnListInteractionListener listener) {
         this.context = context;
-        localDataSet = dataSet; 
-        shoppingListManager = manager;
+        this.localDataSet = new ArrayList<>();
+        if (dataSet != null) {
+            this.localDataSet.addAll(dataSet);
+        }
+        this.shoppingListManager = manager;
         this.interactionListener = listener;
+        setHasStableIds(true);
     }
     
+    @Override
+    public long getItemId(int position) {
+        if (position < 0 || position >= localDataSet.size()) return RecyclerView.NO_ID;
+        ShoppingList list = localDataSet.get(position);
+        if (list.getFirebaseId() != null) return list.getFirebaseId().hashCode();
+        return list.getId();
+    }
+
     public void resetEditingPosition() {
         if (editingPosition != -1) {
+            int oldPos = editingPosition;
             editingPosition = -1;
-            notifyDataSetChanged();
+            notifyItemChanged(oldPos);
             if (interactionListener != null) interactionListener.onEditFinished();
         }
     }
@@ -231,10 +244,33 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
     }
 
     public void updateLists(List<ShoppingList> newLists) {
-        editingPosition = -1;
-        localDataSet.clear();
-        localDataSet.addAll(newLists);
-        notifyDataSetChanged();
+        final List<ShoppingList> oldList = new ArrayList<>(this.localDataSet);
+        final List<ShoppingList> newList = new ArrayList<>(newLists);
+        
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() { return oldList.size(); }
+            @Override
+            public int getNewListSize() { return newList.size(); }
+            @Override
+            public boolean areItemsTheSame(int oldPos, int newPos) {
+                return oldList.get(oldPos).equals(newList.get(newPos));
+            }
+            @Override
+            public boolean areContentsTheSame(int oldPos, int newPos) {
+                ShoppingList o = oldList.get(oldPos);
+                ShoppingList n = newList.get(newPos);
+                return java.util.Objects.equals(o.getName(), n.getName()) &&
+                       o.getItemCount() == n.getItemCount() &&
+                       o.isShared() == n.isShared() &&
+                       java.util.Objects.equals(o.getOwnerUsername(), n.getOwnerUsername());
+            }
+        });
+
+        this.editingPosition = -1;
+        this.localDataSet.clear();
+        this.localDataSet.addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
     }
 
     @Override
@@ -247,13 +283,6 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         ShoppingList movedItem = localDataSet.remove(fromPosition);
         localDataSet.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
-
-        for (int i = 0; i < localDataSet.size(); i++) {
-            localDataSet.get(i).setPosition(i);
-        }
-        shoppingListManager.updateListPositions(localDataSet); 
-        shoppingListManager.saveListOrder(localDataSet);
-
         return true;
     }
 
@@ -263,8 +292,11 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
     @Override
     public void onDragFinished() {
-        // Here we could do final persistence if needed, 
-        // but it's already done in onItemMove for local lists.
+        for (int i = 0; i < localDataSet.size(); i++) {
+            localDataSet.get(i).setPosition(i);
+        }
+        shoppingListManager.updateListPositions(localDataSet); 
+        shoppingListManager.saveListOrder(localDataSet);
     }
 
 

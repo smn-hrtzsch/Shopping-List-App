@@ -664,9 +664,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     @Override
     public View getCoordinatorLayout() { return activityRootView; }
 
-    @Override
-    public View getSnackbarAnchorView() { return findViewById(R.id.add_item_bar_container); }
-
     private final Runnable hideUndoBarRunnable = () -> {
         View undoBar = findViewById(R.id.undo_bar);
         if (undoBar != null) {

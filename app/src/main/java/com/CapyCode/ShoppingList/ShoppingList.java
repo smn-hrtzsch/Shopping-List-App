@@ -8,7 +8,7 @@ public class ShoppingList {
     private String name;
     private List<ShoppingItem> items;
     private int itemCount;
-    private int position; // NEU
+    private int position;
 
     // Firebase-related fields
     private String firebaseId;
@@ -24,7 +24,7 @@ public class ShoppingList {
         this.name = name;
         this.items = new ArrayList<>();
         this.itemCount = 0;
-        this.position = 0; // NEU
+        this.position = 0;
         this.members = new ArrayList<>();
         this.pendingMembers = new ArrayList<>();
         this.isShared = false;
@@ -40,8 +40,6 @@ public class ShoppingList {
     }
 
     // --- Getter und Setter ---
-    public boolean isShared() { return isShared; }
-    public void setShared(boolean shared) { isShared = shared; }
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
     public String getName() { return name; }
@@ -49,44 +47,53 @@ public class ShoppingList {
     public List<ShoppingItem> getItems() { return items; }
     public void setItems(List<ShoppingItem> items) { this.items = items; }
     public int getItemCount() { return itemCount; }
-    public void setItemCount(int itemCount) { this.itemCount = itemCount; }
+    public void setItemCount(int itemCount) {
+        this.itemCount = itemCount;
+    }
 
-    // NEU: Getter und Setter für Position
-    public int getPosition() { return position; }
-    public void setPosition(int position) { this.position = position; }
-
-    // Firebase-related getters and setters
     public String getFirebaseId() { return firebaseId; }
     public void setFirebaseId(String firebaseId) { this.firebaseId = firebaseId; }
+
     public String getOwnerId() { return ownerId; }
     public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
+
     public String getOwnerUsername() { return ownerUsername; }
     public void setOwnerUsername(String ownerUsername) { this.ownerUsername = ownerUsername; }
+
     public List<String> getMembers() { return members; }
     public void setMembers(List<String> members) { this.members = members; }
+
     public List<String> getPendingMembers() { return pendingMembers; }
     public void setPendingMembers(List<String> pendingMembers) { this.pendingMembers = pendingMembers; }
 
-    public boolean isCurrentUserPending(String currentUid) {
-        return pendingMembers != null && pendingMembers.contains(currentUid);
+    public int getPosition() { return position; }
+    public void setPosition(int position) { this.position = position; }
+
+    public boolean isShared() { return isShared; }
+    public void setShared(boolean shared) { isShared = shared; }
+
+    public boolean isCurrentUserPending(String userId) {
+        return pendingMembers != null && pendingMembers.contains(userId);
     }
 
-    public boolean isOwner(String currentUid) {
-        return ownerId != null && ownerId.equals(currentUid);
-    }
-
-    public void addItem(ShoppingItem item) {
-        this.items.add(item);
-        // this.itemCount = this.items.size(); // Deaktiviert, da itemCount aus DB kommt
-    }
-
-    public void removeItem(ShoppingItem item) {
-        this.items.remove(item);
-        // this.itemCount = this.items.size(); // Deaktiviert
+    public boolean isOwner(String userId) {
+        return ownerId != null && ownerId.equals(userId);
     }
 
     @Override
-    public String toString() {
-        return name; // Für Spinner oder einfache Textanzeigen
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShoppingList that = (ShoppingList) o;
+        if (firebaseId != null && that.firebaseId != null) return firebaseId.equals(that.firebaseId);
+        if (id != -1 && that.id != -1) return id == that.id;
+        return name != null && name.equals(that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        if (firebaseId != null) return firebaseId.hashCode();
+        if (id != -1) return (int) (id ^ (id >>> 32));
+        return name != null ? name.hashCode() : super.hashCode();
     }
 }
