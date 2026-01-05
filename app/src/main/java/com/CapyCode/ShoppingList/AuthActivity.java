@@ -424,6 +424,9 @@ public class AuthActivity extends BaseActivity {
 
     private void finishAuth(boolean success, boolean shouldSync) {
         if (success) {
+            // Ensure email is synced to Firestore for future username logins
+            userRepository.syncEmailToFirestore();
+            
             UiUtils.makeCustomToast(AuthActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
             if (shouldSync) {
                 UiUtils.makeCustomToast(AuthActivity.this, getString(R.string.syncing_data), Toast.LENGTH_SHORT).show();
