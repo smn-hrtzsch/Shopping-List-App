@@ -105,11 +105,12 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
                 ShoppingItem oldItem = oldList.get(oldItemPosition);
                 ShoppingItem newItem = newList.get(newItemPosition);
-                return oldItem.getName().equals(newItem.getName()) &&
+                
+                return java.util.Objects.equals(oldItem.getName(), newItem.getName()) &&
                        oldItem.isDone() == newItem.isDone() &&
                        oldItem.getPosition() == newItem.getPosition() &&
-                       oldItem.getQuantity().equals(newItem.getQuantity()) &&
-                       oldItem.getUnit().equals(newItem.getUnit());
+                       java.util.Objects.equals(oldItem.getQuantity(), newItem.getQuantity()) &&
+                       java.util.Objects.equals(oldItem.getUnit(), newItem.getUnit());
             }
         });
 
@@ -185,7 +186,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     @Override
     public void onItemDismiss(int position) {
         if (position < 0 || position >= items.size()) {
-            notifyItemChanged(position);
             return;
         }
 
@@ -217,8 +217,8 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int reInsertPos = Math.min(deletedPosition, items.size());
                 items.add(reInsertPos, itemToDelete);
                 notifyItemInserted(reInsertPos);
-
-                interactionListener.requestItemResort();
+                
+                // Do NOT call requestItemResort here, as it conflicts with notifyItemInserted
             });
         }
     }

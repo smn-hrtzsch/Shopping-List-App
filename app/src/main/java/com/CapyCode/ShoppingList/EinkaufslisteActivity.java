@@ -526,15 +526,13 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 int nextPosition = 0;
                 if(shoppingItems != null) for (ShoppingItem existingItem : shoppingItems) if (!existingItem.isDone()) nextPosition = Math.max(nextPosition, existingItem.getPosition() + 1);
                 
-                // Pre-create the item for optimistic update
                 ShoppingItem newItem = new ShoppingItem(name, "1", "", false, currentShoppingListId, "", nextPosition);
                 
                 if (firebaseListId != null) {
                     updateSyncIcon(R.drawable.ic_cloud_upload_24);
-                    // Optimistic update: add to adapter immediately
                     if (adapter != null) {
                         int pos = adapter.addItem(newItem);
-                        recyclerView.smoothScrollToPosition(pos);
+                        recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 50);
                     }
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
                     shoppingListRepository.updateListTimestamp(firebaseListId, null);
@@ -544,7 +542,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                         newItem.setId(newId); 
                         if (adapter != null) {
                             int pos = adapter.addItem(newItem);
-                            recyclerView.smoothScrollToPosition(pos);
+                            recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 50);
                         }
                     }
                     else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
