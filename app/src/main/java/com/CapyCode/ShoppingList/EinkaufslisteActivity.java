@@ -542,7 +542,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     if (adapter != null) {
                         int pos = adapter.addItem(newItem);
                         // Immediate smooth scroll to the new item
-                        recyclerView.post(() -> recyclerView.smoothScrollToPosition(pos));
+                        recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 50);
                     }
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
                     shoppingListRepository.updateListTimestamp(firebaseListId, null);
@@ -552,7 +552,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                         newItem.setId(newId); 
                         if (adapter != null) {
                             int pos = adapter.addItem(newItem);
-                            recyclerView.post(() -> recyclerView.smoothScrollToPosition(pos));
+                            recyclerView.postDelayed(() -> recyclerView.smoothScrollToPosition(pos), 50);
                         }
                     }
                     else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
@@ -678,8 +678,6 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .withEndAction(() -> {
                     undoBar.setVisibility(View.GONE);
                     undoBar.setTranslationY(0f);
-                    // Reset recycler view margin
-                    updateRecyclerViewMargin(0);
                 })
                 .start();
         }
@@ -710,19 +708,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 float shift = height > 0 ? height : 200f;
                 undoBar.setTranslationY(shift);
                 undoBar.animate().alpha(1f).translationY(0f).setDuration(300).start();
-                // Add exact height as margin, no extra padding to keep it tight
-                updateRecyclerViewMargin(height > 0 ? height : 200); 
             });
         }
         
         undoBarHandler.postDelayed(hideUndoBarRunnable, 5000);
-    }
-
-    private void updateRecyclerViewMargin(int bottomMargin) {
-        if (recyclerView == null) return;
-        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) recyclerView.getLayoutParams();
-        params.bottomMargin = bottomMargin;
-        recyclerView.setLayoutParams(params);
     }
 
     private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
