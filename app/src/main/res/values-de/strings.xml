@@ -109,7 +109,15 @@
     <string name="invite_user">Benutzer einladen</string>
 
     <!-- Profile & User Management -->
-    <string name="profile_title">Benutzerprofil</string>
+    <string name="title_activity_profile">Profil</string>
+    <string name="loading">Laden...</string>
+    <string name="loading_lists">Listen werden geladen...</string>
+    <string name="loading_items">Artikel werden geladen...</string>
+    <string name="loading_profile">Profil wird geladen...</string>
+    <string name="loading_signing_in">Anmeldung läuft...</string>
+    <string name="loading_creating_account">Konto wird erstellt...</string>
+    <string name="loading_saving">Speichervorgang läuft...</string>
+    <string name="loading_uploading">Bildupload läuft...</string>
     <string name="profile_info">Damit andere dich zu ihren Listen hinzufügen können, wähle bitte einen eindeutigen Nutzernamen.</string>
     <string name="profile_username_hint">Nutzernamen wählen</string>
     <string name="invite_username_hint">Nutzernamen eingeben</string>

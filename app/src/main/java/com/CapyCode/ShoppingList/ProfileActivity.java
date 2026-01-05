@@ -10,7 +10,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,7 +47,7 @@ import com.google.firebase.auth.UserInfo;
 import java.util.List;
 import java.util.Map;
 
-public class ProfileActivity extends AppCompatActivity {
+public class ProfileActivity extends BaseActivity {
 
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_THEME = "prefs_theme";
@@ -68,7 +67,6 @@ public class ProfileActivity extends AppCompatActivity {
     private MaterialButton buttonSaveUsernameInline;
     private ImageView imageProfile;
     private View containerContent;
-    private ProgressBar progressBarLoading;
     private View cardSyncPreferences;
     private View cardLinkedMethods;
     private com.google.android.material.switchmaterial.SwitchMaterial switchSyncPrivate;
@@ -172,7 +170,8 @@ public class ProfileActivity extends AppCompatActivity {
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
         containerContent = findViewById(R.id.container_content);
-        progressBarLoading = findViewById(R.id.progress_bar_loading);
+        initLoadingOverlay(findViewById(R.id.profile_content_container));
+        showSkeleton(false);
 
         loadCurrentProfile();
 
@@ -288,11 +287,11 @@ public class ProfileActivity extends AppCompatActivity {
         if (username.length() < 3) { UiUtils.makeCustomToast(this, R.string.profile_error_short, Toast.LENGTH_SHORT).show(); return; }
         if (username.contains(" ")) { UiUtils.makeCustomToast(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
         
-        progressBarLoading.setVisibility(View.VISIBLE);
+        showLoading(getString(R.string.loading_saving), false);
         userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
-                progressBarLoading.setVisibility(View.GONE);
+                hideLoading();
                 UiUtils.makeCustomToast(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
                 currentLoadedUsername = username;
                 textViewCurrentUsername.setText(username);
@@ -303,7 +302,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
             @Override
             public void onError(String message) { 
-                progressBarLoading.setVisibility(View.GONE);
+                hideLoading();
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); 
             }
         });
@@ -327,13 +326,13 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
-        progressBarLoading.setVisibility(View.VISIBLE);
+        showLoading();
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
             for (UserInfo profile : currentUser.getProviderData()) {
                 if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
-                     progressBarLoading.setVisibility(View.GONE);
+                     hideLoading();
                      UiUtils.makeCustomToast(this, R.string.error_google_already_linked, Toast.LENGTH_LONG).show();
                      mGoogleSignInClient.signOut();
                      return;
@@ -352,7 +351,7 @@ public class ProfileActivity extends AppCompatActivity {
                                      if (isEmpty) {
                                          performGoogleSignIn(credential);
                                      } else {
-                                         progressBarLoading.setVisibility(View.GONE);
+                                         hideLoading();
                                          int messageId = mAuth.getCurrentUser().isAnonymous() 
                                              ? R.string.dialog_switch_account_message_guest 
                                              : R.string.dialog_switch_account_message_conflict;
@@ -366,7 +365,7 @@ public class ProfileActivity extends AppCompatActivity {
                                      }
                                  });
                              } else {
-                                 progressBarLoading.setVisibility(View.GONE);
+                                 hideLoading();
                                  String msg = task.getException() != null ? task.getException().getMessage() : "Error";
                                  UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.error_link_failed, msg), Toast.LENGTH_LONG).show();
                              }
@@ -417,7 +416,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void performGoogleSignIn(AuthCredential credential) {
-        progressBarLoading.setVisibility(View.VISIBLE);
+        showLoading();
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
         mAuth.signInWithCredential(credential)
@@ -426,7 +425,7 @@ public class ProfileActivity extends AppCompatActivity {
                         syncGoogleProfilePicture();
                         loadCurrentProfile();
                     } else {
-                        progressBarLoading.setVisibility(View.GONE);
+                        hideLoading();
                         String msg = task.getException() != null ? task.getException().getMessage() : "Authentication failed";
                         UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.error_auth_failed, msg), Toast.LENGTH_SHORT).show();
                     }
@@ -513,13 +512,13 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadCurrentProfile() {
-        progressBarLoading.setVisibility(View.VISIBLE);
+        showLoading(getString(R.string.loading_profile), false, true);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
             userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
                 @Override
                 public void onLoaded(String username, String imageUrl) {
-                    progressBarLoading.setVisibility(View.GONE);
+                    hideLoading();
                     containerContent.setVisibility(View.VISIBLE);
                     
                     currentImageUrl = imageUrl;
@@ -553,7 +552,7 @@ public class ProfileActivity extends AppCompatActivity {
                 }
                 @Override
                 public void onError(String error) {
-                    progressBarLoading.setVisibility(View.GONE);
+                    hideLoading();
                     containerContent.setVisibility(View.VISIBLE);
                     // Ignore "offline" error for new users who might not have a doc yet
                     if (error != null && !error.toLowerCase().contains("offline")) {
@@ -578,7 +577,7 @@ public class ProfileActivity extends AppCompatActivity {
                         fetchProfileData.run();
                     }
                 } else {
-                    progressBarLoading.setVisibility(View.GONE);
+                    hideLoading();
                     containerContent.setVisibility(View.VISIBLE);
                     UiUtils.makeCustomToast(ProfileActivity.this, "Auth failed", Toast.LENGTH_LONG).show();
                 }
@@ -698,6 +697,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void unlinkProvider(String providerId) {
+        showLoading(R.string.loading_saving);
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             user.unlink(providerId).addOnCompleteListener(this, task -> {
@@ -717,10 +717,10 @@ public class ProfileActivity extends AppCompatActivity {
                         }
                         
                         if (!hasProvider) {
-                             progressBarLoading.setVisibility(View.VISIBLE);
+                             showLoading();
                              ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
                              repo.unsyncAllLists(() -> {
-                                 progressBarLoading.setVisibility(View.GONE);
+                                 hideLoading();
                                  loadCurrentProfile();
                              });
                         } else {
@@ -771,14 +771,13 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void performSafeSignOut() {
-        progressBarLoading.setVisibility(View.VISIBLE);
+        showLoading();
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.migrateLocalListsToCloud(() -> {
              repo.clearLocalDatabase();
              mAuth.signOut();
              mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-                 progressBarLoading.setVisibility(View.GONE);
                  UiUtils.makeCustomToast(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
                  loadCurrentProfile(); 
              });
@@ -786,28 +785,28 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void removeImage() {
-        progressBarLoading.setVisibility(View.VISIBLE);
+        showLoading();
         userRepository.removeProfileImage(new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
-                 progressBarLoading.setVisibility(View.GONE);
+                 hideLoading();
                  loadCurrentProfile();
                  UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_image_removed, Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onError(String message) {
-                progressBarLoading.setVisibility(View.GONE);
+                hideLoading();
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void uploadImage(Uri imageUri) {
-        progressBarLoading.setVisibility(View.VISIBLE);
+        showLoading(getString(R.string.loading_uploading), false);
         userRepository.uploadProfileImage(imageUri, new UserRepository.OnImageUploadListener() {
             @Override
             public void onSuccess(String downloadUrl) {
-                progressBarLoading.setVisibility(View.GONE);
+                hideLoading();
                 Glide.with(ProfileActivity.this).load(downloadUrl).apply(RequestOptions.circleCropTransform()).into(imageProfile);
                 imageProfile.setPadding(0,0,0,0);
                 imageProfile.clearColorFilter();
@@ -815,7 +814,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
             @Override
             public void onError(String message) {
-                progressBarLoading.setVisibility(View.GONE);
+                hideLoading();
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });

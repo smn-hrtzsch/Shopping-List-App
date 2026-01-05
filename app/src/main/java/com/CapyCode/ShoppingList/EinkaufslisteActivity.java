@@ -42,7 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class EinkaufslisteActivity extends AppCompatActivity implements MyRecyclerViewAdapter.OnItemInteractionListener {
+public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerViewAdapter.OnItemInteractionListener {
 
     private RecyclerView recyclerView;
     private MyRecyclerViewAdapter adapter;
@@ -70,6 +70,9 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_einkaufsliste);
+
+        initLoadingOverlay(findViewById(R.id.einkaufsliste_content_container));
+        showSkeleton(true);
 
         mAuth = FirebaseAuth.getInstance();
         Toolbar toolbar = findViewById(R.id.toolbar_einkaufsliste);
@@ -166,6 +169,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         touchHelper.attachToRecyclerView(recyclerView);
 
         setupAddItemBar();
+        showLoading(R.string.loading_items);
         refreshItemList();
     }
 
@@ -617,6 +621,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
         if (firebaseListId != null) {
             itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
+                hideLoading();
                 updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
                 this.shoppingItems = loadedItems;
                 if (adapter == null) {
@@ -629,6 +634,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             });
         } else {
             shoppingListRepository.getItemsForListId(currentShoppingListId, (loadedItems, hasPendingWrites) -> {
+                hideLoading();
                 this.shoppingItems = loadedItems;
                 if (adapter == null) {
                     adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, null);
@@ -641,7 +647,28 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         }
     }
 
-    private void checkEmptyViewItems(boolean isEmpty) { if (emptyView != null) { emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE); recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE); } }
+    @Override
+    public void showLoading(String message, boolean showSkeleton) {
+        if (emptyView != null) emptyView.setVisibility(View.GONE);
+        super.showLoading(message, showSkeleton);
+    }
+
+    @Override
+    protected void onLoadingHidden() {
+        if (shoppingItems != null) checkEmptyViewItems(shoppingItems.isEmpty());
+    }
+
+    private void checkEmptyViewItems(boolean isEmpty) { 
+        if (emptyView != null) { 
+            // Only show empty view if we are NOT loading
+            if (isLoadingOverlayVisible()) {
+                emptyView.setVisibility(View.GONE);
+                return;
+            }
+            emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE); 
+            recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE); 
+        } 
+    }
 
     @Override
     public boolean onSupportNavigateUp() { getOnBackPressedDispatcher().onBackPressed(); return true; }

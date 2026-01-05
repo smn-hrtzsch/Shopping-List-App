@@ -46,7 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements ListRecyclerViewAdapter.OnListInteractionListener {
+public class MainActivity extends BaseActivity implements ListRecyclerViewAdapter.OnListInteractionListener {
 
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_THEME = "prefs_theme";
@@ -127,6 +127,9 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
+        initLoadingOverlay(findViewById(R.id.main_content_container));
+        showSkeleton(true);
+
         Toolbar toolbar = findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -181,6 +184,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         touchHelper.attachToRecyclerView(recyclerView);
 
         setupCloseEditorOnTouchOutside();
+        showLoading(R.string.loading_lists);
         loadShoppingLists();
         handleIntent(getIntent());
 
@@ -319,6 +323,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                     onSuccess.run();
                 } else {
                     Log.w("Auth", "signInAnonymously:failure (retry)", task.getException());
+                    hideLoading();
                     String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
                     UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_auth_failed, errorMsg), Toast.LENGTH_LONG).show();
                 }
@@ -327,6 +332,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     }
 
     private void createSharedListInFirestore(String listName) {
+        showLoading(R.string.loading_saving);
         ensureAuthenticated(() -> {
             FirebaseUser currentUser = mAuth.getCurrentUser();
             // Check if user has a username profile
@@ -334,6 +340,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 @Override
                 public void onLoaded(String username) {
                     if (username == null) {
+                        hideLoading();
                         // No profile yet
                         pendingListName = listName; // Save for later
                         showCustomDialog(
@@ -361,9 +368,10 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                                 .addOnSuccessListener(documentReference -> {
                                     Log.d("Firestore", "DocumentSnapshot added with ID: " + documentReference.getId());
                                     UiUtils.makeCustomToast(MainActivity.this, getString(R.string.shared_list_created, listName), Toast.LENGTH_SHORT).show();
-                                    loadShoppingLists(); // Reload lists to show the new shared list
+                                    loadShoppingLists(); // Reload lists (calls hideLoading inside)
                                 })
                                 .addOnFailureListener(e -> {
+                                    hideLoading();
                                     Log.w("Firestore", "Error adding document", e);
                                     UiUtils.makeCustomToast(MainActivity.this, R.string.error_create_shared_list, Toast.LENGTH_SHORT).show();
                                 });
@@ -372,6 +380,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
                 @Override
                 public void onError(String error) {
+                    hideLoading();
                     UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_profile_check, error), Toast.LENGTH_SHORT).show();
                     pendingListName = null;
                 }
@@ -567,6 +576,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             fab.show();
             editTextNewListName.setText("");
         }
+        showLoading(R.string.loading_lists);
         loadShoppingLists();
     }
 
@@ -575,13 +585,32 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             this.shoppingLists = shoppingListManager.sortListsBasedOnSavedOrder(loadedLists);
             adapter.updateLists(shoppingLists);
             checkEmptyView();
+            hideLoading();
         });
+    }
+
+    @Override
+    public void showLoading(String message, boolean showSkeleton) {
+        if (emptyView != null) emptyView.setVisibility(View.GONE);
+        super.showLoading(message, showSkeleton);
+    }
+
+    @Override
+    protected void onLoadingHidden() {
+        checkEmptyView();
     }
 
     private void checkEmptyView() {
         if (shoppingLists != null && shoppingLists.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
-            if (emptyView != null) emptyView.setVisibility(View.VISIBLE);
+            // Only show empty view if we are not currently showing the loading overlay
+            if (isLoadingOverlayVisible()) {
+                if (emptyView != null) emptyView.setVisibility(View.GONE);
+                return;
+            }
+            if (emptyView != null) {
+                emptyView.setVisibility(View.VISIBLE);
+            }
         } else {
             recyclerView.setVisibility(View.VISIBLE);
             if (emptyView != null) emptyView.setVisibility(View.GONE);

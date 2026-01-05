@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,12 +31,11 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 
-public class AuthActivity extends AppCompatActivity {
+public class AuthActivity extends BaseActivity {
 
     private TextInputEditText editTextEmail, editTextPassword;
     private MaterialButton buttonLogin, buttonRegister;
     private TextView textForgotPassword;
-    private ProgressBar progressBar;
     private FirebaseAuth mAuth;
     private UserRepository userRepository;
 
@@ -65,12 +63,14 @@ public class AuthActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         userRepository = new UserRepository(this);
 
+        initLoadingOverlay(findViewById(R.id.auth_content_container));
+        showSkeleton(false);
+
         editTextEmail = findViewById(R.id.edit_text_email);
         editTextPassword = findViewById(R.id.edit_text_password);
         buttonLogin = findViewById(R.id.button_login);
         buttonRegister = findViewById(R.id.button_register);
         textForgotPassword = findViewById(R.id.text_forgot_password);
-        progressBar = findViewById(R.id.progress_bar_auth);
 
         buttonLogin.setOnClickListener(v -> loginUser());
         buttonRegister.setOnClickListener(v -> registerUser());
@@ -94,7 +94,7 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
-        showLoading(true);
+        showLoading(true, R.string.loading_signing_in);
 
         // Directly attempt to login/verify, bypassing fetchSignInMethodsForEmail
         // which might be blocked by Email Enumeration Protection.
@@ -133,7 +133,6 @@ public class AuthActivity extends AppCompatActivity {
         FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
         secondaryAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
-                showLoading(false);
                 if (task.isSuccessful()) {
                     checkIfAccountIsEmpty(isEmpty -> {
                         if (isEmpty) {
@@ -184,16 +183,17 @@ public class AuthActivity extends AppCompatActivity {
 
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
-                    showLoading(false);
                     if (task.isSuccessful()) {
                         finishAuth(true, false);
                     } else {
+                        showLoading(false);
                         handleLoginError(task);
                     }
                 });
     }
 
     void handleLoginError(Task<?> task) {
+        showLoading(false);
         String errorMsg = AuthErrorMapper.getErrorMessage(this, task.getException());
         UiUtils.makeCustomToast(AuthActivity.this, errorMsg, Toast.LENGTH_LONG).show();
     }
@@ -219,7 +219,7 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
-        showLoading(true);
+        showLoading(true, R.string.loading_creating_account);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
@@ -391,7 +391,15 @@ public class AuthActivity extends AppCompatActivity {
     }
 
     private void showLoading(boolean show) {
-        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        showLoading(show, R.string.loading);
+    }
+
+    private void showLoading(boolean show, int messageResId) {
+        if (show) {
+            super.showLoading(getString(messageResId), false);
+        } else {
+            super.hideLoading();
+        }
         buttonLogin.setEnabled(!show);
         buttonRegister.setEnabled(!show);
     }
