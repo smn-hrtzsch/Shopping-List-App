@@ -697,6 +697,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void unlinkProvider(String providerId) {
+        showLoading(R.string.loading_saving);
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             user.unlink(providerId).addOnCompleteListener(this, task -> {

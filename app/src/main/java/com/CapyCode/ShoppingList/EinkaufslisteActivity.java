@@ -71,6 +71,9 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_einkaufsliste);
 
+        initLoadingOverlay(findViewById(R.id.einkaufsliste_activity_root));
+        showSkeleton(true);
+
         mAuth = FirebaseAuth.getInstance();
         Toolbar toolbar = findViewById(R.id.toolbar_einkaufsliste);
         setSupportActionBar(toolbar);
@@ -160,8 +163,6 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         }
         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
         recyclerView.setAdapter(adapter);
-
-        initLoadingOverlay(findViewById(R.id.einkaufsliste_activity_root));
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);

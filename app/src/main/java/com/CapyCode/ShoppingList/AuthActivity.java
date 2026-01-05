@@ -133,7 +133,6 @@ public class AuthActivity extends BaseActivity {
         FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
         secondaryAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
-                showLoading(false);
                 if (task.isSuccessful()) {
                     checkIfAccountIsEmpty(isEmpty -> {
                         if (isEmpty) {
@@ -184,10 +183,10 @@ public class AuthActivity extends BaseActivity {
 
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
-                    showLoading(false);
                     if (task.isSuccessful()) {
                         finishAuth(true, false);
                     } else {
+                        showLoading(false);
                         handleLoginError(task);
                     }
                 });

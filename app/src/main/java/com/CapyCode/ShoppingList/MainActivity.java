@@ -127,6 +127,9 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
+        initLoadingOverlay(findViewById(R.id.main_activity_root));
+        showSkeleton(true);
+
         Toolbar toolbar = findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -173,8 +176,6 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ListRecyclerViewAdapter(this, shoppingLists, shoppingListManager, this);
         recyclerView.setAdapter(adapter);
-
-        initLoadingOverlay(findViewById(R.id.main_activity_root));
 
         fab.setOnClickListener(view -> showAddListDialog());
 
