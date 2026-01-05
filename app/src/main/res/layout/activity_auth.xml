@@ -58,7 +58,10 @@
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp">
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:errorEnabled="true"
+                    app:errorIconDrawable="@null"
+                    android:clipToOutline="true">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edit_text_email"
@@ -80,7 +83,9 @@
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp">
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:errorEnabled="true"
+                    android:clipToOutline="true">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edit_text_password"
