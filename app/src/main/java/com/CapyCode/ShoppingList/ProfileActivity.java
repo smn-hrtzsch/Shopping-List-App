@@ -778,7 +778,6 @@ public class ProfileActivity extends BaseActivity {
              repo.clearLocalDatabase();
              mAuth.signOut();
              mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-                 hideLoading();
                  UiUtils.makeCustomToast(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
                  loadCurrentProfile(); 
              });
