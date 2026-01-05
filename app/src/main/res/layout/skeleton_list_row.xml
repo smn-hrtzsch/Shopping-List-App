@@ -17,23 +17,26 @@
         android:padding="12dp"
         android:background="?attr/colorSurfaceSecondary">
 
-        <!-- Title Skeleton -->
+        <!-- Title Skeleton - Mimicking 18sp TextView -->
         <View
             android:id="@+id/skeleton_title"
             android:layout_width="140dp"
-            android:layout_height="22dp"
+            android:layout_height="24dp"
             android:background="@drawable/bg_dialog_rounded"
             android:backgroundTint="?attr/colorOnSurfaceSecondary"
             android:alpha="0.15"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/skeleton_action_edit"
+            app:layout_constraintHorizontal_bias="0.0"
             android:layout_marginEnd="8dp"/>
 
-        <!-- Subtitle/ItemCount Skeleton -->
+        <!-- Subtitle Skeleton - Mimicking 12sp TextView -->
         <View
             android:id="@+id/skeleton_subtitle"
             android:layout_width="80dp"
-            android:layout_height="14dp"
+            android:layout_height="16dp"
             android:background="@drawable/bg_dialog_rounded"
             android:backgroundTint="?attr/colorOnSurfaceSecondary"
             android:alpha="0.15"
@@ -41,7 +44,7 @@
             app:layout_constraintStart_toStartOf="@+id/skeleton_title"
             android:layout_marginTop="4dp"/>
 
-        <!-- Action Buttons Area Skeleton (Right side) - Matching real buttons -->
+        <!-- Action Buttons Area Skeleton (Right side) - Matching real buttons (40dp) -->
         <View
             android:id="@+id/skeleton_action_delete"
             android:layout_width="40dp"
@@ -62,7 +65,8 @@
             android:alpha="0.15"
             app:layout_constraintEnd_toStartOf="@+id/skeleton_action_delete"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="0dp"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
