@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.List;
+
 public class SimpleItemTouchHelperCallback extends ItemTouchHelper.Callback {
 
     private final ItemTouchHelperAdapter mAdapter;
@@ -58,6 +60,24 @@ public class SimpleItemTouchHelperCallback extends ItemTouchHelper.Callback {
         if (viewHolder.getItemViewType() != target.getItemViewType()) {
             return false;
         }
+
+        // Prevent dragging between checked and unchecked items
+        if (viewHolder instanceof MyRecyclerViewAdapter.ItemViewHolder && target instanceof MyRecyclerViewAdapter.ItemViewHolder) {
+            MyRecyclerViewAdapter adapter = (MyRecyclerViewAdapter) mAdapter;
+            List<ShoppingItem> currentItems = adapter.getCurrentItems();
+            int fromPos = viewHolder.getBindingAdapterPosition();
+            int toPos = target.getBindingAdapterPosition();
+            
+            if (fromPos != RecyclerView.NO_POSITION && toPos != RecyclerView.NO_POSITION 
+                && fromPos < currentItems.size() && toPos < currentItems.size()) {
+                ShoppingItem source = currentItems.get(fromPos);
+                ShoppingItem dest = currentItems.get(toPos);
+                if (source.isDone() != dest.isDone()) {
+                    return false;
+                }
+            }
+        }
+
         return mAdapter.onItemMove(viewHolder.getBindingAdapterPosition(), target.getBindingAdapterPosition());
     }
 
@@ -74,5 +94,11 @@ public class SimpleItemTouchHelperCallback extends ItemTouchHelper.Callback {
                 // Aktuell ist es für Listen deaktiviert in getMovementFlags.
             }
         }
+    }
+
+    @Override
+    public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+        super.clearView(recyclerView, viewHolder);
+        mAdapter.onDragFinished();
     }
 }

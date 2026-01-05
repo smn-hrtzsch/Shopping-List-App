@@ -15,20 +15,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerViewAdapter.ViewHolder> implements ItemTouchHelperAdapter {
 
-    private List<ShoppingList> localDataSet;
-    private ShoppingListManager shoppingListManager;
-    private Context context;
-    private OnListInteractionListener interactionListener;
+    private final List<ShoppingList> localDataSet;
+    private final ShoppingListManager shoppingListManager;
+    private final Context context;
+    private final OnListInteractionListener interactionListener;
     private int editingPosition = -1;
-
 
     public interface OnListInteractionListener {
         void onListClicked(ShoppingList list);
@@ -37,14 +38,36 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         void onJoinClicked(ShoppingList list);
         void onDeclineClicked(ShoppingList list);
         void onLeaveClicked(ShoppingList list);
+        void onEditStarted();
+        void onEditFinished();
     }
-
 
     public ListRecyclerViewAdapter(Context context, List<ShoppingList> dataSet, ShoppingListManager manager, OnListInteractionListener listener) {
         this.context = context;
-        localDataSet = dataSet; 
-        shoppingListManager = manager;
+        this.localDataSet = new ArrayList<>();
+        if (dataSet != null) {
+            this.localDataSet.addAll(dataSet);
+        }
+        this.shoppingListManager = manager;
         this.interactionListener = listener;
+        setHasStableIds(true);
+    }
+    
+    @Override
+    public long getItemId(int position) {
+        if (position < 0 || position >= localDataSet.size()) return RecyclerView.NO_ID;
+        ShoppingList list = localDataSet.get(position);
+        if (list.getFirebaseId() != null) return list.getFirebaseId().hashCode();
+        return list.getId();
+    }
+
+    public void resetEditingPosition() {
+        if (editingPosition != -1) {
+            int oldPos = editingPosition;
+            editingPosition = -1;
+            notifyItemChanged(oldPos);
+            if (interactionListener != null) interactionListener.onEditFinished();
+        }
     }
 
     @NonNull
@@ -69,10 +92,21 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
 
         viewHolder.textViewListName.setText(list.getName());
 
-        if (list.getFirebaseId() != null && !isPending) {
-            viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
-        } else {
+        if (isPending) {
             viewHolder.cloudIcon.setVisibility(View.GONE);
+        } else {
+            viewHolder.cloudIcon.setVisibility(isEditing ? View.GONE : View.VISIBLE);
+            if (list.getFirebaseId() != null) {
+                // Use explicit isShared flag
+                if (list.isShared()) {
+                    viewHolder.cloudIcon.setImageResource(R.drawable.ic_members_group);
+                } else {
+                    viewHolder.cloudIcon.setImageResource(R.drawable.ic_cloud_synced_24); // Assuming this is the synced icon
+                }
+            } else {
+                // Local list
+                viewHolder.cloudIcon.setImageResource(R.drawable.ic_cloud_unsynced_24);
+            }
         }
 
         String itemCountText = String.format(Locale.getDefault(), "%d %s",
@@ -108,11 +142,11 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
             int currentPos = viewHolder.getBindingAdapterPosition();
             if (currentPos == RecyclerView.NO_POSITION) return;
             if (isPending) {
-                Toast.makeText(context, "Bitte erst Einladung annehmen.", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(context, R.string.toast_pending_invite, Toast.LENGTH_SHORT).show();
                 return;
             }
             if (editingPosition != -1 && editingPosition == currentPos){
-                Toast.makeText(context, "Bitte Bearbeitung abschließen.", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                 return;
             }
             if (interactionListener != null) {
@@ -146,6 +180,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
                     notifyItemChanged(previousEditingPosition);
                 }
                 notifyItemChanged(editingPosition);
+                if (interactionListener != null) interactionListener.onEditStarted();
             }
         });
 
@@ -195,10 +230,11 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         if (!newName.isEmpty() && !newName.equals(list.getName())) {
             list.setName(newName); 
             shoppingListManager.updateShoppingList(list);
-            Toast.makeText(context, "Liste umbenannt in \"" + newName + "\"", Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(context, context.getString(R.string.toast_renamed, newName), Toast.LENGTH_SHORT).show();
         }
         editingPosition = -1;
         notifyItemChanged(currentPosition);
+        if (interactionListener != null) interactionListener.onEditFinished();
     }
 
 
@@ -208,10 +244,33 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
     }
 
     public void updateLists(List<ShoppingList> newLists) {
-        editingPosition = -1;
-        localDataSet.clear();
-        localDataSet.addAll(newLists);
-        notifyDataSetChanged();
+        final List<ShoppingList> oldList = new ArrayList<>(this.localDataSet);
+        final List<ShoppingList> newList = new ArrayList<>(newLists);
+        
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() { return oldList.size(); }
+            @Override
+            public int getNewListSize() { return newList.size(); }
+            @Override
+            public boolean areItemsTheSame(int oldPos, int newPos) {
+                return oldList.get(oldPos).equals(newList.get(newPos));
+            }
+            @Override
+            public boolean areContentsTheSame(int oldPos, int newPos) {
+                ShoppingList o = oldList.get(oldPos);
+                ShoppingList n = newList.get(newPos);
+                return java.util.Objects.equals(o.getName(), n.getName()) &&
+                       o.getItemCount() == n.getItemCount() &&
+                       o.isShared() == n.isShared() &&
+                       java.util.Objects.equals(o.getOwnerUsername(), n.getOwnerUsername());
+            }
+        });
+
+        this.editingPosition = -1;
+        this.localDataSet.clear();
+        this.localDataSet.addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
     }
 
     @Override
@@ -224,18 +283,20 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         ShoppingList movedItem = localDataSet.remove(fromPosition);
         localDataSet.add(toPosition, movedItem);
         notifyItemMoved(fromPosition, toPosition);
-
-        for (int i = 0; i < localDataSet.size(); i++) {
-            localDataSet.get(i).setPosition(i);
-        }
-        shoppingListManager.updateListPositions(localDataSet); 
-        shoppingListManager.saveListOrder(localDataSet);
-
         return true;
     }
 
     @Override
     public void onItemDismiss(int position) {
+    }
+
+    @Override
+    public void onDragFinished() {
+        for (int i = 0; i < localDataSet.size(); i++) {
+            localDataSet.get(i).setPosition(i);
+        }
+        shoppingListManager.updateListPositions(localDataSet); 
+        shoppingListManager.saveListOrder(localDataSet);
     }
 
 
@@ -248,7 +309,7 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
         final TextView textViewListItemCount;
         final ImageView cloudIcon;
         final ImageButton buttonJoin;
-        final ImageButton buttonDecline;
+        final com.google.android.material.button.MaterialButton buttonDecline;
 
 
         public ViewHolder(View view) {

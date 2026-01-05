@@ -2,6 +2,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_switch_language"
+        android:title="Language"
+        app:showAsAction="always"
+        app:actionLayout="@layout/menu_item_language" />
+    <item
+        android:id="@+id/action_switch_theme"
+        android:title="@string/action_settings"
+        android:icon="@drawable/ic_moon_outlined"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_edit_profile"
         android:icon="@drawable/ic_edit_24"
         android:title="@string/edit"

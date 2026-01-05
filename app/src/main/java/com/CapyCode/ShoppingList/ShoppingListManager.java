@@ -15,6 +15,9 @@ public class ShoppingListManager {
 
     private static final String PREFS_NAME = "list_order_prefs";
     private static final String KEY_LIST_ORDER = "list_order";
+    
+    public static final String SETTINGS_PREFS = "settings_prefs";
+    public static final String KEY_SYNC_PRIVATE_DEFAULT = "sync_private_default";
 
     public interface OnListsLoadedListener {
         void onListsLoaded(List<ShoppingList> shoppingLists);
@@ -38,31 +41,59 @@ public class ShoppingListManager {
         sharedPreferences.edit().putString(KEY_LIST_ORDER, order).apply();
     }
 
+    public void updateListIdInOrder(String oldId, String newId) {
+        String orderString = sharedPreferences.getString(KEY_LIST_ORDER, null);
+        if (orderString != null && !orderString.isEmpty()) {
+            String[] orderedIds = orderString.split(",");
+            List<String> newOrder = new ArrayList<>();
+            for (String id : orderedIds) {
+                if (id.equals(oldId)) {
+                    newOrder.add(newId);
+                } else {
+                    newOrder.add(id);
+                }
+            }
+            String newOrderString = String.join(",", newOrder);
+            sharedPreferences.edit().putString(KEY_LIST_ORDER, newOrderString).apply();
+        }
+    }
+
     public List<ShoppingList> sortListsBasedOnSavedOrder(List<ShoppingList> lists) {
         String orderString = sharedPreferences.getString(KEY_LIST_ORDER, null);
-        if (orderString == null || orderString.isEmpty()) {
-            return lists;
+        Map<String, Integer> orderMap = new HashMap<>();
+        if (orderString != null && !orderString.isEmpty()) {
+            String[] orderedIds = orderString.split(",");
+            for (int i = 0; i < orderedIds.length; i++) {
+                orderMap.put(orderedIds[i], i);
+            }
         }
 
-        String[] orderedIds = orderString.split(",");
-        Map<String, Integer> orderMap = new HashMap<>();
-        for (int i = 0; i < orderedIds.length; i++) {
-            orderMap.put(orderedIds[i], i);
-        }
+        String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
 
         Collections.sort(lists, (l1, l2) -> {
+            boolean isPending1 = l1.isCurrentUserPending(currentUid);
+            boolean isPending2 = l2.isCurrentUserPending(currentUid);
+
+            if (isPending1 && !isPending2) return 1;
+            if (!isPending1 && isPending2) return -1;
+
             String id1 = l1.getFirebaseId() != null ? l1.getFirebaseId() : String.valueOf(l1.getId());
             String id2 = l2.getFirebaseId() != null ? l2.getFirebaseId() : String.valueOf(l2.getId());
+            
             Integer pos1 = orderMap.get(id1);
             Integer pos2 = orderMap.get(id2);
-            if (pos1 == null) pos1 = Integer.MAX_VALUE;
-            if (pos2 == null) pos2 = Integer.MAX_VALUE;
-            int comp = pos1.compareTo(pos2);
-            if (comp != 0) {
-                return comp;
+            
+            // If both are in manual order, use that
+            if (pos1 != null && pos2 != null) {
+                return pos1.compareTo(pos2);
             }
-            // Fallback: Sort by name (case-insensitive) to have a stable order for unsorted lists
-            return l1.getName().compareToIgnoreCase(l2.getName());
+            
+            // Items in manual order come before items not in manual order
+            if (pos1 != null) return -1;
+            if (pos2 != null) return 1;
+            
+            // Both are not in manual order (e.g. new lists), sort by DB position
+            return Integer.compare(l1.getPosition(), l2.getPosition());
         });
 
         return lists;
@@ -82,6 +113,10 @@ public class ShoppingListManager {
 
     public long addShoppingList(String name, int position) {
         return repository.addShoppingList(name, position);
+    }
+
+    public long addShoppingList(String name, int position, boolean isShared) {
+        return repository.getShoppingListDatabaseHelper().addShoppingList(name, position, isShared);
     }
 
     public void updateShoppingList(ShoppingList list) {

@@ -36,14 +36,21 @@
             app:barrierDirection="start"
             app:constraint_referenced_ids="button_edit_list_name_inline,button_save_list_name_inline,button_delete_list_inline,button_join_list,button_decline_list,cloud_icon"/>
 
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/barrier_buttons"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="start"
+            app:constraint_referenced_ids="button_edit_list_name_inline,button_save_list_name_inline,button_delete_list_inline,button_join_list,button_decline_list"/>
+
         <ImageView
             android:id="@+id/cloud_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_cloud_24"
+            android:src="@drawable/ic_members_group"
             android:visibility="gone"
             app:tint="?attr/colorControlNormal"
-            app:layout_constraintEnd_toStartOf="@id/button_edit_list_name_inline"
+            app:layout_constraintEnd_toStartOf="@id/barrier_buttons"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             android:layout_marginEnd="8dp"/>
@@ -92,15 +99,16 @@
             app:layout_constraintBottom_toBottomOf="parent"/>
 
         <!-- Edit / Save / Decline (Left of Rightmost Action) -->
-        <ImageButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/button_decline_list"
+            style="@style/Widget.App.Button.Close"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@drawable/ic_decline_list"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            app:icon="@drawable/ic_decline_list"
+            app:iconTint="?attr/colorError"
+            app:strokeColor="?attr/colorError"
             android:contentDescription="@string/button_decline"
             android:visibility="gone"
-            app:tint="?attr/colorError"
             app:layout_constraintEnd_toStartOf="@+id/button_join_list"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"

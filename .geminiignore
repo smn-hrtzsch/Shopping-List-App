@@ -1,0 +1,22 @@
+TestAccounts.md
+
+# IDE & System
+.idea/
+.vscode/
+.DS_Store
+*.swp
+Thumbs.db
+
+# Build & Dependencies
+.gradle/
+**/build/
+**/node_modules/
+**/dist/
+functions/lib/
+
+# Configuration & Secrets
+google-services.json
+local.properties
+*.jks
+*.keystore
+*.hprof

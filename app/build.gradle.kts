@@ -30,6 +30,12 @@ android {
 
     // --- TEIL 2: Signing Config definieren ---
     signingConfigs {
+        create("configDebug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             // Wir nutzen 'getProperty' mit Standardwerten, das ist sicherer als der Array-Zugriff
             keyAlias = keystoreProperties.getProperty("key.alias", "debug")
@@ -45,6 +51,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("configDebug")
+        }
         release {
             // --- TEIL 3: Signing Config anwenden ---
             // Hier sagen wir dem Release-Build, dass er die Config von oben nutzen soll
@@ -74,13 +83,20 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation("androidx.window:window:1.5.0")
     testImplementation(libs.junit)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.inline)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
     implementation("com.google.firebase:firebase-appcheck-debug")
+
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 }

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_dialog_rounded">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:id="@+id/dialog_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="@string/edit"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_dialog_close"
+            style="@style/Widget.App.Button.Close"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true" />
+    </RelativeLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_username"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginBottom="8dp"/>
+
+    <include
+        android:id="@+id/include_username_input_dialog"
+        layout="@layout/merge_input_with_button" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog_profile_pic_title"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_option_new_image"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/option_new_image"
+        app:icon="@drawable/ic_cloud_upload_24"
+        app:iconGravity="textStart"
+        app:iconPadding="16dp"
+        app:cornerRadius="30dp"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface"
+        app:iconTint="?attr/colorOnSurface"
+        app:strokeColor="?attr/colorOnSurfaceSecondary"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button_option_remove_image"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginBottom="24dp"
+        android:text="@string/option_remove_image"
+        app:icon="@drawable/ic_delete_24"
+        app:iconGravity="textStart"
+        app:iconPadding="16dp"
+        app:cornerRadius="30dp"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="?attr/colorError"
+        app:iconTint="?attr/colorError"
+        app:strokeColor="?attr/colorError"/>
+
+</LinearLayout>

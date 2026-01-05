@@ -7,9 +7,9 @@
     <color name="cursor_color_adaptive">@color/white</color>
 
     <!-- New Adaptive Colors (Dark Mode) -->
-    <color name="button_background_adaptive">@color/dark_gray</color>
-    <color name="input_stroke_adaptive">#FFFFFF</color>
-    <color name="input_stroke_inactive_adaptive">@color/gray</color>
-    <color name="input_stroke_focused_adaptive">@color/light_gray</color>
-    <color name="dialog_action_text_adaptive">@color/light_gray</color>
+    <color name="button_background_adaptive">#424242</color>
+    <color name="input_stroke_adaptive">#BDBDBD</color>
+    <color name="input_stroke_inactive_adaptive">#616161</color>
+    <color name="input_stroke_focused_adaptive">#EEEEEE</color>
+    <color name="dialog_action_text_adaptive">#EEEEEE</color>
 </resources>

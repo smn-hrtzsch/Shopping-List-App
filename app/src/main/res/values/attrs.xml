@@ -2,4 +2,5 @@
 <resources>
     <attr name="colorSurfaceSecondary" format="color" />
     <attr name="colorOnSurfaceSecondary" format="color" />
+    <attr name="colorOnSurfaceVariant" format="color" />
 </resources>

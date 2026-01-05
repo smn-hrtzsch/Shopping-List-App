@@ -5,17 +5,29 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="?attr/colorSurface">
+    android:background="@drawable/bg_dialog_rounded">
 
-    <TextView
-        android:id="@+id/dialog_title"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/invite_user"
-        android:textAppearance="?attr/textAppearanceHeadline6"
-        android:textColor="?attr/colorOnSurface"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/dialog_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="@string/invite_user"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_dialog_close"
+            style="@style/Widget.App.Button.Close"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true" />
+    </RelativeLayout>
 
     <TextView
         android:id="@+id/dialog_message"
@@ -23,57 +35,11 @@
         android:layout_height="wrap_content"
         android:text="@string/invite_user_message"
         android:textAppearance="?attr/textAppearanceBody2"
-        android:textColor="?attr/colorOnSurface"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:layout_marginBottom="16dp"/>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/invite_username_hint"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        app:boxStrokeColor="@color/input_stroke_selector"
-        app:hintTextColor="@color/input_stroke_adaptive"
-        android:textColorHint="@color/input_stroke_adaptive"
-        app:boxCornerRadiusTopStart="12dp"
-        app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusBottomStart="12dp"
-        app:boxCornerRadiusBottomEnd="12dp"
-        android:layout_marginBottom="24dp">
+    <include
+        android:id="@+id/include_username_input_dialog"
+        layout="@layout/merge_input_with_button" />
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/edit_text_invite_username"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textPersonName"
-            android:textColor="@color/text_primary_adaptive"
-            android:textCursorDrawable="@null"
-            android:maxLines="1"/>
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/dialog_button_negative"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/button_cancel"
-            android:textColor="@color/dialog_action_text_adaptive"
-            android:layout_marginEnd="8dp"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/dialog_button_positive"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/invite_button"
-            android:textColor="@color/dialog_action_text_adaptive"
-            app:strokeColor="@color/dialog_action_text_adaptive"/>
-
-    </LinearLayout>
 </LinearLayout>

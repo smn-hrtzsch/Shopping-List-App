@@ -16,6 +16,7 @@
         <item name="colorError">@color/orange2</item>
         <item name="colorOnError">@color/black</item>
 
+        <item name="alertDialogTheme">@style/AppMaterialAlertDialogTheme</item>
         <item name="materialAlertDialogTheme">@style/AppMaterialAlertDialogTheme</item>
         <item name="snackbarStyle">@style/AppSnackbarStyle</item>
 
@@ -30,7 +31,8 @@
         <item name="colorSecondary">@color/orange2</item>
         <item name="colorSurface">@color/black</item>
         <item name="colorOnSurface">@color/light_gray</item>
-        <item name="android:background">@color/dark_gray</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:textColorPrimary">@color/light_gray</item>
         <item name="android:textColorSecondary">@color/gray</item>
         <item name="buttonBarPositiveButtonStyle">@style/MyDialogButton</item>
@@ -40,16 +42,31 @@
 
     <style name="AppSnackbarStyle" parent="Widget.MaterialComponents.Snackbar">
         <item name="materialThemeOverlay">@style/AppSnackbarThemeOverlay</item>
+        <item name="backgroundTint">?attr/colorSurfaceSecondary</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.Snackbar</item>
+        <item name="android:layout_margin">16dp</item>
     </style>
 
-    <style name="AppSnackbarThemeOverlay" parent="">
-        <item name="colorPrimary">@color/teal_200</item>
-        <item name="colorOnPrimary">@color/dark_gray</item>
+    <style name="AppSnackbarThemeOverlay" parent="ThemeOverlay.MaterialComponents.Dark">
+        <item name="colorOnSurface">?attr/colorOnSurface</item>
+        <item name="colorPrimary">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="ShapeAppearance.App.Snackbar" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
     </style>
 
     <style name="AccentInputTheme" parent="">
-        <item name="colorControlActivated">@color/teal_200</item>
-        <item name="colorAccent">@color/teal_200</item>
+        <item name="colorControlActivated">?attr/colorOnSurface</item>
+        <item name="colorAccent">?attr/colorOnSurface</item>
+        <item name="colorPrimary">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="ButtonStyle.Solid" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/button_background_adaptive</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="rippleColor">?attr/colorOnSurfaceSecondary</item>
     </style>
 
 </resources>

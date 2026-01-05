@@ -70,8 +70,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/appbar"
-        android:layout_above="@+id/add_item_bar_container"
+        android:layout_above="@+id/undo_bar"
         tools:listitem="@layout/recyclerview_row" />
+
+    <include
+        android:id="@+id/undo_bar"
+        layout="@layout/undo_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/add_item_bar_container"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/empty_view_items"

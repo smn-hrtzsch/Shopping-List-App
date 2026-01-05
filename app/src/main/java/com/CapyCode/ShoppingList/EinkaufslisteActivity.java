@@ -1,5 +1,8 @@
 package com.CapyCode.ShoppingList;
 
+import android.content.ContentValues;
+import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -7,6 +10,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -15,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
@@ -26,7 +31,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +48,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private MyRecyclerViewAdapter adapter;
     private List<ShoppingItem> shoppingItems;
     private ShoppingListRepository shoppingListRepository;
+    private ShoppingList currentShoppingList;
     private long currentShoppingListId = -1L;
     private String firebaseListId;
     private TextView toolbarTitleTextView;
@@ -47,8 +57,13 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private EditText editTextAddItem;
     private ImageButton buttonAddItem;
+    private ImageView toolbarCloudIcon;
     private com.google.firebase.firestore.ListenerRegistration listSnapshotListener;
     private com.google.firebase.firestore.ListenerRegistration itemsSnapshotListener;
+    private final android.os.Handler syncIconHandler = new android.os.Handler();
+    private final android.os.Handler undoBarHandler = new android.os.Handler();
+    private FirebaseAuth mAuth;
+    private boolean isUnsyncing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,11 +71,16 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_einkaufsliste);
 
+        mAuth = FirebaseAuth.getInstance();
         Toolbar toolbar = findViewById(R.id.toolbar_einkaufsliste);
         setSupportActionBar(toolbar);
         toolbarTitleTextView = findViewById(R.id.toolbar_title_einkaufsliste);
         emptyView = findViewById(R.id.empty_view_items);
         activityRootView = findViewById(R.id.einkaufsliste_activity_root);
+        toolbarCloudIcon = findViewById(R.id.toolbar_cloud_icon);
+        if (toolbarCloudIcon != null) {
+            toolbarCloudIcon.setOnClickListener(v -> toggleCloudSync());
+        }
 
         AppBarLayout appBarLayout = findViewById(R.id.appbar);
         View addItemBarContainer = findViewById(R.id.add_item_bar_container);
@@ -68,12 +88,22 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         ViewCompat.setOnApplyWindowInsetsListener(activityRootView, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
-
+            boolean isKeyboardVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
             int bottomInset = Math.max(systemBars.bottom, ime.bottom);
-
             appBarLayout.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             addItemBarContainer.setPadding(systemBars.left, 0, systemBars.right, bottomInset);
-
+            
+            if (isKeyboardVisible) {
+                // Only scroll to bottom if the "Add Item" bar has focus
+                View focusedView = getCurrentFocus();
+                if (focusedView != null && focusedView.getId() == R.id.edit_text_add_item_bar) {
+                    recyclerView.postDelayed(() -> {
+                        if (adapter != null && adapter.getItemCount() > 0) {
+                            recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                        }
+                    }, 150);
+                }
+            }
             return insets;
         });
 
@@ -86,34 +116,48 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         shoppingListRepository = new ShoppingListRepository(this);
         currentShoppingListId = getIntent().getLongExtra("LIST_ID", -1L);
         firebaseListId = getIntent().getStringExtra("FIREBASE_LIST_ID");
+        currentShoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
 
         String listName = getIntent().getStringExtra("LIST_NAME");
         if (toolbarTitleTextView != null) {
             toolbarTitleTextView.setText(listName);
         }
 
-        if (firebaseListId != null) {
-            ImageView toolbarCloudIcon = findViewById(R.id.toolbar_cloud_icon);
-            if (toolbarCloudIcon != null) {
-                toolbarCloudIcon.setVisibility(View.VISIBLE);
+        if (toolbarCloudIcon != null) {
+            toolbarCloudIcon.setVisibility(View.VISIBLE); // Always visible now
+            if (firebaseListId != null) {
+                toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
+            } else {
+                toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_unsynced_24);
             }
-            
-            // Listen for list deletion
+        }
+
+        if (firebaseListId != null) {
             listSnapshotListener = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     .collection("shopping_lists")
                     .document(firebaseListId)
                     .addSnapshotListener((documentSnapshot, e) -> {
                         if (e != null) return;
-                        if (documentSnapshot != null && !documentSnapshot.exists()) {
-                            Toast.makeText(this, "Diese Liste wurde vom Eigentümer gelöscht.", Toast.LENGTH_LONG).show();
+                        if (isUnsyncing) return; // Prevent closing if we are currently unsyncing
+                        if (documentSnapshot != null && documentSnapshot.exists()) {
+                            Boolean sharedOnServer = documentSnapshot.getBoolean("isShared");
+                            if (currentShoppingList != null && sharedOnServer != null) {
+                                currentShoppingList.setShared(sharedOnServer);
+                                invalidateOptionsMenu();
+                            }
+                        } else if (documentSnapshot != null && !documentSnapshot.exists()) {
+                            UiUtils.makeCustomToast(this, R.string.error_list_deleted_by_owner, Toast.LENGTH_LONG).show();
                             finish();
                         }
                     });
         }
 
-        shoppingItems = new ArrayList<>();
         recyclerView = findViewById(R.id.item_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Disable change animations to prevent flickering during cloud updates
+        if (recyclerView.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
+            ((androidx.recyclerview.widget.SimpleItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
+        }
         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
         recyclerView.setAdapter(adapter);
 
@@ -126,198 +170,304 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (listSnapshotListener != null) {
-            listSnapshotListener.remove();
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.einkaufsliste_menu, menu);
+        boolean isShared = currentShoppingList != null && currentShoppingList.isShared();
+        menu.findItem(R.id.action_share_list).setVisible(!isShared);
+        menu.findItem(R.id.action_view_members).setVisible(isShared);
+        return true;
+    }
+
+    private void toggleCloudSync() {
+        if (mAuth.getCurrentUser() == null) {
+            UiUtils.makeCustomToast(this, R.string.auth_required, Toast.LENGTH_SHORT).show();
+            return;
         }
-        if (itemsSnapshotListener != null) {
-            itemsSnapshotListener.remove();
+        
+        boolean isShared = currentShoppingList != null && currentShoppingList.isShared();
+        if (isShared) {
+            // Already shared, maybe show members? Or just do nothing.
+            // For now, only for non-shared private lists.
+            return;
+        }
+
+        if (firebaseListId == null) {
+            checkUserRequirementsForSync(() -> {
+                showCustomDialog(getString(R.string.dialog_enable_sync_title), getString(R.string.dialog_enable_sync_message), getString(R.string.button_enable_sync), () -> {
+                    updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                    shoppingListRepository.uploadSingleListToCloud(currentShoppingList, () -> {
+                        
+                        // Fix order: Replace local ID with Firebase ID in saved preference
+                        ShoppingListManager manager = new ShoppingListManager(this);
+                        manager.updateListIdInOrder(String.valueOf(currentShoppingListId), currentShoppingList.getFirebaseId());
+                        
+                        firebaseListId = currentShoppingList.getFirebaseId();
+                        updateSyncIcon(R.drawable.ic_cloud_synced_24);
+                        UiUtils.makeCustomToast(this, R.string.toast_sync_enabled, Toast.LENGTH_SHORT).show();
+                        refreshItemList();
+                    });
+                }, null);
+            });
+        } else {
+            showCustomDialog(getString(R.string.dialog_stop_sync_title), getString(R.string.dialog_stop_sync_message), getString(R.string.button_stop_sync), () -> {
+                isUnsyncing = true; // Set early here!
+                performSafeUnsync();
+            }, null);
+        }
+    }
+
+    private void checkUserRequirementsForSync(Runnable onRequirementsMet) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        boolean hasProvider = false;
+        for (com.google.firebase.auth.UserInfo profile : user.getProviderData()) {
+            if (com.google.firebase.auth.GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) || 
+                com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                hasProvider = true;
+                break;
+            }
+        }
+
+        // Check if anonymous or no providers
+        if (user.isAnonymous() || !hasProvider) {
+            showCustomDialog(
+                    getString(R.string.dialog_auth_required_title),
+                    getString(R.string.dialog_auth_required_message),
+                    getString(R.string.button_register),
+                    () -> {
+                        Intent intent = new Intent(EinkaufslisteActivity.this, ProfileActivity.class);
+                        // We still open profile, but maybe we don't need to trigger edit profile automatically if username is not required?
+                        // User said "The button to register should open ProfileActivity directly with open Edit Profile Dialog...".
+                        // But now that username is not required, maybe we just open ProfileActivity normally?
+                        // However, the previous instruction was about "Register & Set Name".
+                        // Now it's just "Register".
+                        // So I will remove the EXTRA_OPEN_EDIT_PROFILE to just let them register/link.
+                        startActivity(intent);
+                    },
+                    null
+            );
+            return;
+        }
+
+        // Username not required for private lists anymore
+        onRequirementsMet.run();
+    }
+
+    private void performSafeUnsync() {
+        if (firebaseListId == null) return;
+        isUnsyncing = true; // Set early here!
+        UiUtils.makeCustomToast(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
+
+        // Remove listeners immediately to prevent any updates during unsync
+        if (listSnapshotListener != null) { listSnapshotListener.remove(); listSnapshotListener = null; }
+        if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
+
+        // 1. Fetch items from cloud (One-Time) to ensure we have latest state
+        shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, (cloudItems, hasPendingWrites) -> {
+            // 3. Atomically decouple list and replace items locally
+            // This prevents "deleteObsoleteCloudLists" from deleting this list because firebaseId becomes NULL
+            shoppingListRepository.decoupleListAndReplaceItems(currentShoppingListId, cloudItems);
+
+            String listToDeleteId = firebaseListId;
+
+            // 4. Update RAM objects
+            currentShoppingList.setFirebaseId(null);
+            currentShoppingList.setShared(false);
+            currentShoppingList.setOwnerId(null);
+            
+            // Update saved order in Manager: Replace Firebase ID with Local ID
+            ShoppingListManager manager = new ShoppingListManager(this);
+            manager.updateListIdInOrder(listToDeleteId, String.valueOf(currentShoppingListId));
+            
+            firebaseListId = null;
+
+            // 5. Update UI immediately
+            updateSyncIcon(R.drawable.ic_cloud_unsynced_24);
+            UiUtils.makeCustomToast(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
+            
+            // Force adapter recreation to switch to local mode
+            adapter = null; 
+            refreshItemList(); // Reloads items from DB (which are now the decoupled ones)
+
+            // 6. Delete from Cloud
+            // Even if MainActivity listener fires now, it won't find this list in "obsolete" check because it has no firebaseId locally.
+            shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, null);
+        });
+    }
+
+    private void updateSyncIcon(int drawableId) {
+        if (toolbarCloudIcon == null) return;
+        
+        toolbarCloudIcon.setVisibility(View.VISIBLE);
+        if (firebaseListId != null) {
+             // List is synced
+             toolbarCloudIcon.setImageResource(drawableId);
+             if (drawableId != R.drawable.ic_cloud_synced_24) {
+                 syncIconHandler.removeCallbacksAndMessages(null);
+                 syncIconHandler.postDelayed(() -> {
+                     if (toolbarCloudIcon != null) toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_synced_24);
+                 }, 1000);
+             }
+        } else {
+             // List is local
+             toolbarCloudIcon.setImageResource(R.drawable.ic_cloud_unsynced_24);
         }
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.einkaufsliste_menu, menu);
-        if (firebaseListId != null) {
-            menu.findItem(R.id.action_share_list).setVisible(false);
-            menu.findItem(R.id.action_view_members).setVisible(true);
-        } else {
-            menu.findItem(R.id.action_view_members).setVisible(false);
-        }
-        return true;
+    protected void onDestroy() {
+        super.onDestroy();
+        syncIconHandler.removeCallbacksAndMessages(null);
+        if (listSnapshotListener != null) listSnapshotListener.remove();
+        if (itemsSnapshotListener != null) itemsSnapshotListener.remove();
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
-        if (itemId == R.id.action_clear_list) {
-            showClearListOptionsDialog();
-            return true;
-        } else if (itemId == R.id.action_share_list) {
-            shareShoppingList();
-            return true;
-        } else if (itemId == R.id.action_view_members) {
-            showMembersDialog();
-            return true;
-        }
+        if (itemId == R.id.action_clear_list) { showClearListOptionsDialog(); return true; }
+        else if (itemId == R.id.action_share_list) { shareShoppingList(); return true; }
+        else if (itemId == R.id.action_view_members) { showMembersDialog(); return true; }
         return super.onOptionsItemSelected(item);
     }
 
     private void showMembersDialog() {
         if (firebaseListId == null) return;
-
         shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
             @Override
             public void onLoaded(List<Map<String, String>> membersWithNames) {
-                MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(EinkaufslisteActivity.this);
+                androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(EinkaufslisteActivity.this);
                 View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
                 builder.setView(dialogView);
                 androidx.appcompat.app.AlertDialog dialog = builder.create();
-
-                if (dialog.getWindow() != null) {
-                    dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-                }
-
+                if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                 android.widget.LinearLayout container = dialogView.findViewById(R.id.container_members_list);
                 View buttonAdd = dialogView.findViewById(R.id.button_add_member);
                 View buttonClose = dialogView.findViewById(R.id.button_close_dialog);
-
                 String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
-
                 for (Map<String, String> member : membersWithNames) {
-                    // Create row layout programmatically
                     android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
-                    row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-                    row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-                    row.setPadding(0, 24, 0, 24); // More padding
-
-                    ImageView icon = new ImageView(EinkaufslisteActivity.this);
-                    icon.setImageResource(R.drawable.ic_account_circle_24);
+                    row.setOrientation(android.widget.LinearLayout.HORIZONTAL); row.setGravity(android.view.Gravity.CENTER_VERTICAL); row.setPadding(0, 24, 0, 24);
+                    ImageView icon = new ImageView(EinkaufslisteActivity.this); 
                     
-                    String uid = member.get("uid");
-                    boolean isMe = uid != null && uid.equals(currentUid);
+                    String imageUrl = member.get("profileImageUrl");
+                    if (imageUrl != null && !imageUrl.isEmpty()) {
+                        Glide.with(EinkaufslisteActivity.this)
+                             .load(imageUrl)
+                             .apply(RequestOptions.circleCropTransform())
+                             .into(icon);
+                        icon.setOnClickListener(v -> showImagePreviewDialog(imageUrl, member.get("username")));
+                    } else {
+                        icon.setImageResource(R.drawable.ic_account_circle_24);
+                        int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
+                        int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
+                        String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
+                        icon.setColorFilter(isMe ? highlightColor : textColor);
+                    }
                     
-                    // Use theme color for icon, but highlight color if it's the current user
-                    int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
-                    int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
-                    
-                    icon.setColorFilter(isMe ? highlightColor : textColor);
-                    
-                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); // Bigger icon
-                    iconParams.setMargins(0, 0, 32, 0);
+                    android.widget.LinearLayout.LayoutParams iconParams = new android.widget.LinearLayout.LayoutParams(64, 64); iconParams.setMargins(0, 0, 32, 0);
                     row.addView(icon, iconParams);
-
                     TextView text = new TextView(EinkaufslisteActivity.this);
-                    String role = member.get("role");
-                    String username = member.get("username");
+                    String role = member.get("role"); String username = member.get("username");
+                    String uid = member.get("uid"); boolean isMe = uid != null && uid.equals(currentUid);
                     if (isMe) username += getString(R.string.member_is_me);
-                    
                     android.text.SpannableString content = new android.text.SpannableString(username + "\n" + role);
                     content.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, username.length(), 0);
                     content.setSpan(new android.text.style.RelativeSizeSpan(0.85f), username.length() + 1, content.length(), 0);
-                    content.setSpan(new android.text.style.ForegroundColorSpan(
-                        com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurfaceVariant)
-                    ), username.length() + 1, content.length(), 0);
-                    
-                    text.setText(content);
-                    text.setTextColor(isMe ? highlightColor : textColor);
-                    text.setTextSize(16);
-                    row.addView(text);
-
+                    content.setSpan(new android.text.style.ForegroundColorSpan(com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurfaceVariant)), username.length() + 1, content.length(), 0);
+                    int textColor = com.google.android.material.color.MaterialColors.getColor(dialogView, com.google.android.material.R.attr.colorOnSurface);
+                    int highlightColor = androidx.core.content.ContextCompat.getColor(EinkaufslisteActivity.this, R.color.dialog_action_text_adaptive);
+                    text.setText(content); text.setTextColor(isMe ? highlightColor : textColor); text.setTextSize(16); row.addView(text);
                     container.addView(row);
                 }
-
-                buttonAdd.setOnClickListener(v -> {
-                    dialog.dismiss();
-                    showInviteUserDialog();
-                });
-
+                buttonAdd.setOnClickListener(v -> { showInviteUserDialog(); });
                 buttonClose.setOnClickListener(v -> dialog.dismiss());
-
                 dialog.show();
             }
-
             @Override
-            public void onError(String error) {
-                Toast.makeText(EinkaufslisteActivity.this, error, Toast.LENGTH_SHORT).show();
-            }
+            public void onError(String error) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show(); }
         });
     }
 
+    private void showImagePreviewDialog(String imageUrl, String username) {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_image_preview, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+        
+        TextView titleView = dialogView.findViewById(R.id.dialog_title_preview);
+        ImageView imageView = dialogView.findViewById(R.id.dialog_image_preview);
+        TextView usernameView = dialogView.findViewById(R.id.dialog_username_preview);
+        View btnClose = dialogView.findViewById(R.id.dialog_button_close_preview);
+        
+        titleView.setText(R.string.profile_picture);
+        usernameView.setText(username);
+        
+        Glide.with(this)
+             .load(imageUrl)
+             .apply(RequestOptions.circleCropTransform())
+             .into(imageView);
+             
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
     private void showInviteUserDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_invite_user, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
-
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
-
-        com.google.android.material.textfield.TextInputEditText editText = dialogView.findViewById(R.id.edit_text_invite_username);
-        View btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
-        View btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
-
+        
+        View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
+        com.google.android.material.textfield.TextInputEditText editText = includeDialog.findViewById(R.id.username_edit_text);
+        com.google.android.material.button.MaterialButton btnPositive = includeDialog.findViewById(R.id.username_action_button);
+        btnPositive.setText(R.string.invite_button); // Set correct text for invite action
+        
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
         btnPositive.setOnClickListener(v -> {
             String username = editText.getText().toString().trim();
             if (!username.isEmpty()) {
-                // 1. Search for UID by username
                 UserRepository userRepository = new UserRepository(this);
                 userRepository.findUidByUsername(username, new UserRepository.OnUserSearchListener() {
                     @Override
                     public void onUserFound(String uid) {
-                        // 2. Add UID to list
                         shoppingListRepository.addMemberToList(firebaseListId, uid, new ShoppingListRepository.OnMemberAddListener() {
                             @Override
-                            public void onMemberAdded() {
-                                Toast.makeText(EinkaufslisteActivity.this, getString(R.string.user_invited, username), Toast.LENGTH_SHORT).show();
-                                dialog.dismiss();
-                            }
-
+                            public void onMemberAdded() { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.user_invited, username), Toast.LENGTH_SHORT).show(); dialog.dismiss(); }
                             @Override
-                            public void onMemberAlreadyExists() {
-                                Toast.makeText(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show();
-                            }
-
+                            public void onMemberAlreadyExists() { UiUtils.makeCustomToast(EinkaufslisteActivity.this, R.string.error_member_already_exists, Toast.LENGTH_LONG).show(); }
                             @Override
-                            public void onError(String message) {
-                                Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
-                            }
+                            public void onError(String message) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show(); }
                         });
                     }
-
                     @Override
-                    public void onError(String message) {
-                        Toast.makeText(EinkaufslisteActivity.this, message, Toast.LENGTH_LONG).show();
-                    }
+                    public void onError(String message) { UiUtils.makeCustomToast(EinkaufslisteActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show(); }
                 });
             }
         });
-
-        btnNegative.setOnClickListener(v -> dialog.dismiss());
-
+        btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
 
     private void shareShoppingList() {
-        if (firebaseListId != null) {
-            Toast.makeText(this, "Cannot share a shared list.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        ShoppingList shoppingList = shoppingListRepository.getShoppingListById(currentShoppingListId);
-        if (shoppingList == null) {
-            Toast.makeText(this, R.string.list_not_found, Toast.LENGTH_SHORT).show();
+        if (currentShoppingList == null) return;
+        if (currentShoppingList.isShared()) {
+            UiUtils.makeCustomToast(this, R.string.error_cannot_share_shared, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        shoppingListRepository.getItemsForListId(currentShoppingListId, items -> {
+        ShoppingListRepository.OnItemsLoadedListener shareAction = (items, hasPendingWrites) -> {
             try {
                 org.json.JSONObject jsonList = new org.json.JSONObject();
                 jsonList.put("app_id", "com.CapyCode.ShoppingList");
-                jsonList.put("name", shoppingList.getName());
-
+                jsonList.put("name", currentShoppingList.getName());
                 org.json.JSONArray jsonItems = new org.json.JSONArray();
                 for (ShoppingItem item : items) {
                     org.json.JSONObject jsonItem = new org.json.JSONObject();
@@ -330,188 +480,251 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     jsonItems.put(jsonItem);
                 }
                 jsonList.put("items", jsonItems);
-
                 String jsonString = jsonList.toString(2);
 
-                java.io.File file = new java.io.File(getCacheDir(), "list.json");
+                String safeName = currentShoppingList.getName().replaceAll("[\\\\/:*?\"<>|]", "_");
+                java.io.File file = new java.io.File(getCacheDir(), safeName + ".json");
+
                 try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
                     fos.write(jsonString.getBytes());
                 }
-
                 android.net.Uri fileUri = androidx.core.content.FileProvider.getUriForFile(this, "com.CapyCode.ShoppingList.provider", file);
-
                 android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
                 shareIntent.setType("application/json");
                 shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, fileUri);
-                shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.shopping_list) + ": " + shoppingList.getName());
                 shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
                 startActivity(android.content.Intent.createChooser(shareIntent, getString(R.string.share_list)));
-
             } catch (org.json.JSONException | java.io.IOException e) {
                 e.printStackTrace();
-                Toast.makeText(this, "Error creating share data.", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, R.string.error_create_share_data, Toast.LENGTH_SHORT).show();
             }
-        });
+        };
+
+        if (firebaseListId != null) {
+            // Fetch latest from cloud for sharing
+            shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, shareAction);
+        } else {
+            // Fetch from local DB
+            shoppingListRepository.getItemsForListId(currentShoppingListId, shareAction);
+        }
     }
 
     private void setupAddItemBar() {
         editTextAddItem = findViewById(R.id.edit_text_add_item_bar);
         buttonAddItem = findViewById(R.id.button_add_item_bar);
-
         editTextAddItem.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 boolean hasText = !s.toString().trim().isEmpty();
-                buttonAddItem.setEnabled(hasText);
-                buttonAddItem.setAlpha(hasText ? 1.0f : 0.5f);
+                buttonAddItem.setEnabled(hasText); buttonAddItem.setAlpha(hasText ? 1.0f : 0.5f);
             }
-
             @Override
             public void afterTextChanged(Editable s) {}
         });
-
         View.OnClickListener addItemAction = v -> {
+            if (adapter != null && adapter.isEditing()) {
+                UiUtils.makeCustomToast(this, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
+                return;
+            }
             String name = editTextAddItem.getText().toString().trim();
             if (!name.isEmpty()) {
                 int nextPosition = 0;
-                if(shoppingItems != null){
-                    for (ShoppingItem existingItem : shoppingItems) {
-                        if (!existingItem.isDone()) {
-                            nextPosition = Math.max(nextPosition, existingItem.getPosition() + 1);
-                        }
-                    }
-                }
-
+                if(shoppingItems != null) for (ShoppingItem existingItem : shoppingItems) if (!existingItem.isDone()) nextPosition = Math.max(nextPosition, existingItem.getPosition() + 1);
+                
                 ShoppingItem newItem = new ShoppingItem(name, "1", "", false, currentShoppingListId, "", nextPosition);
+                
                 if (firebaseListId != null) {
-                    shoppingListRepository.addItemToShoppingList(firebaseListId, newItem);
-                    shoppingListRepository.updateListTimestamp(firebaseListId);
+                    updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                    if (adapter != null) {
+                        int pos = adapter.addItem(newItem);
+                        // Use scrollToPosition for instant jump to new item, avoiding jittery scroll animation
+                        recyclerView.scrollToPosition(pos);
+                    }
+                    shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
+                    shoppingListRepository.updateListTimestamp(firebaseListId, null);
                 } else {
                     long newId = shoppingListRepository.addItemToShoppingList(currentShoppingListId, newItem);
-                    if (newId != -1) {
-                        newItem.setId(newId);
-                        adapter.addItem(newItem);
-                        recyclerView.scrollToPosition(adapter.getItemCount() - 1);
-                    } else {
-                        Toast.makeText(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
+                    if (newId != -1) { 
+                        newItem.setId(newId); 
+                        if (adapter != null) {
+                            int pos = adapter.addItem(newItem);
+                            recyclerView.scrollToPosition(pos);
+                        }
                     }
+                    else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
                 }
                 editTextAddItem.setText("");
             }
         };
-
         buttonAddItem.setOnClickListener(addItemAction);
         editTextAddItem.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                if (buttonAddItem.isEnabled()) {
-                    addItemAction.onClick(v);
-                }
-                return true;
-            }
+            if (actionId == EditorInfo.IME_ACTION_DONE) { if (buttonAddItem.isEnabled()) addItemAction.onClick(v); return true; }
             return false;
         });
     }
 
+    private void scrollToBottom() {
+        if (adapter != null && adapter.getItemCount() > 0) {
+            recyclerView.postDelayed(() -> {
+                if (recyclerView != null && adapter != null) {
+                    recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                }
+            }, 100);
+        }
+    }
+
     private void showClearListOptionsDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.dialog_clear_list_title)
-                .setMessage(R.string.dialog_clear_list_message)
-                .setPositiveButton(R.string.dialog_option_remove_checked, (dialog, which) -> {
-                    if (firebaseListId != null) {
-                        shoppingListRepository.clearCheckedItemsFromList(firebaseListId);
-                        shoppingListRepository.updateListTimestamp(firebaseListId);
-                    } else {
-                        shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
-                    }
-                    refreshItemList();
-                    Toast.makeText(this, "Erledigte Artikel entfernt", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton(R.string.dialog_option_remove_all, (dialog, which) -> {
-                    if (firebaseListId != null) {
-                        shoppingListRepository.clearAllItemsFromList(firebaseListId);
-                        shoppingListRepository.updateListTimestamp(firebaseListId);
-                    } else {
-                        shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
-                    }
-                    refreshItemList();
-                    Toast.makeText(this, "Alle Artikel entfernt", Toast.LENGTH_SHORT).show();
-                })
-                .setNeutralButton(R.string.dialog_option_cancel, (dialog, which) -> dialog.dismiss())
-                .show();
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_clear, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        View btnRemoveChecked = dialogView.findViewById(R.id.button_remove_checked);
+        View btnRemoveAll = dialogView.findViewById(R.id.button_remove_all);
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
+
+        btnRemoveChecked.setOnClickListener(v -> {
+            if (firebaseListId != null) {
+                updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                shoppingListRepository.clearCheckedItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
+            } else shoppingListRepository.clearCheckedItemsFromList(currentShoppingListId);
+            refreshItemList(); UiUtils.makeCustomToast(this, R.string.toast_items_cleared_done, Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        btnRemoveAll.setOnClickListener(v -> {
+            if (firebaseListId != null) {
+                updateSyncIcon(R.drawable.ic_cloud_upload_24);
+                shoppingListRepository.clearAllItemsFromList(firebaseListId, () -> shoppingListRepository.updateListTimestamp(firebaseListId, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24)));
+            } else shoppingListRepository.clearAllItemsFromList(currentShoppingListId);
+            refreshItemList(); UiUtils.makeCustomToast(this, R.string.toast_items_cleared_all, Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     private void refreshItemList() {
-        if (shoppingListRepository == null || adapter == null) return;
-        adapter.resetEditingPosition();
-
-        // Clean up previous listener if exists
-        if (itemsSnapshotListener != null) {
-            itemsSnapshotListener.remove();
-            itemsSnapshotListener = null;
-        }
-
+        if (shoppingListRepository == null) return;
+        if (adapter != null) adapter.resetEditingPosition();
+        
+        if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
         if (firebaseListId != null) {
-            itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, loadedItems -> {
+            itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
+                updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
                 this.shoppingItems = loadedItems;
-                adapter.setItems(shoppingItems);
+                if (adapter == null) {
+                    adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
+                    recyclerView.setAdapter(adapter);
+                } else {
+                    adapter.setItems(shoppingItems);
+                }
                 checkEmptyViewItems(shoppingItems.isEmpty());
             });
         } else {
-            shoppingListRepository.getItemsForListId(currentShoppingListId, loadedItems -> {
+            shoppingListRepository.getItemsForListId(currentShoppingListId, (loadedItems, hasPendingWrites) -> {
                 this.shoppingItems = loadedItems;
-                adapter.setItems(shoppingItems);
+                if (adapter == null) {
+                    adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, null);
+                    recyclerView.setAdapter(adapter);
+                } else {
+                    adapter.setItems(shoppingItems);
+                }
                 checkEmptyViewItems(shoppingItems.isEmpty());
             });
         }
     }
 
-    private void checkEmptyViewItems(boolean isEmpty) {
-        if (emptyView != null) {
-            emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-            recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
-        }
-    }
+    private void checkEmptyViewItems(boolean isEmpty) { if (emptyView != null) { emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE); recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE); } }
 
     @Override
-    public boolean onSupportNavigateUp() {
-        getOnBackPressedDispatcher().onBackPressed();
-        return true;
-    }
+    public boolean onSupportNavigateUp() { getOnBackPressedDispatcher().onBackPressed(); return true; }
 
     @Override
     public void onItemCheckboxChanged(ShoppingItem item, boolean isChecked) {
         if (firebaseListId != null) {
-            shoppingListRepository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked);
-            shoppingListRepository.updateListTimestamp(firebaseListId);
-        } else {
-            shoppingListRepository.toggleItemChecked(item.getId(), isChecked);
-        }
+            updateSyncIcon(R.drawable.ic_cloud_upload_24);
+            shoppingListRepository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
+            shoppingListRepository.updateListTimestamp(firebaseListId, null);
+        } else shoppingListRepository.toggleItemChecked(item.getId(), isChecked);
         refreshItemList();
     }
 
     @Override
-    public void onDataSetChanged() {
-        if (adapter != null) {
-            checkEmptyViewItems(adapter.getCurrentItems().isEmpty());
+    public void onDataSetChanged() { if (adapter != null) checkEmptyViewItems(adapter.getCurrentItems().isEmpty()); }
+
+    @Override
+    public void requestItemResort() { refreshItemList(); }
+
+    @Override
+    public View getCoordinatorLayout() { return activityRootView; }
+
+    private final Runnable hideUndoBarRunnable = () -> {
+        View undoBar = findViewById(R.id.undo_bar);
+        if (undoBar != null && undoBar.getVisibility() == View.VISIBLE) {
+            float shift = undoBar.getHeight() > 0 ? undoBar.getHeight() : 200f;
+            undoBar.animate()
+                .alpha(0f)
+                .translationY(shift)
+                .setDuration(300)
+                .withEndAction(() -> {
+                    undoBar.setVisibility(View.GONE);
+                    undoBar.setTranslationY(0f);
+                })
+                .start();
         }
-    }
+    };
 
     @Override
-    public void requestItemResort() {
-        refreshItemList();
+    public void showUndoBar(String message, Runnable undoAction) {
+        View undoBar = findViewById(R.id.undo_bar);
+        if (undoBar == null) return;
+
+        TextView undoText = undoBar.findViewById(R.id.undo_text);
+        View undoButton = undoBar.findViewById(R.id.undo_button);
+        
+        undoText.setText(message);
+        undoButton.setOnClickListener(v -> {
+            undoAction.run();
+            undoBarHandler.removeCallbacks(hideUndoBarRunnable);
+            hideUndoBarRunnable.run();
+        });
+
+        undoBarHandler.removeCallbacks(hideUndoBarRunnable);
+        
+        if (undoBar.getVisibility() != View.VISIBLE) {
+            undoBar.setAlpha(0f);
+            undoBar.setVisibility(View.VISIBLE);
+            undoBar.post(() -> {
+                int height = undoBar.getHeight();
+                float shift = height > 0 ? height : 200f;
+                undoBar.setTranslationY(shift);
+                undoBar.animate().alpha(1f).translationY(0f).setDuration(300).start();
+            });
+        }
+        
+        undoBarHandler.postDelayed(hideUndoBarRunnable, 5000);
     }
 
-    @Override
-    public View getCoordinatorLayout() {
-        return activityRootView;
-    }
-
-    @Override
-    public View getSnackbarAnchorView() {
-        return findViewById(R.id.add_item_bar_container);
+    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title); TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        com.google.android.material.button.MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive); com.google.android.material.button.MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+        textTitle.setText(title); textMessage.setText(message); btnPositive.setText(positiveButtonText);
+        btnPositive.setOnClickListener(v -> { if (onPositiveAction != null) onPositiveAction.run(); dialog.dismiss(); });
+        btnNegative.setOnClickListener(v -> { if (onNegativeAction != null) onNegativeAction.run(); dialog.dismiss(); });
+        dialog.show();
     }
 }

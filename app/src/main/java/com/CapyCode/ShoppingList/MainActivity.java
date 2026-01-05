@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_THEME = "prefs_theme";
+    private static final String KEY_LANGUAGE = "prefs_language";
 
     private RecyclerView recyclerView;
     private ListRecyclerViewAdapter adapter;
@@ -81,6 +82,17 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 }
             });
 
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        SharedPreferences prefs = newBase.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String lang = prefs.getString(KEY_LANGUAGE, "en");
+        
+        java.util.Locale locale = new java.util.Locale(lang);
+        java.util.Locale.setDefault(locale);
+        android.content.res.Configuration config = newBase.getResources().getConfiguration();
+        config.setLocale(locale);
+        super.attachBaseContext(newBase.createConfigurationContext(config));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                             // If sign in fails, display a message to the user.
                             Log.w("Auth", "signInAnonymously:failure", task.getException());
                             String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                            Toast.makeText(MainActivity.this, "Authentication failed: " + errorMsg,
+                            UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_auth_failed, errorMsg),
                                     Toast.LENGTH_LONG).show();
                         }
                     });
@@ -151,8 +163,10 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         shoppingLists = new ArrayList<>();
 
         addListInputLayout = findViewById(R.id.add_list_input_layout);
-        editTextNewListName = findViewById(R.id.edit_text_new_list_name);
-        buttonConfirmAddList = findViewById(R.id.button_confirm_add_list);
+        // editTextNewListName = findViewById(R.id.edit_text_new_list_name); // Unused
+        // buttonConfirmAddList = findViewById(R.id.button_confirm_add_list); // Unused
+        if(addListInputLayout != null) addListInputLayout.setVisibility(View.GONE); // Hide it permanently if it exists in layout
+
         emptyView = findViewById(R.id.empty_view_main);
 
         recyclerView = findViewById(R.id.list_recycler_view);
@@ -173,13 +187,9 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (addListInputLayout.getVisibility() == View.VISIBLE) {
-                    toggleAddListInput(false); // Assume local if closed without saving
-                } else {
-                    if (isEnabled()) {
-                        setEnabled(false);
-                        getOnBackPressedDispatcher().onBackPressed();
-                    }
+                if (isEnabled()) {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
                 }
             }
         });
@@ -192,74 +202,111 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         View cardPrivate = dialogView.findViewById(R.id.card_private_list);
         View cardShared = dialogView.findViewById(R.id.card_shared_list);
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         cardPrivate.setOnClickListener(v -> {
-            toggleAddListInput(false);
             dialog.dismiss();
+            showNameInputDialog(false);
         });
 
         cardShared.setOnClickListener(v -> {
-            toggleAddListInput(true);
             dialog.dismiss();
+            showNameInputDialog(true);
+        });
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        dialog.show();
+    }
+
+    private void showNameInputDialog(boolean isShared) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_input_name, null);
+        builder.setView(view);
+        AlertDialog dialog = builder.create();
+        
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        View btnClose = view.findViewById(R.id.button_dialog_close);
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        View includeInput = view.findViewById(R.id.include_input);
+        EditText input = includeInput.findViewById(R.id.username_edit_text);
+        input.setHint(R.string.enter_list_name);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        
+        Button btnSave = includeInput.findViewById(R.id.username_action_button);
+        btnSave.setText(R.string.button_save);
+
+        btnSave.setOnClickListener(v -> {
+            String name = input.getText().toString().trim();
+            if (name.isEmpty()) {
+                UiUtils.makeCustomToast(MainActivity.this, R.string.invalid_list_name, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            createList(name, isShared);
+            dialog.dismiss();
+        });
+        
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                btnSave.performClick();
+                return true;
+            }
+            return false;
+        });
+
+        dialog.setOnShowListener(d -> {
+            input.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
         });
 
         dialog.show();
     }
 
-    private void toggleAddListInput(boolean isShared) {
-        if (addListInputLayout.getVisibility() == View.GONE) {
-            addListInputLayout.setVisibility(View.VISIBLE);
-            fab.hide();
-            editTextNewListName.requestFocus();
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(editTextNewListName, InputMethodManager.SHOW_IMPLICIT);
-            buttonConfirmAddList.setOnClickListener(v -> addNewList(isShared));
-            editTextNewListName.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    addNewList(isShared);
-                    return true;
-                }
-                return false;
-            });
-        } else {
-            addListInputLayout.setVisibility(View.GONE);
-            fab.show();
-            editTextNewListName.setText("");
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
-        }
-    }
-
-    private void addNewList(boolean isShared) {
-        String listName = editTextNewListName.getText().toString().trim();
-        if (listName.isEmpty()) {
-            Toast.makeText(MainActivity.this, R.string.invalid_list_name, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+    private void createList(String listName, boolean isShared) {
         if (isShared) {
             createSharedListInFirestore(listName);
         } else {
-            int nextPosition = shoppingLists.size();
-            long newId = shoppingListManager.addShoppingList(listName, nextPosition);
+            int nextPosition = shoppingListRepository.getNextPosition();
+            long newId = shoppingListManager.addShoppingList(listName, nextPosition, false);
             if (newId != -1) {
-                loadShoppingLists();
-                Toast.makeText(MainActivity.this, getString(R.string.local_list_created, listName), Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, getString(R.string.local_list_created, listName), Toast.LENGTH_SHORT).show();
+                syncPrivateListIfEnabled();
             } else {
-                Toast.makeText(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(MainActivity.this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
             }
         }
-        // Hide keyboard and input field
-        addListInputLayout.setVisibility(View.GONE);
-        fab.show();
-        editTextNewListName.setText("");
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(editTextNewListName.getWindowToken(), 0);
+    }
+
+    private void syncPrivateListIfEnabled() {
+        android.content.SharedPreferences settings = getSharedPreferences(ShoppingListManager.SETTINGS_PREFS, MODE_PRIVATE);
+        boolean syncDefault = settings.getBoolean(ShoppingListManager.KEY_SYNC_PRIVATE_DEFAULT, true);
+        FirebaseUser user = mAuth.getCurrentUser();
+        boolean hasAccount = false;
+        if (user != null && !user.isAnonymous()) hasAccount = true;
+        if (user != null && user.isAnonymous()) {
+            for (com.google.firebase.auth.UserInfo info : user.getProviderData()) {
+                if (!info.getProviderId().equals("firebase")) { hasAccount = true; break; }
+            }
+        }
+
+        if (syncDefault && hasAccount) {
+            UiUtils.makeCustomToast(MainActivity.this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
+            shoppingListRepository.migrateLocalListsToCloud(this::loadShoppingLists);
+        } else {
+            loadShoppingLists();
+        }
     }
 
     private void ensureAuthenticated(Runnable onSuccess) {
@@ -273,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 } else {
                     Log.w("Auth", "signInAnonymously:failure (retry)", task.getException());
                     String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                    Toast.makeText(MainActivity.this, "Authentication failed: " + errorMsg, Toast.LENGTH_LONG).show();
+                    UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_auth_failed, errorMsg), Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -306,25 +353,26 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                         Map<String, Object> shoppingList = new HashMap<>();
                         shoppingList.put("name", listName);
                         shoppingList.put("ownerId", userId);
-                        shoppingList.put("members", Arrays.asList(userId));
+                        shoppingList.put("isShared", true);
+                        shoppingList.put("members", new ArrayList<>(Arrays.asList(userId)));
 
                         db.collection("shopping_lists")
                                 .add(shoppingList)
                                 .addOnSuccessListener(documentReference -> {
                                     Log.d("Firestore", "DocumentSnapshot added with ID: " + documentReference.getId());
-                                    Toast.makeText(MainActivity.this, getString(R.string.shared_list_created, listName), Toast.LENGTH_SHORT).show();
+                                    UiUtils.makeCustomToast(MainActivity.this, getString(R.string.shared_list_created, listName), Toast.LENGTH_SHORT).show();
                                     loadShoppingLists(); // Reload lists to show the new shared list
                                 })
                                 .addOnFailureListener(e -> {
                                     Log.w("Firestore", "Error adding document", e);
-                                    Toast.makeText(MainActivity.this, R.string.error_create_shared_list, Toast.LENGTH_SHORT).show();
+                                    UiUtils.makeCustomToast(MainActivity.this, R.string.error_create_shared_list, Toast.LENGTH_SHORT).show();
                                 });
                     }
                 }
 
                 @Override
                 public void onError(String error) {
-                    Toast.makeText(MainActivity.this, "Fehler beim Profil-Check: " + error, Toast.LENGTH_SHORT).show();
+                    UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_profile_check, error), Toast.LENGTH_SHORT).show();
                     pendingListName = null;
                 }
             });
@@ -338,7 +386,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         TextView textTitle = dialogView.findViewById(R.id.dialog_title);
@@ -385,7 +433,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                 }
             } catch (java.io.IOException e) {
                 e.printStackTrace();
-                Toast.makeText(this, "Error reading file.", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, R.string.error_reading_file, Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -407,7 +455,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
             org.json.JSONObject jsonList = new org.json.JSONObject(jsonString);
 
             if (!"com.CapyCode.ShoppingList".equals(jsonList.optString("app_id"))) {
-                Toast.makeText(this, "Incompatible file.", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, R.string.incompatible_file, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -430,35 +478,19 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
                     ShoppingItem newItem = new ShoppingItem(itemName, quantity, unit, isDone, listId, notes, position);
                     shoppingListManager.addItemToShoppingList(listId, newItem);
                 }
-                loadShoppingLists();
-                Toast.makeText(this, getString(R.string.list_imported, listName), Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, getString(R.string.list_imported, listName), Toast.LENGTH_SHORT).show();
+                syncPrivateListIfEnabled();
             } else {
-                Toast.makeText(this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(this, R.string.error_adding_list, Toast.LENGTH_SHORT).show();
             }
         } catch (org.json.JSONException e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error parsing shared data.", Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(this, R.string.error_parsing_shared, Toast.LENGTH_SHORT).show();
         }
     }
 
     private void setupCloseEditorOnTouchOutside() {
-        emptyView.setOnClickListener(v -> {
-            if (addListInputLayout.getVisibility() == View.VISIBLE) {
-                toggleAddListInput(false); // Assume local if closed without saving
-            }
-        });
-
-        recyclerView.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {
-            @Override
-            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
-                // Diese Bedingung stellt sicher, dass der Klick nicht auf den Editor selbst erfolgt
-                if (addListInputLayout.getVisibility() == View.VISIBLE && e.getY() > addListInputLayout.getBottom()) {
-                    toggleAddListInput(false); // Assume local if closed without saving
-                    return true;
-                }
-                return false;
-            }
-        });
+        // No inline editor anymore
     }
 
 
@@ -475,8 +507,27 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         } else {
             themeItem.setIcon(R.drawable.ic_moon_outlined);
         }
+
+        MenuItem languageItem = menu.findItem(R.id.action_switch_language);
+        if (languageItem != null) {
+            View actionView = languageItem.getActionView();
+            if (actionView != null) {
+                TextView langText = actionView.findViewById(R.id.text_language_code);
+                String currentLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+                langText.setText(currentLang.toUpperCase());
+                actionView.setOnClickListener(v -> switchLanguage());
+            }
+        }
         
         return true;
+    }
+
+    private void switchLanguage() {
+        String currentLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+        String newLang = currentLang.equals("en") ? "de" : "en";
+        
+        sharedPreferences.edit().putString(KEY_LANGUAGE, newLang).apply();
+        recreate();
     }
 
     @Override
@@ -503,6 +554,14 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
     @Override
     protected void onResume() {
         super.onResume();
+        
+        String savedLang = sharedPreferences.getString(KEY_LANGUAGE, "en");
+        String currentLang = getResources().getConfiguration().getLocales().get(0).getLanguage();
+        if (!savedLang.equals(currentLang)) {
+            recreate();
+            return;
+        }
+
         if (addListInputLayout.getVisibility() == View.VISIBLE) {
             addListInputLayout.setVisibility(View.GONE);
             fab.show();
@@ -551,13 +610,13 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         shoppingListRepository.acceptInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(MainActivity.this, "Einladung angenommen", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(MainActivity.this, R.string.toast_invitation_accepted, Toast.LENGTH_SHORT).show();
                 loadShoppingLists();
             }
 
             @Override
             public void onError(String message) {
-                Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+                UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -568,13 +627,13 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         shoppingListRepository.declineInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
-                Toast.makeText(MainActivity.this, "Einladung abgelehnt", Toast.LENGTH_SHORT).show();
+                UiUtils.makeCustomToast(MainActivity.this, R.string.toast_invitation_declined, Toast.LENGTH_SHORT).show();
                 loadShoppingLists();
             }
 
             @Override
             public void onError(String message) {
-                Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+                UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -584,21 +643,21 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         if (list.getFirebaseId() == null) return;
 
         showCustomDialog(
-                "Liste verlassen?",
-                "Möchtest du die Liste \"" + list.getName() + "\" wirklich verlassen?",
-                "Verlassen",
-                "Abbrechen",
+                getString(R.string.dialog_leave_list_title),
+                getString(R.string.dialog_leave_list_message, list.getName()),
+                getString(R.string.button_leave_confirm),
+                getString(R.string.button_cancel),
                 () -> {
                     shoppingListRepository.leaveList(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
                         @Override
                         public void onSuccess() {
-                            Toast.makeText(MainActivity.this, "Liste verlassen", Toast.LENGTH_SHORT).show();
+                            UiUtils.makeCustomToast(MainActivity.this, R.string.toast_list_left, Toast.LENGTH_SHORT).show();
                             loadShoppingLists();
                         }
 
                         @Override
                         public void onError(String message) {
-                            Toast.makeText(MainActivity.this, "Fehler: " + message, Toast.LENGTH_LONG).show();
+                            UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_generic_message, message), Toast.LENGTH_LONG).show();
                         }
                     });
                 },
@@ -614,7 +673,7 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
         final AlertDialog dialog = builder.create();
 
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
         TextView dialogTitle = dialogView.findViewById(R.id.dialogTitle);
@@ -629,12 +688,22 @@ public class MainActivity extends AppCompatActivity implements ListRecyclerViewA
 
         positiveButton.setOnClickListener(v -> {
             shoppingListManager.deleteShoppingList(listToDelete);
-            Toast.makeText(MainActivity.this, "Liste \"" + listToDelete.getName() + "\" gelöscht", Toast.LENGTH_SHORT).show();
+            UiUtils.makeCustomToast(MainActivity.this, getString(R.string.toast_list_deleted_named, listToDelete.getName()), Toast.LENGTH_SHORT).show();
             loadShoppingLists();
             dialog.dismiss();
         });
 
         negativeButton.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
+    }
+
+    @Override
+    public void onEditStarted() {
+        if (fab != null) fab.hide();
+    }
+
+    @Override
+    public void onEditFinished() {
+        if (fab != null) fab.show();
     }
 }

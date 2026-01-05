@@ -43,6 +43,11 @@
             android:exported="false"
             android:parentActivityName=".MainActivity"
             android:label="Profil"/>
+        <activity
+            android:name=".AuthActivity"
+            android:exported="false"
+            android:parentActivityName=".ProfileActivity"
+            android:label="@string/account_info"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"
