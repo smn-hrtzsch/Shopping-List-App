@@ -10,6 +10,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -525,6 +526,10 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             public void afterTextChanged(Editable s) {}
         });
         View.OnClickListener addItemAction = v -> {
+            if (adapter != null && adapter.isEditing()) {
+                UiUtils.makeCustomToast(this, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
+                return;
+            }
             String name = editTextAddItem.getText().toString().trim();
             if (!name.isEmpty()) {
                 int nextPosition = 0;
@@ -536,9 +541,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                     updateSyncIcon(R.drawable.ic_cloud_upload_24);
                     if (adapter != null) {
                         int pos = adapter.addItem(newItem);
-                        recyclerView.postDelayed(() -> {
-                            if (recyclerView != null) recyclerView.smoothScrollToPosition(pos);
-                        }, 100);
+                        // Immediate smooth scroll to the new item
+                        recyclerView.post(() -> recyclerView.smoothScrollToPosition(pos));
                     }
                     shoppingListRepository.addItemToShoppingList(firebaseListId, newItem, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
                     shoppingListRepository.updateListTimestamp(firebaseListId, null);
@@ -548,9 +552,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                         newItem.setId(newId); 
                         if (adapter != null) {
                             int pos = adapter.addItem(newItem);
-                            recyclerView.postDelayed(() -> {
-                                if (recyclerView != null) recyclerView.smoothScrollToPosition(pos);
-                            }, 100);
+                            recyclerView.post(() -> recyclerView.smoothScrollToPosition(pos));
                         }
                     }
                     else UiUtils.makeCustomToast(this, R.string.error_adding_item, Toast.LENGTH_SHORT).show();
@@ -676,6 +678,8 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
                 .withEndAction(() -> {
                     undoBar.setVisibility(View.GONE);
                     undoBar.setTranslationY(0f);
+                    // Reset recycler view margin
+                    updateRecyclerViewMargin(0);
                 })
                 .start();
         }
@@ -702,13 +706,22 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
             undoBar.setAlpha(0f);
             undoBar.setVisibility(View.VISIBLE);
             undoBar.post(() -> {
-                float shift = undoBar.getHeight() > 0 ? undoBar.getHeight() : 200f;
+                int height = undoBar.getHeight();
+                float shift = height > 0 ? height : 200f;
                 undoBar.setTranslationY(shift);
                 undoBar.animate().alpha(1f).translationY(0f).setDuration(300).start();
+                updateRecyclerViewMargin(height > 0 ? height + 16 : 200); // Add a bit extra padding
             });
         }
         
         undoBarHandler.postDelayed(hideUndoBarRunnable, 5000);
+    }
+
+    private void updateRecyclerViewMargin(int bottomMargin) {
+        if (recyclerView == null) return;
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) recyclerView.getLayoutParams();
+        params.bottomMargin = bottomMargin;
+        recyclerView.setLayoutParams(params);
     }
 
     private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {

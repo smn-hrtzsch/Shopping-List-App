@@ -273,6 +273,17 @@ public class ShoppingListRepository {
             });
     }
 
+    public void restoreItemToShoppingList(String firebaseListId, ShoppingItem item, OnActionListener listener) {
+        if (item.getFirebaseId() != null) {
+            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item)
+                .addOnCompleteListener(task -> {
+                    if (listener != null) listener.onActionComplete();
+                });
+        } else {
+            addItemToShoppingList(firebaseListId, item, listener);
+        }
+    }
+
     public void updateItemInList(ShoppingItem item, String firebaseListId, OnActionListener listener) {
         if (firebaseListId != null && item.getFirebaseId() != null) {
             db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item)

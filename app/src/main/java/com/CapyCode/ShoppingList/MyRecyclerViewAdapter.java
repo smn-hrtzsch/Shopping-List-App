@@ -69,6 +69,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         }
     }
 
+    public boolean isEditing() {
+        return editingItemPosition != -1;
+    }
+
     @NonNull
     @Override
     public ItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -215,13 +219,8 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int reInsertPos = Math.min(deletedPosition, items.size());
                 
                 if (firebaseListId != null) {
-                    updateSyncIconInActivity(true);
-                    // For cloud lists, we re-add it. 
-                    // Note: We don't have the old firebaseId here anymore, Firestore generates a new one
-                    // but our DiffUtil will match by name if needed.
-                    repository.addItemToShoppingList(firebaseListId, itemToDelete, () -> {
-                        updateSyncIconInActivity(false);
-                    });
+                    // Use restore to keep ID if possible
+                    repository.restoreItemToShoppingList(firebaseListId, itemToDelete, null);
                     repository.updateListTimestamp(firebaseListId, null);
                 } else {
                     long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
@@ -231,18 +230,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 items.add(reInsertPos, itemToDelete);
                 notifyItemInserted(reInsertPos);
                 
-                if (reInsertPos == 0 || reInsertPos >= items.size() - 2) {
-                     // Ensure visibility if at boundaries
-                }
-            });
-        }
-    }
-
-    private void updateSyncIconInActivity(boolean uploading) {
-        if (context instanceof EinkaufslisteActivity) {
-            ((EinkaufslisteActivity) context).runOnUiThread(() -> {
-                // This is a bit hacky but we need to trigger the icon update
-                // repository actions are async.
+                // Do NOT call requestItemResort here, as it conflicts with notifyItemInserted
             });
         }
     }
