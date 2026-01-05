@@ -15,13 +15,15 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:alpha="0.6">
-        <include layout="@layout/skeleton_list_row" />
-        <include layout="@layout/skeleton_list_row" />
-        <include layout="@layout/skeleton_list_row" />
-        <include layout="@layout/skeleton_list_row" />
-        <include layout="@layout/skeleton_list_row" />
-        <include layout="@layout/skeleton_list_row" />
-        <include layout="@layout/skeleton_list_row" />
+        
+        <LinearLayout
+            android:id="@+id/skeleton_content_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <!-- Will be populated programmatically -->
+        </LinearLayout>
+        
     </LinearLayout>
 
     <!-- Loading Indicator Overlay -->
