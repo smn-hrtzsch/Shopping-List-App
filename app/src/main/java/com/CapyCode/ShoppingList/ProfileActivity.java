@@ -82,7 +82,10 @@ public class ProfileActivity extends BaseActivity {
     private final ActivityResultLauncher<Intent> authActivityLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK) {
+                    showLoading(getString(R.string.loading_profile), true, true);
                     loadCurrentProfile();
+                } else {
+                    hideLoading();
                 }
             });
 
@@ -170,7 +173,7 @@ public class ProfileActivity extends BaseActivity {
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
         containerContent = findViewById(R.id.container_content);
-        initLoadingOverlay(findViewById(R.id.profile_content_container));
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile);
         showSkeleton(false);
 
         loadCurrentProfile();
@@ -192,6 +195,7 @@ public class ProfileActivity extends BaseActivity {
 
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
         buttonRegisterEmail.setOnClickListener(v -> {
+            showLoading(getString(R.string.loading), true, true);
             Intent intent = new Intent(this, AuthActivity.class);
             authActivityLauncher.launch(intent);
         });
@@ -512,7 +516,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void loadCurrentProfile() {
-        showLoading(getString(R.string.loading_profile), false, true);
+        showLoading(getString(R.string.loading_profile), true, true);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
             userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
@@ -681,6 +685,7 @@ public class ProfileActivity extends BaseActivity {
             int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
             buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
             buttonRegisterEmail.setOnClickListener(v -> {
+                showLoading(getString(R.string.loading), true, true);
                 Intent intent = new Intent(this, AuthActivity.class);
                 authActivityLauncher.launch(intent);
             });
@@ -771,7 +776,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSafeSignOut() {
-        showLoading();
+        showLoading(getString(R.string.loading), true, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.migrateLocalListsToCloud(() -> {

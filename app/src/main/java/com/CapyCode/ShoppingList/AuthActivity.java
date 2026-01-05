@@ -63,7 +63,7 @@ public class AuthActivity extends BaseActivity {
         mAuth = FirebaseAuth.getInstance();
         userRepository = new UserRepository(this);
 
-        initLoadingOverlay(findViewById(R.id.auth_content_container));
+        initLoadingOverlay(findViewById(R.id.auth_content_container), R.layout.skeleton_profile);
         showSkeleton(false);
 
         editTextEmail = findViewById(R.id.edit_text_email);
@@ -396,7 +396,7 @@ public class AuthActivity extends BaseActivity {
 
     private void showLoading(boolean show, int messageResId) {
         if (show) {
-            super.showLoading(getString(messageResId), false);
+            super.showLoading(getString(messageResId), true);
         } else {
             super.hideLoading();
         }

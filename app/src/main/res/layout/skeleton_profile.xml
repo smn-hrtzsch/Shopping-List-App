@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- skeleton_profile.xml -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="?attr/colorSurface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Profile Image Skeleton -->
+        <View
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Username Text Skeleton -->
+        <View
+            android:layout_width="180dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Label Skeleton -->
+        <View
+            android:layout_width="100dp"
+            android:layout_height="14dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Sync Card Skeleton -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginTop="24dp"/>
+
+        <!-- Linked Methods Card Skeleton -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:minHeight="24dp"/>
+
+        <!-- Button 1 Skeleton -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginBottom="4dp"/>
+            
+        <!-- Button 2 Skeleton -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginBottom="4dp"/>
+
+    </LinearLayout>
+</ScrollView>

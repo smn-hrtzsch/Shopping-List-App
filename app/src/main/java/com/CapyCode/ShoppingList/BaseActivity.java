@@ -29,10 +29,23 @@ public abstract class BaseActivity extends AppCompatActivity {
     private static final int LOADING_DELAY_MS = 250;
 
     protected void initLoadingOverlay(ViewGroup container) {
+        initLoadingOverlay(container, R.layout.skeleton_list_row);
+    }
+
+    protected void initLoadingOverlay(ViewGroup container, int skeletonLayoutResId) {
         if (loadingOverlay != null) {
             container.removeView(loadingOverlay);
         }
         loadingOverlay = getLayoutInflater().inflate(R.layout.layout_loading_overlay, container, false);
+        
+        ViewGroup skeletonContainer = loadingOverlay.findViewById(R.id.skeleton_content_container);
+        if (skeletonContainer != null) {
+            skeletonContainer.removeAllViews();
+            for (int i = 0; i < 6; i++) {
+                getLayoutInflater().inflate(skeletonLayoutResId, skeletonContainer, true);
+            }
+        }
+
         loadingOverlay.setVisibility(View.GONE);
         loadingOverlay.setAlpha(0f);
         container.addView(loadingOverlay);

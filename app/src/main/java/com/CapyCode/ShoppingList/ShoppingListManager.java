@@ -20,7 +20,7 @@ public class ShoppingListManager {
     public static final String KEY_SYNC_PRIVATE_DEFAULT = "sync_private_default";
 
     public interface OnListsLoadedListener {
-        void onListsLoaded(List<ShoppingList> shoppingLists);
+        void onListsLoaded(List<ShoppingList> shoppingLists, boolean fromServer);
     }
 
     public ShoppingListManager(Context context) {

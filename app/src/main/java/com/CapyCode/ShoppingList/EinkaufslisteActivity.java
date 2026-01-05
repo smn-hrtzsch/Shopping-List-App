@@ -71,7 +71,7 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_einkaufsliste);
 
-        initLoadingOverlay(findViewById(R.id.einkaufsliste_content_container));
+        initLoadingOverlay(findViewById(R.id.einkaufsliste_content_container), R.layout.skeleton_item_row);
         showSkeleton(true);
 
         mAuth = FirebaseAuth.getInstance();

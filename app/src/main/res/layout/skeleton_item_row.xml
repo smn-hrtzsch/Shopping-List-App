@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- skeleton_item_row.xml -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- Checkbox Skeleton -->
+    <View
+        android:id="@+id/skeleton_checkbox"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:background="@drawable/bg_dialog_rounded"
+        android:backgroundTint="?attr/colorOnSurfaceSecondary"
+        android:alpha="0.15"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Text Content Skeleton -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toEndOf="@+id/skeleton_checkbox"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/skeleton_actions">
+
+        <!-- Item Name -->
+        <View
+            android:layout_width="120dp"
+            android:layout_height="16dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"
+            android:layout_marginBottom="4dp"/>
+
+        <!-- Quantity/Unit -->
+        <View
+            android:layout_width="60dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15" />
+    </LinearLayout>
+
+    <!-- Actions Skeleton -->
+    <LinearLayout
+        android:id="@+id/skeleton_actions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Edit Icon -->
+        <View
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"/>
+
+        <!-- Delete Icon -->
+        <View
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorOnSurfaceSecondary"
+            android:alpha="0.15"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
