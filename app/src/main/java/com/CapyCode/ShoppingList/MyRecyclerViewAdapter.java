@@ -158,12 +158,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         
         repository.updateItemPositions(items);
         
-        // If it's a cloud list, update positions on server
+        // If it's a cloud list, update positions on server using a batch
         if (firebaseListId != null) {
-            for (ShoppingItem item : items) {
-                repository.updateItemInList(item, firebaseListId, null);
-            }
-            repository.updateListTimestamp(firebaseListId, null);
+            repository.updateItemPositionsInCloud(firebaseListId, items, () -> {
+                repository.updateListTimestamp(firebaseListId, null);
+            });
         }
     }
 

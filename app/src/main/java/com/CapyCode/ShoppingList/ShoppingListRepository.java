@@ -289,6 +289,28 @@ public class ShoppingListRepository {
         dbHelper.updateItemPositionsBatch(items);
     }
 
+    public void updateItemPositionsInCloud(String firebaseListId, List<ShoppingItem> items, OnActionListener listener) {
+        if (firebaseListId == null || items == null || items.isEmpty()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
+
+        com.google.firebase.firestore.WriteBatch batch = db.batch();
+        com.google.firebase.firestore.CollectionReference itemsRef = db.collection("shopping_lists").document(firebaseListId).collection("items");
+
+        for (ShoppingItem item : items) {
+            if (item.getFirebaseId() != null) {
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("position", item.getPosition());
+                batch.update(itemsRef.document(item.getFirebaseId()), updates);
+            }
+        }
+
+        batch.commit().addOnCompleteListener(task -> {
+            if (listener != null) listener.onActionComplete();
+        });
+    }
+
     public void updateShoppingList(ShoppingList list) {
         if (list.getFirebaseId() != null) {
             db.collection("shopping_lists").document(list.getFirebaseId()).update("name", list.getName());
