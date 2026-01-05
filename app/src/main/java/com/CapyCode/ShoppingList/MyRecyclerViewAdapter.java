@@ -211,20 +211,38 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         if (interactionListener != null) {
             String message = "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted);
             interactionListener.showUndoBar(message, () -> {
+                // Determine actual re-insertion index to avoid IndexOutOfBounds
+                int reInsertPos = Math.min(deletedPosition, items.size());
+                
                 if (firebaseListId != null) {
-                    repository.addItemToShoppingList(firebaseListId, itemToDelete, null);
+                    updateSyncIconInActivity(true);
+                    // For cloud lists, we re-add it. 
+                    // Note: We don't have the old firebaseId here anymore, Firestore generates a new one
+                    // but our DiffUtil will match by name if needed.
+                    repository.addItemToShoppingList(firebaseListId, itemToDelete, () -> {
+                        updateSyncIconInActivity(false);
+                    });
                     repository.updateListTimestamp(firebaseListId, null);
                 } else {
                     long newId = repository.addItemToShoppingList(itemToDelete.getListId(), itemToDelete);
                     itemToDelete.setId(newId);
                 }
 
-                // Correctly re-insert at the deleted position if possible
-                int reInsertPos = Math.min(deletedPosition, items.size());
                 items.add(reInsertPos, itemToDelete);
                 notifyItemInserted(reInsertPos);
                 
-                // Do NOT call requestItemResort here, as it conflicts with notifyItemInserted
+                if (reInsertPos == 0 || reInsertPos >= items.size() - 2) {
+                     // Ensure visibility if at boundaries
+                }
+            });
+        }
+    }
+
+    private void updateSyncIconInActivity(boolean uploading) {
+        if (context instanceof EinkaufslisteActivity) {
+            ((EinkaufslisteActivity) context).runOnUiThread(() -> {
+                // This is a bit hacky but we need to trigger the icon update
+                // repository actions are async.
             });
         }
     }

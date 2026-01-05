@@ -60,6 +60,7 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
     private com.google.firebase.firestore.ListenerRegistration listSnapshotListener;
     private com.google.firebase.firestore.ListenerRegistration itemsSnapshotListener;
     private final android.os.Handler syncIconHandler = new android.os.Handler();
+    private final android.os.Handler undoBarHandler = new android.os.Handler();
     private FirebaseAuth mAuth;
     private boolean isUnsyncing = false;
 
@@ -666,8 +667,17 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
 
     private final Runnable hideUndoBarRunnable = () -> {
         View undoBar = findViewById(R.id.undo_bar);
-        if (undoBar != null) {
-            undoBar.animate().alpha(0f).translationY(undoBar.getHeight()).setDuration(300).withEndAction(() -> undoBar.setVisibility(View.GONE)).start();
+        if (undoBar != null && undoBar.getVisibility() == View.VISIBLE) {
+            float shift = undoBar.getHeight() > 0 ? undoBar.getHeight() : 200f;
+            undoBar.animate()
+                .alpha(0f)
+                .translationY(shift)
+                .setDuration(300)
+                .withEndAction(() -> {
+                    undoBar.setVisibility(View.GONE);
+                    undoBar.setTranslationY(0f);
+                })
+                .start();
         }
     };
 
@@ -682,22 +692,23 @@ public class EinkaufslisteActivity extends AppCompatActivity implements MyRecycl
         undoText.setText(message);
         undoButton.setOnClickListener(v -> {
             undoAction.run();
-            syncIconHandler.removeCallbacks(hideUndoBarRunnable);
+            undoBarHandler.removeCallbacks(hideUndoBarRunnable);
             hideUndoBarRunnable.run();
         });
 
-        syncIconHandler.removeCallbacks(hideUndoBarRunnable);
+        undoBarHandler.removeCallbacks(hideUndoBarRunnable);
         
         if (undoBar.getVisibility() != View.VISIBLE) {
             undoBar.setAlpha(0f);
             undoBar.setVisibility(View.VISIBLE);
             undoBar.post(() -> {
-                undoBar.setTranslationY(undoBar.getHeight());
+                float shift = undoBar.getHeight() > 0 ? undoBar.getHeight() : 200f;
+                undoBar.setTranslationY(shift);
                 undoBar.animate().alpha(1f).translationY(0f).setDuration(300).start();
             });
         }
         
-        syncIconHandler.postDelayed(hideUndoBarRunnable, 5000);
+        undoBarHandler.postDelayed(hideUndoBarRunnable, 5000);
     }
 
     private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
