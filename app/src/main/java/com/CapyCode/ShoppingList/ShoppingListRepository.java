@@ -42,6 +42,16 @@ public class ShoppingListRepository {
         return dbHelper;
     }
 
+    public boolean hasUnsyncedLists() {
+        List<ShoppingList> lists = dbHelper.getAllShoppingLists();
+        for (ShoppingList list : lists) {
+            if (list.getFirebaseId() == null || list.getFirebaseId().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int getLocalListCount() {
         return dbHelper.getShoppingListCount();
     }

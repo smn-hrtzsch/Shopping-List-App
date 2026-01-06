@@ -1067,7 +1067,70 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void confirmSignOut() {
-        showCustomDialog(getString(R.string.button_sign_out), getString(R.string.dialog_sign_out_message_safe), getString(R.string.button_sign_out), this::performSafeSignOut);
+        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+        if (repo.hasUnsyncedLists()) {
+             showThreeOptionDialog(
+                 getString(R.string.button_sign_out),
+                 getString(R.string.dialog_sign_out_message_unsaved),
+                 getString(R.string.button_upload_and_sign_out),
+                 getString(R.string.button_delete_and_sign_out),
+                 this::performSafeSignOut, // Positive: Upload & Out
+                 this::performDestructiveSignOut // Neutral: Delete & Out
+             );
+        } else {
+             showCustomDialog(getString(R.string.button_sign_out), getString(R.string.dialog_sign_out_message_safe), getString(R.string.button_sign_out), this::performSimpleSignOut);
+        }
+    }
+
+    private void showThreeOptionDialog(String title, String message, String positiveText, String neutralText, Runnable onPositive, Runnable onNeutral) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // Use vertical layout to accommodate 3 buttons without cramped text
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_vertical_buttons, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+        MaterialButton btnNeutral = dialogView.findViewById(R.id.dialog_button_neutral);
+
+        textTitle.setText(title);
+        textMessage.setText(message);
+        btnPositive.setText(positiveText);
+        btnNeutral.setText(neutralText);
+        btnNeutral.setVisibility(View.VISIBLE);
+        // Make neutral button red/warning style?
+        btnNeutral.setTextColor(ContextCompat.getColor(this, R.color.red));
+
+        btnPositive.setOnClickListener(v -> { onPositive.run(); dialog.dismiss(); });
+        btnNeutral.setOnClickListener(v -> { onNeutral.run(); dialog.dismiss(); });
+        btnNegative.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private void performSimpleSignOut() {
+        showLoading(getString(R.string.loading), true, true);
+        isSigningOut = true;
+        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+        repo.clearLocalDatabase();
+        mAuth.signOut();
+        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+             loadCurrentProfile(); 
+        });
+    }
+
+    private void performDestructiveSignOut() {
+        showLoading(getString(R.string.loading), true, true);
+        isSigningOut = true;
+        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+        repo.clearLocalDatabase();
+        mAuth.signOut();
+        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+             UiUtils.makeCustomToast(this, R.string.toast_local_data_cleared, Toast.LENGTH_SHORT).show();
+             loadCurrentProfile();
+        });
     }
 
     private void performSafeSignOut() {
@@ -1078,6 +1141,7 @@ public class ProfileActivity extends BaseActivity {
              repo.clearLocalDatabase();
              mAuth.signOut();
              mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+                 UiUtils.makeCustomToast(this, R.string.toast_lists_uploaded, Toast.LENGTH_SHORT).show();
                  loadCurrentProfile(); 
              });
         });

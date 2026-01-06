@@ -43,6 +43,16 @@
             android:layout_marginEnd="8dp"/>
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/dialog_button_neutral"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Neutral"
+            android:textColor="@color/dialog_action_text_adaptive"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp"/>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/dialog_button_positive"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"

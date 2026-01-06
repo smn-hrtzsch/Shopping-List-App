@@ -275,4 +275,9 @@
     <string name="dialog_username_required_title">Username required</string>
     <string name="dialog_username_required_message">To enable cloud synchronization, you must set a username so others can find you.</string>
     <string name="button_set_username">Set Username</string>
+    <string name="dialog_sign_out_message_unsaved">You have local lists that are not backed up to the cloud.\n\nDo you want to upload them before signing out, or delete them from this device?</string>
+    <string name="button_upload_and_sign_out">Upload &amp; Sign Out</string>
+    <string name="button_delete_and_sign_out">Delete &amp; Sign Out</string>
+    <string name="toast_lists_uploaded">Lists uploaded</string>
+    <string name="toast_local_data_cleared">Local data cleared</string>
 </resources>
