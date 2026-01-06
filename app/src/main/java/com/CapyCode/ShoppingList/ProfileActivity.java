@@ -567,10 +567,15 @@ public class ProfileActivity extends BaseActivity {
 
     private void revertRegistration(FirebaseUser user, boolean isLinkedAccount) {
         showLoading(getString(R.string.loading), true, true);
+        Runnable onComplete = () -> {
+            hideLoading();
+            loadCurrentProfile();
+        };
+
         if (isLinkedAccount) {
-            user.unlink(EmailAuthProvider.PROVIDER_ID).addOnCompleteListener(t -> { hideLoading(); });
+            user.unlink(EmailAuthProvider.PROVIDER_ID).addOnCompleteListener(t -> onComplete.run());
         } else {
-            user.delete().addOnCompleteListener(t -> { hideLoading(); });
+            user.delete().addOnCompleteListener(t -> onComplete.run());
         }
     }
 
