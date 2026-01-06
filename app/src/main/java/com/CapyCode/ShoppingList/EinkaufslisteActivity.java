@@ -723,8 +723,11 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
             updateSyncIcon(R.drawable.ic_cloud_upload_24);
             shoppingListRepository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked, () -> updateSyncIcon(R.drawable.ic_cloud_synced_24));
             shoppingListRepository.updateListTimestamp(firebaseListId, null);
-        } else shoppingListRepository.toggleItemChecked(item.getId(), isChecked);
-        refreshItemList();
+        } else {
+            shoppingListRepository.toggleItemChecked(item.getId(), isChecked);
+        }
+        // Disabled full refresh to prevent scrolling/jumping
+        // refreshItemList(); 
     }
 
     @Override

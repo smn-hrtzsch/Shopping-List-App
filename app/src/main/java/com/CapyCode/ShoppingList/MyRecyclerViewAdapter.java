@@ -356,14 +356,112 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 }
 
                 item.setDone(isChecked);
+                
+                // Manually update styling to ensure immediate feedback without full rebind/scroll
+                // Must match logic in bind() exactly!
+                // bind() uses: 
+                // if (item.isDone()) { ... colorOnSurfaceVariant ("Error"?) ... STRIKE_THRU_TEXT_FLAG ... }
+                // else { ... colorOnSurface ("Error"?) ... ~STRIKE_THRU_TEXT_FLAG ... }
+                
+                // ERROR in bind(): 
+                // int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant, "Error"); 
+                // int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurface, "Error");
+                
+                if (isChecked) {
+                    // Match bind() logic for done
+                    int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant, "Error"); // Likely Grey
+                    textViewName.setTextColor(color);
+                    // bind() sets STRIKE_THRU_TEXT_FLAG if done?
+                    // "textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));" -> This line REMOVES it unconditionally in bind()!
+                    // Wait, look at line 320 in bind():
+                    // textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                    // It REMOVES strikethrough for ALL items at the start of bind? 
+                    // No, look at bind logic:
+                    // 308: if (item.isDone()) { ... } else { ... }
+                    // 320: textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                    // Line 320 is AFTER the if/else block!
+                    // So bind() ALWAYS removes strikethrough!
+                    // That explains why "sometimes it is strikethrough" (my manual listener logic added it) 
+                    // and "on reopen it is correct" (bind removes it).
+                    // The user said: "not only graying out but also strikethrough, that is wrong" -> Strikethrough is WRONG.
+                    
+                    // So I should NOT add strikethrough in my listener either.
+                    // And I should rely on bind() logic which seems to be: Done = Gray text, No Strikethrough.
+                    
+                    // But wait, if I want to move it to the bottom, I need to sort.
+                    // If I sort the list and notifyMoved, it moves.
+                    // User said: "Items werden nicht ans Ende verschoben" (Items are not moved to end).
+                    // So I MUST move them.
+                    
+                    // Plan:
+                    // 1. Update style (color only, NO strikethrough).
+                    // 2. Sort the `items` list locally.
+                    // 3. Notify adapter of move.
+                    
+                    textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG)); // Ensure NO strikethrough
+                    buttonEdit.setVisibility(View.GONE);
+                    buttonEdit.setEnabled(false);
+                    buttonEdit.setAlpha(0.5f);
+                } else {
+                    int color = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurface, "Error"); // Likely Black/White
+                    textViewName.setTextColor(color);
+                    textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG)); // Ensure NO strikethrough
+                    buttonEdit.setVisibility(View.VISIBLE);
+                    buttonEdit.setEnabled(true);
+                    buttonEdit.setAlpha(1.0f);
+                }
+
                 if (firebaseListId != null) {
                     repository.toggleItemChecked(firebaseListId, item.getFirebaseId(), isChecked, null);
                 } else {
                     repository.updateItemInList(item, firebaseListId, null);
                 }
+                
+                // Handle sorting locally to move item to bottom/top
+                int newPos = -1;
+                // We need to re-sort the list based on the new isDone state
+                // Copy list to sort
+                List<ShoppingItem> sortedList = new ArrayList<>(items);
+                Collections.sort(sortedList, (item1, item2) -> {
+                    if (item1.isDone() == item2.isDone()) {
+                        int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
+                        if (posComp != 0) return posComp;
+                        return Long.compare(item1.getId(), item2.getId());
+                    }
+                    return item1.isDone() ? 1 : -1;
+                });
+                
+                // Find where our item ended up
+                int newIndex = sortedList.indexOf(item);
+                
+                if (currentPos != newIndex) {
+                    // Capture current top position
+                    RecyclerView rv = (RecyclerView) itemView.getParent();
+                    androidx.recyclerview.widget.LinearLayoutManager llm = (androidx.recyclerview.widget.LinearLayoutManager) rv.getLayoutManager();
+                    int firstVisiblePos = llm.findFirstVisibleItemPosition();
+                    View firstVisibleView = llm.findViewByPosition(firstVisiblePos);
+                    int offset = (firstVisibleView != null) ? firstVisibleView.getTop() : 0;
+
+                    // Clear focus to be safe
+                    if (checkBox.hasFocus() || itemView.hasFocus()) {
+                        itemView.clearFocus();
+                        checkBox.clearFocus();
+                    }
+                    
+                    // Move data
+                    items.remove(currentPos);
+                    items.add(newIndex, item);
+                    notifyItemMoved(currentPos, newIndex);
+                    
+                    // Restore position
+                    // If we moved the item that was at the top, we want the NEW item at that index to be at the top
+                    if (firstVisiblePos != RecyclerView.NO_POSITION) {
+                        llm.scrollToPositionWithOffset(firstVisiblePos, offset);
+                    }
+                }
+
                 if (interactionListener != null) {
                     interactionListener.onItemCheckboxChanged(item, isChecked);
-                    // interactionListener.requestItemResort(); // DISABLE AUTO SCROLL ON CHECK
                 }
             });
 
