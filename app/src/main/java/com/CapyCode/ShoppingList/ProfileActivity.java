@@ -1368,7 +1368,9 @@ public class ProfileActivity extends BaseActivity {
         repo.clearLocalDatabase();
         mAuth.signOut();
         mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-             loadCurrentProfile(); 
+             if (!isFinishing() && !isDestroyed()) {
+                 loadCurrentProfile();
+             }
         });
     }
 
@@ -1380,8 +1382,10 @@ public class ProfileActivity extends BaseActivity {
         repo.clearLocalDatabase();
         mAuth.signOut();
         mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-             UiUtils.makeCustomToast(this, R.string.toast_local_data_cleared, Toast.LENGTH_SHORT).show();
-             loadCurrentProfile();
+             if (!isFinishing() && !isDestroyed()) {
+                 UiUtils.makeCustomToast(this, R.string.toast_local_data_cleared, Toast.LENGTH_SHORT).show();
+                 loadCurrentProfile();
+             }
         });
     }
 
@@ -1394,8 +1398,10 @@ public class ProfileActivity extends BaseActivity {
              repo.clearLocalDatabase();
              mAuth.signOut();
              mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-                 UiUtils.makeCustomToast(this, R.string.toast_lists_uploaded, Toast.LENGTH_SHORT).show();
-                 loadCurrentProfile(); 
+                 if (!isFinishing() && !isDestroyed()) {
+                     UiUtils.makeCustomToast(this, R.string.toast_lists_uploaded, Toast.LENGTH_SHORT).show();
+                     loadCurrentProfile();
+                 }
              });
         });
     }
@@ -1468,6 +1474,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void deleteAccount() {
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
         showLoading(getString(R.string.loading), true, true);
         buttonDelete.setEnabled(false);
         ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
@@ -1475,6 +1482,7 @@ public class ProfileActivity extends BaseActivity {
             userRepository.deleteAccount(new UserRepository.OnProfileActionListener() {
                 @Override
                 public void onSuccess() {
+                    if (isFinishing() || isDestroyed()) return;
                     hideLoading();
                     UiUtils.makeCustomToast(ProfileActivity.this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
                     // Don't navigate to MainActivity, stay here and reload state (which will create a new anonymous user)
@@ -1483,6 +1491,7 @@ public class ProfileActivity extends BaseActivity {
                 }
                 @Override
                 public void onError(String message) {
+                    if (isFinishing() || isDestroyed()) return;
                     hideLoading();
                     UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
                     buttonDelete.setEnabled(true);
