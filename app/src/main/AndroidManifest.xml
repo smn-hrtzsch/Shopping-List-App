@@ -43,7 +43,7 @@
             android:exported="false"
             android:parentActivityName=".MainActivity"
             android:label="Profil"
-            android:windowSoftInputMode="adjustPan"/>
+            android:windowSoftInputMode="adjustResize"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"

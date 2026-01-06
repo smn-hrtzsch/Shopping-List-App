@@ -197,6 +197,19 @@ public class ProfileActivity extends BaseActivity {
         };
         editTextEmailInline.addTextChangedListener(clearErrorWatcherInline);
         editTextPasswordInline.addTextChangedListener(clearErrorWatcherInline);
+        
+        View.OnFocusChangeListener scrollListener = (v, hasFocus) -> {
+            if (hasFocus) {
+                // Delay to allow keyboard to appear and layout to resize
+                v.postDelayed(() -> {
+                    if (containerContent instanceof android.widget.ScrollView) {
+                        ((android.widget.ScrollView) containerContent).fullScroll(View.FOCUS_DOWN);
+                    }
+                }, 500);
+            }
+        };
+        editTextEmailInline.setOnFocusChangeListener(scrollListener);
+        editTextPasswordInline.setOnFocusChangeListener(scrollListener);
 
         buttonLoginInline.setOnClickListener(v -> performDialogLogin(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
         buttonRegisterInline.setOnClickListener(v -> performDialogRegister(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
@@ -976,6 +989,12 @@ public class ProfileActivity extends BaseActivity {
 
             buttonSignOut.setVisibility(View.VISIBLE);
             findViewById(R.id.layout_auth_buttons).setVisibility(View.VISIBLE);
+            
+            // Reset visibility of auth buttons for linked state
+            buttonRegisterGoogle.setVisibility(View.VISIBLE);
+            buttonRegisterEmail.setVisibility(View.VISIBLE);
+            buttonDelete.setVisibility(View.VISIBLE);
+            
             boolean isGoogleLinked = googleProfile != null;
             boolean isEmailLinked = emailProfile != null;
 
@@ -1022,6 +1041,18 @@ public class ProfileActivity extends BaseActivity {
                 // Show inline Google button, hide the one in standard list
                 buttonGoogleInline.setVisibility(View.VISIBLE);
                 buttonRegisterGoogle.setVisibility(View.GONE);
+                
+                // Clear fields if they were used previously
+                if (editTextEmailInline.getText().length() > 0) editTextEmailInline.setText("");
+                if (editTextPasswordInline.getText().length() > 0) editTextPasswordInline.setText("");
+                
+                // Ensure loading state is reset
+                findViewById(R.id.auth_loading_container_inline).setVisibility(View.GONE);
+                buttonLoginInline.setEnabled(true);
+                buttonRegisterInline.setEnabled(true);
+                buttonGoogleInline.setEnabled(true);
+                editTextEmailInline.setEnabled(true);
+                editTextPasswordInline.setEnabled(true);
             } else {
                 buttonRegisterEmail.setVisibility(View.VISIBLE);
                 layoutAuthInline.setVisibility(View.GONE);
@@ -1050,6 +1081,15 @@ public class ProfileActivity extends BaseActivity {
                 buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
             }
             buttonSignOut.setVisibility(View.GONE);
+            
+            // Hide delete account button and warning if no username set (fresh anonymous user)
+            if (!shouldShowLinkText) {
+                buttonDelete.setVisibility(View.GONE);
+                textViewWarning.setVisibility(View.GONE);
+            } else {
+                buttonDelete.setVisibility(View.VISIBLE);
+                textViewWarning.setVisibility(View.VISIBLE);
+            }
         }
     }
     
@@ -1317,6 +1357,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void deleteAccount() {
+        showLoading(getString(R.string.loading), true, true);
         buttonDelete.setEnabled(false);
         ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
         repository.deleteAllUserData(() -> {
@@ -1331,8 +1372,10 @@ public class ProfileActivity extends BaseActivity {
                 }
                 @Override
                 public void onError(String message) {
+                    hideLoading();
                     UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
                     buttonDelete.setEnabled(true);
+                    containerContent.setVisibility(View.VISIBLE);
                 }
             });
         });
