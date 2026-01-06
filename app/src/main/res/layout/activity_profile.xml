@@ -161,6 +161,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="textEmailAddress"
+                                android:autofillHints="emailAddress"
                                 android:textSize="14sp"/>
                         </com.google.android.material.textfield.TextInputLayout>
 
@@ -195,6 +196,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="textPassword"
+                                android:autofillHints="password"
                                 android:textSize="14sp"/>
                         </com.google.android.material.textfield.TextInputLayout>
 
