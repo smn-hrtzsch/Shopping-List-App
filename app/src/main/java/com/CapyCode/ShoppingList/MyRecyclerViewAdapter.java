@@ -435,13 +435,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int newIndex = sortedList.indexOf(item);
                 
                 if (currentPos != newIndex) {
-                    // Capture current top position
-                    RecyclerView rv = (RecyclerView) itemView.getParent();
-                    androidx.recyclerview.widget.LinearLayoutManager llm = (androidx.recyclerview.widget.LinearLayoutManager) rv.getLayoutManager();
-                    int firstVisiblePos = llm.findFirstVisibleItemPosition();
-                    View firstVisibleView = llm.findViewByPosition(firstVisiblePos);
-                    int offset = (firstVisibleView != null) ? firstVisibleView.getTop() : 0;
-
                     // Clear focus to be safe
                     if (checkBox.hasFocus() || itemView.hasFocus()) {
                         itemView.clearFocus();
@@ -452,12 +445,6 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     items.remove(currentPos);
                     items.add(newIndex, item);
                     notifyItemMoved(currentPos, newIndex);
-                    
-                    // Restore position
-                    // If we moved the item that was at the top, we want the NEW item at that index to be at the top
-                    if (firstVisiblePos != RecyclerView.NO_POSITION) {
-                        llm.scrollToPositionWithOffset(firstVisiblePos, offset);
-                    }
                 }
 
                 if (interactionListener != null) {
