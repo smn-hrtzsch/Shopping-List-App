@@ -226,6 +226,20 @@ public class ShoppingListRepository {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
                         return Integer.compare(a.getPosition(), b.getPosition());
                     });
+                    
+                    // If we have pending writes (local changes not yet on server), we should still update the UI
+                    // BUT we must ensure that we don't overwrite our local optimistic state with "old" server state
+                    // if the listener fires for other reasons.
+                    // However, with Firestore, the listener usually fires immediately with the local "pending" state.
+                    // The issue might be that the ID mapping or some other property is causing DiffUtil to reset.
+                    // Since the user says "only for cloud synced lists", it confirms it's a listener/latency issue.
+                    
+                    // The "fix" for flickering was to ignore updates if hasPendingWrites is true?
+                    // No, usually we WANT to show pending writes (optimistic UI).
+                    // But if the "local write" has already updated the adapter via notifyItemChanged,
+                    // and THEN this listener fires with the SAME data (but from cache), it should be fine.
+                    // If it fires with OLD data for some reason, that's bad.
+                    
                     listener.onItemsLoaded(items, hasPendingWrites);
                 });
     }
@@ -272,7 +286,9 @@ public class ShoppingListRepository {
     }
 
     public void addItemToShoppingList(String firebaseListId, ShoppingItem item, OnActionListener listener) {
-        db.collection("shopping_lists").document(firebaseListId).collection("items").add(item)
+        com.google.firebase.firestore.DocumentReference ref = db.collection("shopping_lists").document(firebaseListId).collection("items").document();
+        item.setFirebaseId(ref.getId());
+        ref.set(item)
             .addOnCompleteListener(task -> {
                 if (listener != null) listener.onActionComplete();
             });
