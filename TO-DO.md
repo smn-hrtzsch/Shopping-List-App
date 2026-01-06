@@ -63,9 +63,10 @@
 ## Bugs
 
 - [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
-- [ ] Beim Abhaken von Artikeln wird manchmal der Fokus / das Scrollen zum Ende der Liste gesetzt. Aber das ist nicht gewollt. Es sollte beim Abhaken kein automatisches Scrollen geben. Nur beim Hinzufügen von Artikeln. Das Problem tritt hauptsächlich bei privaten synced Listen auf.
-- [ ] Es fehlen noch deutsche Strings für den Abmelden Dialog.
-- [ ] Beim entfernen einer Anmelde-Methode sollten die Buttons untereinander angezeigt werden, da horizontal der Text zu viel Platz einnimmt mit zwei Buttons nebeneinander. Du kannst dazu den dialog_vertical_buttons.xml verwenden.xml nutzen.
-- [ ] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
 
 ## Fixed Bugs
+
+- [x] Beim Abhaken von Artikeln wird manchmal der Fokus / das Scrollen zum Ende der Liste gesetzt. Aber das ist nicht gewollt. Es sollte beim Abhaken kein automatisches Scrollen geben. Nur beim Hinzufügen von Artikeln. Das Problem tritt hauptsächlich bei privaten synced Listen auf.
+- [x] Es fehlen noch deutsche Strings für den Abmelden Dialog.
+- [x] Beim entfernen einer Anmelde-Methode sollten die Buttons untereinander angezeigt werden, da horizontal der Text zu viel Platz einnimmt mit zwei Buttons nebeneinander. Du kannst dazu den dialog_vertical_buttons.xml verwenden.xml nutzen.
+- [x] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
