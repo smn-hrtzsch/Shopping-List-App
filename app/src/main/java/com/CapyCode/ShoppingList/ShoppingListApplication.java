@@ -13,7 +13,7 @@ public class ShoppingListApplication extends Application {
         
         android.util.Log.d("ShoppingListApp", "Application onCreate called");
 
-        // FirebaseApp.initializeApp(this); // Automatically handled by Firebase Content Provider
+        FirebaseApp.initializeApp(this); // Explicitly initialize
 
         FirebaseAppCheck firebaseAppCheck = FirebaseAppCheck.getInstance();
         
