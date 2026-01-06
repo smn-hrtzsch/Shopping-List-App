@@ -244,6 +244,25 @@ public class ProfileActivity extends BaseActivity {
             }
         });
 
+        // Add GlobalLayoutListener to detect keyboard open and scroll if auth fields are focused
+        root.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+            private int previousHeight = -1;
+
+            @Override
+            public void onGlobalLayout() {
+                int height = root.getHeight();
+                if (previousHeight != -1) {
+                    int diff = previousHeight - height;
+                    if (diff > 200) { // Height decreased significantly -> Keyboard likely opened
+                        if (editTextEmailInline.hasFocus() || editTextPasswordInline.hasFocus()) {
+                            triggerAuthScroll();
+                        }
+                    }
+                }
+                previousHeight = height;
+            }
+        });
+
         setupSyncSwitch();
     }
 
@@ -653,10 +672,18 @@ public class ProfileActivity extends BaseActivity {
         editText.setText(currentLoadedUsername != null ? currentLoadedUsername : "");
 
         btnNew.setOnClickListener(v -> {
+            if (currentLoadedUsername == null || currentLoadedUsername.isEmpty()) {
+                UiUtils.makeCustomToast(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show();
+                return;
+            }
             pickImageLauncher.launch("image/*");
             dialog.dismiss();
         });
         btnRemove.setOnClickListener(v -> {
+            if (currentLoadedUsername == null || currentLoadedUsername.isEmpty()) {
+                UiUtils.makeCustomToast(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show();
+                return;
+            }
             removeImage();
             dialog.dismiss();
         });
