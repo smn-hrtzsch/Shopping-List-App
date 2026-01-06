@@ -42,7 +42,8 @@
             android:name=".ProfileActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity"
-            android:label="Profil"/>
+            android:label="Profil"
+            android:windowSoftInputMode="adjustPan"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"

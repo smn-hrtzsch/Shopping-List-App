@@ -62,7 +62,7 @@ public class ProfileActivity extends BaseActivity {
     private TextView textViewWarning;
     private LinearLayout layoutLinkedMethods;
     private LinearLayout layoutViewMode;
-    private LinearLayout layoutEditMode;
+    private com.google.android.material.card.MaterialCardView layoutEditMode;
     private EditText editTextUsernameInline;
     private MaterialButton buttonSaveUsernameInline;
     private com.google.android.material.card.MaterialCardView layoutAuthInline;
