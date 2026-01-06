@@ -14,8 +14,8 @@
         android:layout_marginTop="16dp"
         android:layout_marginBottom="32dp"
         android:background="@drawable/ic_account_circle_24"
-        android:backgroundTint="?attr/colorSurfaceVariant"
-        android:alpha="0.3"/>
+        android:backgroundTint="?attr/colorOnSurface"
+        android:alpha="0.1"/>
 
     <!-- Edit Mode Card -->
     <com.google.android.material.card.MaterialCardView
@@ -37,9 +37,8 @@
                 android:layout_width="180dp"
                 android:layout_height="20dp"
                 android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:background="?attr/colorOnSurface"
+                android:alpha="0.1"/>
 
             <!-- Input -->
             <View
@@ -47,16 +46,16 @@
                 android:layout_height="56dp"
                 android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:backgroundTint="?attr/colorOnSurface"
+                android:alpha="0.1"/>
 
             <!-- Button -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:backgroundTint="?attr/colorOnSurface"
+                android:alpha="0.1"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -81,9 +80,8 @@
                 android:layout_width="200dp"
                 android:layout_height="20dp"
                 android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:background="?attr/colorOnSurface"
+                android:alpha="0.1"/>
 
             <!-- Email Input -->
             <View
@@ -91,8 +89,8 @@
                 android:layout_height="56dp"
                 android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:backgroundTint="?attr/colorOnSurface"
+                android:alpha="0.1"/>
 
             <!-- Password Input -->
             <View
@@ -100,8 +98,8 @@
                 android:layout_height="56dp"
                 android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:backgroundTint="?attr/colorOnSurface"
+                android:alpha="0.1"/>
 
             <!-- Auth Buttons Row -->
             <LinearLayout
@@ -115,16 +113,16 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/bg_dialog_rounded"
-                    android:backgroundTint="?attr/colorSurfaceVariant"
-                    android:alpha="0.3"/>
+                    android:backgroundTint="?attr/colorOnSurface"
+                    android:alpha="0.1"/>
                 <View
                     android:layout_width="0dp"
                     android:layout_height="50dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_dialog_rounded"
-                    android:backgroundTint="?attr/colorSurfaceVariant"
-                    android:alpha="0.3"/>
+                    android:backgroundTint="?attr/colorOnSurface"
+                    android:alpha="0.1"/>
             </LinearLayout>
 
             <!-- Google Button -->
@@ -133,8 +131,8 @@
                 android:layout_height="50dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:backgroundTint="?attr/colorOnSurface"
+                android:alpha="0.1"/>
 
             <!-- Forgot Password -->
             <View
@@ -142,9 +140,8 @@
                 android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginTop="16dp"
-                android:background="@drawable/bg_dialog_rounded"
-                android:backgroundTint="?attr/colorSurfaceVariant"
-                android:alpha="0.3"/>
+                android:background="?attr/colorOnSurface"
+                android:alpha="0.1"/>
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
