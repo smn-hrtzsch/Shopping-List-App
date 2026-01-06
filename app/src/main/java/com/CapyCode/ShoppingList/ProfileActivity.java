@@ -271,6 +271,11 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performAuthLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
+        // Debug: Check App Check Token status
+        com.google.firebase.appcheck.FirebaseAppCheck.getInstance().getAppCheckToken(false)
+            .addOnSuccessListener(token -> android.util.Log.d("AppCheck", "Token received: " + token.getToken()))
+            .addOnFailureListener(e -> android.util.Log.e("AppCheck", "Token failed", e));
+
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.isAnonymous()) {
              verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError);
