@@ -166,8 +166,11 @@
     <string name="error_member_already_exists">Dieser Nutzer ist bereits Mitglied der Liste.</string>
     <string name="member_is_me">" (Du)"</string>
     <string name="invited_by">Eingeladen von %s</string>
-    <string name="prompt_email">E-Mail</string>
+    <string name="prompt_email">E-Mail oder Benutzername</string>
     <string name="prompt_password">Passwort</string>
+    <string name="invite_user_hint_mixed">Benutzername oder E-Mail eingeben</string>
+    <string name="invite_user_message_mixed">Gib den Benutzernamen oder die E-Mail der Person ein, die du einladen möchtest.</string>
+    <string name="error_email_or_username_required">E-Mail oder Benutzername erforderlich</string>
     <string name="action_sign_in">Anmelden</string>
     <string name="action_register">Registrieren</string>
     <string name="action_forgot_password">Passwort vergessen?</string>
@@ -191,8 +194,9 @@
     <string name="change_profile_picture">Bild ändern</string>
     <string name="action_register_email">Mit E-Mail registrieren</string>
     <string name="action_sign_in_email">Mit E-Mail anmelden</string>
-    <string name="error_login_user_not_found">E-Mail oder Passwort falsch.</string>
-    <string name="error_login_wrong_password">E-Mail oder Passwort falsch.</string>
+    <string name="auth_dialog_title">Anmelden oder Registrieren</string>
+    <string name="error_login_user_not_found">E-Mail, Benutzername oder Passwort falsch.</string>
+    <string name="error_login_wrong_password">E-Mail, Benutzername oder Passwort falsch.</string>
     <string name="dialog_switch_account_title">Konto wechseln?</string>
     <string name="dialog_switch_account_message">Du bist dabei, dich mit einem anderen Konto anzumelden. Deine aktuellen lokalen Listen und Daten werden gelöscht.\n\nMöchtest du wirklich das Konto wechseln?</string>
     <string name="dialog_switch_account_message_guest">Dieses Konto ist bereits mit einem anderen Profil verknüpft.\n\nMöchtest du zu diesem Profil wechseln? Deine aktuellen, nicht synchronisierten Listen werden gelöscht.</string>
@@ -244,8 +248,10 @@
     <string name="error_link_general">Fehler beim Verknüpfen.</string>
     <string name="dialog_google_account_title">Google Konto</string>
     <string name="dialog_google_account_message">Diese E-Mail Adresse ist mit einem Google Konto verknüpft. Bitte melde dich über den \'Mit Google anmelden\' Button an.\n\nDu hast für dieses Konto kein Passwort festgelegt.</string>
-    <string name="toast_invitation_accepted">Einladung angenommen</string>
     <string name="toast_invitation_declined">Einladung abgelehnt</string>
+    <string name="error_user_no_email">Dieser Nutzer hat keine E-Mail verknüpft.</string>
+    <string name="dialog_decline_invitation_title">Einladung ablehnen?</string>
+    <string name="dialog_decline_invitation_message">Möchtest du die Einladung zu \"%s\" wirklich ablehnen?</string>
     <string name="dialog_leave_list_title">Liste verlassen?</string>
     <string name="dialog_leave_list_message">Möchtest du die Liste \"%s\" wirklich verlassen?</string>
     <string name="button_leave_confirm">Verlassen</string>

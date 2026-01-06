@@ -79,16 +79,6 @@ public class ProfileActivity extends BaseActivity {
     private String currentImageUrl = null;
     private boolean isSigningOut = false;
 
-    private final ActivityResultLauncher<Intent> authActivityLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    showLoading(getString(R.string.loading_profile), true, true);
-                    loadCurrentProfile();
-                } else {
-                    hideLoading();
-                }
-            });
-
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri != null) {
@@ -112,10 +102,7 @@ public class ProfileActivity extends BaseActivity {
     @Override
     protected void attachBaseContext(android.content.Context newBase) {
         SharedPreferences prefs = newBase.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String lang = prefs.getString(KEY_LANGUAGE, "en"); // Default to English or system? Let's say 'en' or maybe check system.
-        // Better: check system default if not set. But for toggle we need explicit.
-        // Let's assume 'en' as default fall back or check system locale.
-        // For simplicity in this step, I'll load what's saved or default to 'en'.
+        String lang = prefs.getString(KEY_LANGUAGE, "en");
         
         java.util.Locale locale = new java.util.Locale(lang);
         java.util.Locale.setDefault(locale);
@@ -173,32 +160,17 @@ public class ProfileActivity extends BaseActivity {
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
         containerContent = findViewById(R.id.container_content);
-        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile);
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showSkeleton(false);
 
         loadCurrentProfile();
 
         if (getIntent().getBooleanExtra("EXTRA_OPEN_EDIT_PROFILE", false)) {
-            // Delay slightly to ensure UI is ready or just call it. 
-            // Better to check after profile load? 
-            // Actually, if we want to set username, we can show it immediately, 
-            // but pre-filling with current username requires profile load.
-            // Let's rely on loadCurrentProfile finishing or just show it blank/pending.
-            // Since loadCurrentProfile is async, we can't wait for it easily here without callbacks.
-            // But showEditProfileDialog uses currentLoadedUsername.
-            // Let's hook into the success of loadCurrentProfile? 
-            // Or just set a flag.
-            
-            // Simpler: Just post it.
             containerContent.postDelayed(this::showEditProfileDialog, 500); 
         }
 
         buttonDelete.setOnClickListener(v -> confirmDeleteAccount());
-        buttonRegisterEmail.setOnClickListener(v -> {
-            showLoading(getString(R.string.loading), true, true);
-            Intent intent = new Intent(this, AuthActivity.class);
-            authActivityLauncher.launch(intent);
-        });
+        buttonRegisterEmail.setOnClickListener(v -> showAuthDialog());
         buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
         buttonSignOut.setOnClickListener(v -> confirmSignOut());
         buttonSaveUsernameInline.setOnClickListener(v -> saveUsername(editTextUsernameInline.getText().toString().trim(), null));
@@ -210,6 +182,345 @@ public class ProfileActivity extends BaseActivity {
         });
 
         setupSyncSwitch();
+    }
+
+    // --- Auth Dialog Implementation ---
+
+    private void showAuthDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_auth, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        EditText editTextEmail = dialogView.findViewById(R.id.edit_text_email);
+        EditText editTextPassword = dialogView.findViewById(R.id.edit_text_password);
+        TextView errorTextEmail = dialogView.findViewById(R.id.error_text_email);
+        TextView errorTextPassword = dialogView.findViewById(R.id.error_text_password);
+        TextView errorTextGeneral = dialogView.findViewById(R.id.error_text_general);
+        View authLoadingContainer = dialogView.findViewById(R.id.auth_loading_container);
+        View dot1 = dialogView.findViewById(R.id.dot1);
+        View dot2 = dialogView.findViewById(R.id.dot2);
+        View dot3 = dialogView.findViewById(R.id.dot3);
+        View buttonLogin = dialogView.findViewById(R.id.button_login);
+        View buttonRegister = dialogView.findViewById(R.id.button_register);
+        View textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
+        View buttonClose = dialogView.findViewById(R.id.button_dialog_close);
+
+        android.text.TextWatcher clearErrorWatcher = new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { 
+                errorTextEmail.setVisibility(View.GONE);
+                errorTextPassword.setVisibility(View.GONE);
+                errorTextGeneral.setVisibility(View.GONE);
+            }
+            @Override public void afterTextChanged(android.text.Editable s) {}
+        };
+        editTextEmail.addTextChangedListener(clearErrorWatcher);
+        editTextPassword.addTextChangedListener(clearErrorWatcher);
+
+        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
+        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
+        textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail, authLoadingContainer, dot1, dot2, dot3));
+        buttonClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
+        String input = emailField.getText().toString().trim();
+        String password = passwordField.getText().toString().trim();
+
+        if (input.isEmpty()) { showError(errorEmail, getString(R.string.error_email_or_username_required)); return; }
+        if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
+
+        hideKeyboard();
+        loadingContainer.setVisibility(View.VISIBLE);
+        BaseActivity.startDotsAnimation(d1, d2, d3);
+        btnLogin.setEnabled(false);
+        btnRegister.setEnabled(false);
+
+        Runnable onLoginSuccess = () -> {
+            dialog.dismiss();
+            userRepository.syncEmailToFirestore();
+            UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
+            ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
+            repository.migrateLocalListsToCloud(() -> {
+                loadCurrentProfile(); 
+            });
+        };
+        
+        Runnable onError = () -> {
+             loadingContainer.setVisibility(View.GONE);
+             d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+             btnLogin.setEnabled(true);
+             btnRegister.setEnabled(true);
+        };
+
+        if (AuthValidator.isValidEmail(input)) {
+            performAuthLogin(input, password, onLoginSuccess, errorGeneral, onError);
+        } else {
+            userRepository.findEmailByUsername(input, new UserRepository.OnEmailLoadedListener() {
+                @Override public void onLoaded(String email) { performAuthLogin(email, password, onLoginSuccess, errorGeneral, onError); }
+                @Override public void onError(String error) { onError.run(); showError(errorEmail, error); }
+            });
+        }
+    }
+
+    private void performAuthLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null && currentUser.isAnonymous()) {
+             verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError);
+        } else {
+             mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        onSuccess.run();
+                    } else {
+                        onError.run();
+                        showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException()));
+                    }
+                });
+        }
+    }
+
+    private void verifyCredentialsAndSwitch(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
+        com.google.firebase.FirebaseOptions options = com.google.firebase.FirebaseApp.getInstance().getOptions();
+        com.google.firebase.FirebaseApp secondaryApp;
+        try { secondaryApp = com.google.firebase.FirebaseApp.getInstance("secondary"); } 
+        catch (IllegalStateException e) { secondaryApp = com.google.firebase.FirebaseApp.initializeApp(this, options, "secondary"); }
+        
+        FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
+        secondaryAuth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    checkIfAccountIsEmpty(isEmpty -> {
+                        if (isEmpty) {
+                            performSwitchLogin(email, password, onSuccess, errorView, onError);
+                        } else {
+                            hideLoading(); 
+                            // Dialog remains hidden here? No, we need to handle this.
+                            // If we show a NEW dialog (CustomDialog), the AuthDialog is still hidden.
+                            // When CustomDialog closes, what happens?
+                            // We should probably close AuthDialog if we proceed to Switch.
+                            // But if user cancels switch? We need to show AuthDialog again.
+                            
+                            // Simplified flow: Close auth dialog, show switch dialog.
+                            // But onError callback shows AuthDialog again? No, onError is for failures.
+                            
+                            showCustomDialog(
+                                getString(R.string.dialog_switch_account_title),
+                                getString(R.string.dialog_switch_account_message_guest),
+                                getString(R.string.button_switch_and_link),
+                                () -> {
+                                    showLoading(getString(R.string.loading), true, true);
+                                    performSwitchLogin(email, password, onSuccess, errorView, onError);
+                                }
+                            );
+                            // If user cancels custom dialog? Auth dialog is hidden forever.
+                            // showCustomDialog doesn't support cancel callback properly here.
+                            // We assume user proceeds or we are stuck.
+                            // Let's assume switch is the path.
+                        }
+                    });
+                } else {
+                    onError.run();
+                    showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException()));
+                }
+            });
+    }
+
+    private void performSwitchLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
+        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+        repo.clearLocalDatabase();
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) onSuccess.run();
+                    else { onError.run(); showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException())); }
+                });
+    }
+
+    private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
+        String email = emailField.getText().toString().trim();
+        String password = passwordField.getText().toString().trim();
+
+        if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
+        if (!AuthValidator.isValidEmail(email)) { showError(errorEmail, getString(R.string.error_invalid_email)); return; }
+        if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
+        if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
+
+        hideKeyboard();
+        loadingContainer.setVisibility(View.VISIBLE);
+        BaseActivity.startDotsAnimation(d1, d2, d3);
+        btnLogin.setEnabled(false);
+        btnRegister.setEnabled(false);
+        
+        Runnable onError = () -> {
+             loadingContainer.setVisibility(View.GONE);
+             d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+             btnLogin.setEnabled(true);
+             btnRegister.setEnabled(true);
+        };
+
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
+            AuthCredential credential = EmailAuthProvider.getCredential(email, password);
+            currentUser.linkWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        startVerificationFlow(currentUser, true, dialog);
+                    } else {
+                        onError.run();
+                        String msg = AuthErrorMapper.getErrorMessage(this, task.getException());
+                        if (task.getException() instanceof FirebaseAuthUserCollisionException) msg = getString(R.string.error_email_collision_link);
+                        showError(errorEmail, msg);
+                    }
+                });
+        } else {
+            mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        startVerificationFlow(task.getResult().getUser(), false, dialog);
+                    } else {
+                        onError.run();
+                        showError(errorEmail, AuthErrorMapper.getErrorMessage(this, task.getException()));
+                    }
+                });
+        }
+    }
+
+    private void performDialogResetPassword(EditText emailField, TextView errorEmail, View loadingContainer, View d1, View d2, View d3) {
+        String email = emailField.getText().toString().trim();
+        if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
+        
+        hideKeyboard();
+        loadingContainer.setVisibility(View.VISIBLE);
+        BaseActivity.startDotsAnimation(d1, d2, d3);
+        
+        mAuth.sendPasswordResetEmail(email).addOnCompleteListener(t -> {
+            loadingContainer.setVisibility(View.GONE);
+            d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+            if (t.isSuccessful()) UiUtils.makeCustomToast(this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
+            else showError(errorEmail, AuthErrorMapper.getErrorMessage(this, t.getException()));
+        });
+    }
+
+
+
+    
+
+        private void startVerificationFlow(FirebaseUser user, boolean isLinkedAccount, androidx.appcompat.app.AlertDialog authDialog) {
+
+            userRepository.syncEmailToFirestore();
+
+            user.sendEmailVerification()
+
+                    .addOnCompleteListener(task -> {
+
+                        // Dialog remains open but loading finished? Or dismiss dialog and show verification dialog?
+
+                        // We dismiss authDialog here.
+
+                        authDialog.dismiss();
+
+                        if (task.isSuccessful()) {
+
+                            showVerificationDialog(user, isLinkedAccount);
+
+                        } else {
+
+                            UiUtils.makeCustomToast(this, getString(R.string.error_send_email_failed, task.getException().getMessage()), Toast.LENGTH_LONG).show();
+
+                            revertRegistration(user, isLinkedAccount);
+
+                        }
+
+                    });
+
+        }
+
+    
+
+    private void showVerificationDialog(FirebaseUser user, boolean isLinkedAccount) {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        builder.setView(dialogView);
+        builder.setCancelable(false);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
+        textTitle.setText(R.string.dialog_verify_email_title);
+        textMessage.setText(getString(R.string.dialog_verify_email_message, user.getEmail()));
+        btnPositive.setText(R.string.button_confirmed);
+        btnNegative.setText(R.string.button_cancel_delete);
+
+        btnPositive.setOnClickListener(v -> {
+            user.reload().addOnCompleteListener(reloadTask -> {
+                if (reloadTask.isSuccessful()) {
+                    if (user.isEmailVerified()) {
+                        dialog.dismiss();
+                        UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
+                        loadCurrentProfile();
+                    } else {
+                        UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_email_not_verified, Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.error_check_failed, reloadTask.getException().getMessage()), Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        btnNegative.setOnClickListener(v -> {
+             dialog.dismiss();
+             revertRegistration(user, isLinkedAccount);
+        });
+        dialog.show();
+    }
+
+    private void revertRegistration(FirebaseUser user, boolean isLinkedAccount) {
+        showLoading(getString(R.string.loading), true, true);
+        if (isLinkedAccount) {
+            user.unlink(EmailAuthProvider.PROVIDER_ID).addOnCompleteListener(t -> { hideLoading(); });
+        } else {
+            user.delete().addOnCompleteListener(t -> { hideLoading(); });
+        }
+    }
+
+    private void performDialogResetPassword(EditText emailField, TextView errorEmail, android.widget.ProgressBar progressBar) {
+
+            String email = emailField.getText().toString().trim();
+
+            if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
+
+            
+
+            progressBar.setVisibility(View.VISIBLE);
+
+            mAuth.sendPasswordResetEmail(email).addOnCompleteListener(t -> {
+
+                progressBar.setVisibility(View.GONE);
+
+                if (t.isSuccessful()) UiUtils.makeCustomToast(this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
+
+                else showError(errorEmail, AuthErrorMapper.getErrorMessage(this, t.getException()));
+
+            });
+
+        }
+
+    private void showError(TextView errorView, String message) {
+        if (errorView != null) {
+            errorView.setText(message);
+            errorView.setVisibility(View.VISIBLE);
+        }
     }
 
     private void showImagePreviewDialog(String imageUrl, String username) {
@@ -669,10 +980,7 @@ public class ProfileActivity extends BaseActivity {
                 buttonRegisterEmail.setIconResource(R.drawable.ic_email);
                 int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
                 buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
-                buttonRegisterEmail.setOnClickListener(v -> {
-                    Intent intent = new Intent(this, AuthActivity.class);
-                    authActivityLauncher.launch(intent);
-                });
+                buttonRegisterEmail.setOnClickListener(v -> showAuthDialog());
             }
         } else {
             textViewWarning.setVisibility(View.VISIBLE);
@@ -684,11 +992,7 @@ public class ProfileActivity extends BaseActivity {
             buttonRegisterEmail.setIconResource(R.drawable.ic_email);
             int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
             buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
-            buttonRegisterEmail.setOnClickListener(v -> {
-                showLoading(getString(R.string.loading), true, true);
-                Intent intent = new Intent(this, AuthActivity.class);
-                authActivityLauncher.launch(intent);
-            });
+            buttonRegisterEmail.setOnClickListener(v -> showAuthDialog());
             buttonRegisterGoogle.setText(shouldShowLinkText ? R.string.action_link_google : R.string.sign_in_google);
             buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
             buttonRegisterGoogle.setIconTint(null);
