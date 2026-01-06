@@ -595,20 +595,20 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 return;
             }
             item.setName(newName);
-            repository.updateItemInList(item, firebaseListId, null);
-            if (firebaseListId != null) {
-                repository.updateListTimestamp(firebaseListId, null);
-            }
+            
+            repository.updateItemInList(item, firebaseListId, () -> {
+                if (firebaseListId != null) {
+                    repository.updateListTimestamp(firebaseListId, null);
+                }
+                
+                // Refresh list only after write is confirmed to avoid fetching stale data
+                if (interactionListener != null) {
+                    interactionListener.requestItemResort();
+                }
+            });
+            
             editingItemPosition = -1;
             notifyItemChanged(position);
-            
-            // Removing requestItemResort() here because it triggers a full reload (destroying listener)
-            // which can cause a race condition where the listener fetches stale data from server
-            // before the local write is fully committed/cached, resulting in UI reverting to old value.
-            // Since name change does not affect sort order (done/position), we don't need to resort.
-            if (interactionListener != null) {
-                interactionListener.requestItemResort();
-            }
         }
     }
 }

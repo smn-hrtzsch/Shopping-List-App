@@ -943,6 +943,8 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void loadCurrentProfile() {
+        // Reset skeleton to profile type in case it was changed to auth type during sign out
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showLoading(getString(R.string.loading_profile), true, true);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
@@ -1340,7 +1342,8 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSimpleSignOut() {
-        showLoading(getString(R.string.loading), false, true);
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+        showLoading(getString(R.string.loading), true, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
@@ -1351,7 +1354,8 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performDestructiveSignOut() {
-        showLoading(getString(R.string.loading), false, true);
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+        showLoading(getString(R.string.loading), true, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
@@ -1363,7 +1367,8 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSafeSignOut() {
-        showLoading(getString(R.string.loading), false, true);
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+        showLoading(getString(R.string.loading), true, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.migrateLocalListsToCloud(() -> {
@@ -1378,19 +1383,19 @@ public class ProfileActivity extends BaseActivity {
 
     private void removeImage() {
         progressImage.setVisibility(View.VISIBLE);
-        imageProfile.setAlpha(0.5f);
+        imageProfile.setVisibility(View.INVISIBLE);
         userRepository.removeProfileImage(new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
                  progressImage.setVisibility(View.GONE);
-                 imageProfile.setAlpha(1.0f);
+                 imageProfile.setVisibility(View.VISIBLE);
                  loadCurrentProfile();
                  UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_image_removed, Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onError(String message) {
                 progressImage.setVisibility(View.GONE);
-                imageProfile.setAlpha(1.0f);
+                imageProfile.setVisibility(View.VISIBLE);
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });
@@ -1398,12 +1403,12 @@ public class ProfileActivity extends BaseActivity {
 
     private void uploadImage(Uri imageUri) {
         progressImage.setVisibility(View.VISIBLE);
-        imageProfile.setAlpha(0.5f);
+        imageProfile.setVisibility(View.INVISIBLE);
         userRepository.uploadProfileImage(imageUri, new UserRepository.OnImageUploadListener() {
             @Override
             public void onSuccess(String downloadUrl) {
                 progressImage.setVisibility(View.GONE);
-                imageProfile.setAlpha(1.0f);
+                imageProfile.setVisibility(View.VISIBLE);
                 currentImageUrl = downloadUrl;
                 Glide.with(ProfileActivity.this).load(downloadUrl).apply(RequestOptions.circleCropTransform()).into(imageProfile);
                 imageProfile.setPadding(0,0,0,0);
@@ -1413,7 +1418,7 @@ public class ProfileActivity extends BaseActivity {
             @Override
             public void onError(String message) {
                 progressImage.setVisibility(View.GONE);
-                imageProfile.setAlpha(1.0f);
+                imageProfile.setVisibility(View.VISIBLE);
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });

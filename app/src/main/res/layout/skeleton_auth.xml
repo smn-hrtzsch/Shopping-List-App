@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Auth Title -->
+    <View
+        android:layout_width="150dp"
+        android:layout_height="24dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_dialog_rounded"
+        android:backgroundTint="?attr/colorSurfaceVariant"
+        android:alpha="0.3"/>
+
+    <!-- Email Input -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_dialog_rounded"
+        android:backgroundTint="?attr/colorSurfaceVariant"
+        android:alpha="0.3"/>
+
+    <!-- Password Input -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_dialog_rounded"
+        android:backgroundTint="?attr/colorSurfaceVariant"
+        android:alpha="0.3"/>
+
+    <!-- Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <View
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorSurfaceVariant"
+            android:alpha="0.3"/>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_dialog_rounded"
+            android:backgroundTint="?attr/colorSurfaceVariant"
+            android:alpha="0.3"/>
+    </LinearLayout>
+
+</LinearLayout>
