@@ -237,44 +237,48 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     itemToDelete.setId(newId);
                 }
 
-                // Create a new list with the restored item and let DiffUtil handle the insertion
-                List<ShoppingItem> newList = new ArrayList<>(items);
+                // Optimized Undo: Insert with correct position calculation (Shift Logic)
                 
-                // Shift existing items to make space for the restored item at its original position
-                // This prevents conflicts if other items have moved into that position (e.g. by drag & drop)
+                // 1. Shift existing items to make space (Main branch logic)
                 int targetPos = itemToDelete.getPosition();
-                for (ShoppingItem item : newList) {
-                    if (item.getPosition() >= targetPos) {
-                        item.setPosition(item.getPosition() + 1);
+                // We modify the live list directly to ensure consistency
+                for (ShoppingItem existingItem : items) {
+                    if (existingItem.getPosition() >= targetPos) {
+                        existingItem.setPosition(existingItem.getPosition() + 1);
                     }
                 }
                 
-                newList.add(itemToDelete);
+                // 2. Insert item
+                // Find correct index to maintain sort order
+                // Now that we shifted, itemToDelete.pos (targetPos) is unique and smaller than the shifted ones.
+                // We just need to find the first item with pos > targetPos (or done status diff)
                 
-                // Sort with tie-breaker
-                Collections.sort(newList, (item1, item2) -> {
-                    if (item1.isDone() == item2.isDone()) {
-                        int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
-                        if (posComp != 0) return posComp;
-                        return Long.compare(item1.getId(), item2.getId());
+                int insertIndex = 0;
+                while (insertIndex < items.size()) {
+                    ShoppingItem current = items.get(insertIndex);
+                    // Compare based on Done -> Position -> ID
+                    if (current.isDone() != itemToDelete.isDone()) {
+                         if (current.isDone() && !itemToDelete.isDone()) break; // Current is Done, Deleted is Not -> Deleted comes first
+                    } else {
+                        if (current.getPosition() > targetPos) break; // Found first item with larger pos
+                        if (current.getPosition() == targetPos) {
+                             // Should not happen due to shift, but safety tie-breaker
+                             if (current.getId() > itemToDelete.getId()) break;
+                        }
                     }
-                    return item1.isDone() ? 1 : -1;
-                });
-
-                // Renormalize positions to fix any gaps or duplicates
-                for (int i = 0; i < newList.size(); i++) {
-                    newList.get(i).setPosition(i);
+                    insertIndex++;
                 }
                 
-                // Persist new positions
-                repository.updateItemPositions(newList);
+                items.add(insertIndex, itemToDelete);
+                
+                // 3. Notify Adapter
+                notifyItemInserted(insertIndex);
+                
+                // 4. Persist changes
+                repository.updateItemPositions(items);
                 if (firebaseListId != null) {
-                    repository.updateItemPositionsInCloud(firebaseListId, newList, null);
+                    repository.updateItemPositionsInCloud(firebaseListId, items, null);
                 }
-
-                setItems(newList);
-                
-                // requestItemResort is implicit via setItems/DiffUtil logic or handled by cloud update listener
             });
         }
     }
@@ -435,16 +439,51 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int newIndex = sortedList.indexOf(item);
                 
                 if (currentPos != newIndex) {
-                    // Clear focus to be safe
-                    if (checkBox.hasFocus() || itemView.hasFocus()) {
-                        itemView.clearFocus();
-                        checkBox.clearFocus();
-                    }
+                    // Prevent auto-scrolling:
+                    RecyclerView rv = (RecyclerView) itemView.getParent();
+                    androidx.recyclerview.widget.LinearLayoutManager llm = (androidx.recyclerview.widget.LinearLayoutManager) rv.getLayoutManager();
                     
-                    // Move data
+                    // 1. Capture exact scroll state
+                    int firstVisiblePos = llm.findFirstVisibleItemPosition();
+                    View firstVisibleView = llm.findViewByPosition(firstVisiblePos);
+                    int offset = (firstVisibleView != null) ? firstVisibleView.getTop() : 0;
+                    
+                    // 2. Clear focus completely
+                    if (checkBox.hasFocus() || itemView.hasFocus()) {
+                        checkBox.clearFocus();
+                        itemView.clearFocus();
+                        View parent = (View) itemView.getParent();
+                        if (parent != null) parent.clearFocus();
+                    }
+                    rv.clearFocus();
+                    
+                    // 3. Move data
                     items.remove(currentPos);
                     items.add(newIndex, item);
                     notifyItemMoved(currentPos, newIndex);
+                    
+                    // 4. RESTORE scroll position explicitly
+                    // Calculate correct target position accounting for the move
+                    if (firstVisiblePos != RecyclerView.NO_POSITION) {
+                        int restorePos = firstVisiblePos;
+                        
+                        // If item moved from ABOVE viewport to BELOW (Check)
+                        if (currentPos < firstVisiblePos && newIndex >= firstVisiblePos) {
+                            restorePos--;
+                        }
+                        // If item moved from BELOW viewport to ABOVE (Uncheck)
+                        else if (currentPos > firstVisiblePos && newIndex <= firstVisiblePos) {
+                            restorePos++;
+                        }
+                        // If moved within viewport or outside viewport completely, no scroll shift needed usually.
+                        
+                        restorePos = Math.max(0, restorePos);
+                        
+                        // Use post to ensure this runs AFTER the move animation/layout pass
+                        final int finalPos = restorePos;
+                        final int finalOffset = offset;
+                        rv.post(() -> llm.scrollToPositionWithOffset(finalPos, finalOffset));
+                    }
                 }
 
                 if (interactionListener != null) {
