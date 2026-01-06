@@ -108,21 +108,9 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         shoppingListRepository = new ShoppingListRepository(this);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) {
-            mAuth.signInAnonymously()
-                    .addOnCompleteListener(this, task -> {
-                        if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            Log.d("Auth", "signInAnonymously:success");
-                            // FirebaseUser user = mAuth.getCurrentUser();
-                        } else {
-                            // If sign in fails, display a message to the user.
-                            Log.w("Auth", "signInAnonymously:failure", task.getException());
-                            String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                            UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_auth_failed, errorMsg),
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    });
+        // Automatic anonymous sign-in removed to allow local-only usage until profile is created.
+        if (currentUser != null) {
+             // Log.d("Auth", "User is signed in: " + currentUser.getUid());
         }
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
