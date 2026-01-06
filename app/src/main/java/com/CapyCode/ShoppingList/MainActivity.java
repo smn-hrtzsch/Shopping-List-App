@@ -244,7 +244,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         View includeInput = view.findViewById(R.id.include_input);
-        EditText input = includeInput.findViewById(R.id.username_edit_text);
+        EditText input = includeInput.findViewById(R.id.input_edit_text);
         input.setHint(R.string.enter_list_name);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         

@@ -444,7 +444,7 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         }
         
         View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
-        com.google.android.material.textfield.TextInputEditText editText = includeDialog.findViewById(R.id.username_edit_text);
+        com.google.android.material.textfield.TextInputEditText editText = includeDialog.findViewById(R.id.input_edit_text);
         com.google.android.material.textfield.TextInputLayout inputLayout = includeDialog.findViewById(R.id.username_input_layout); // Fixed ID
         com.google.android.material.button.MaterialButton btnPositive = includeDialog.findViewById(R.id.username_action_button);
         TextView messageView = dialogView.findViewById(R.id.dialog_message);
