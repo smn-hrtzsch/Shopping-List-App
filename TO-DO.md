@@ -21,7 +21,8 @@
 - [x] Zurücksetzen des Passworts via E-Mail
 - [ ] 2FA (Two-Factor Authentication) implementieren
 - [x] Profilbild hochladen und ändern
-- Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen / zwei verschiedene Layouts?
+- [ ] Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen / zwei verschiedene Layouts?
+- [ ] Wenn der Dialog zum Anzeigen des Profilbilds in der ProfileActivity geöffnet ist, sollte zusätzlich zum Schließen Button auch noch ein Bearbeiten Button im Dialog angezeigt werden, der einen dann direkt zum Profil Bearbeiten Dialog führt.
 
 ## Platformen
 
@@ -62,8 +63,21 @@
 ## Bugs
 
 - [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
-- [ ] Nach dem Ändern des Profilbildes wird im Vorschau Dialog immer noch das alte Profilbild angezeigt. Erst nach aktualisieren / neu starten der Activity wird das neue Bild korrekt angezeigt.
-- [ ] Beim Einladen eines Users zu einer geteilten Liste werden Vorschläge aus dem Passwort Manager gemacht, das sollte nicht so sein.
-- [ ] Die Nachricht "Abgemeldet" sollte erst angezeigt werden, wenn die Loading Animation abgeschlossen ist und man wieder in der fertig geladenen ProfileActivity ist, um Überschneidung mit dem Loading Overlay zu vermeiden.
-
+- [x] Nach dem Ändern des Profilbildes wird im Vorschau Dialog immer noch das alte Profilbild angezeigt. Erst nach aktualisieren / neu starten der Activity wird das neue Bild korrekt angezeigt.
+- [x] Beim Einladen eines Users zu einer geteilten Liste werden Vorschläge aus dem Passwort Manager gemacht, das sollte nicht so sein.
+- [x] Die Nachricht "Abgemeldet" in der ProfileActivity sollte erst angezeigt werden, wenn die Loading Animation abgeschlossen ist und man wieder in der fertig geladenen ProfileActivity ist, um Überschneidung mit dem Loading Overlay zu vermeiden.
+- [x] Beim Hinzufügen von neuen Artikeln in der EinkaufslisteActivity flackert das Bild, keine cleane und smoothe UI Aktualisierung.
+- [x] Nach bearbeiten eines Artikels wird die UI in der Einkaufsliste Acitivity nicht korrekt aktualisiert. Es wird noch der alte Stand gezeigt und erst beim neuen Öffnen der Liste werden die Artikel korrekt angezeigt.
+ 
 ## Fixed Bugs
+- [x] Ladezeit der MainActivity optimieren, lokale Kopie der Cloud Datenbank verwenden
+- [x] Erstellen eines Accounts mit E-Mail und Passwort
+- [x] Verknüpfung mit Google Account
+- [x] Zurücksetzen des Passworts via E-Mail
+- [x] Profilbild hochladen und ändern
+- [x] Profilbilder der Member in der Member-Liste anzeigen
+- [x] Nach dem Ändern des Profilbildes wird im Vorschau Dialog immer noch das alte Profilbild angezeigt.
+- [x] Beim Einladen eines Users zu einer geteilten Liste werden Vorschläge aus dem Passwort Manager gemacht.
+- [x] Die Nachricht "Abgemeldet" in der ProfileActivity wird erst nach dem Laden angezeigt.
+- [x] Flackern beim Hinzufügen von Artikeln behoben.
+- [x] UI Aktualisierung nach Bearbeiten eines Artikels korrigiert.
