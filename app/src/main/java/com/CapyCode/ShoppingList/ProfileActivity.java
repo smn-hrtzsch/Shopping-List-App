@@ -72,6 +72,7 @@ public class ProfileActivity extends BaseActivity {
     private MaterialButton buttonRegisterInline;
     private MaterialButton buttonGoogleInline;
     private ImageView imageProfile;
+    private android.widget.ProgressBar progressImage;
     private View containerContent;
     private View cardSyncPreferences;
     private View cardLinkedMethods;
@@ -212,6 +213,15 @@ public class ProfileActivity extends BaseActivity {
         View.OnClickListener clickListener = v -> triggerAuthScroll();
         editTextEmailInline.setOnClickListener(clickListener);
         editTextPasswordInline.setOnClickListener(clickListener);
+        
+        editTextPasswordInline.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                hideKeyboard(editTextPasswordInline);
+                buttonLoginInline.performClick();
+                return true;
+            }
+            return false;
+        });
 
         buttonLoginInline.setOnClickListener(v -> performDialogLogin(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
         buttonRegisterInline.setOnClickListener(v -> performDialogRegister(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
@@ -219,6 +229,7 @@ public class ProfileActivity extends BaseActivity {
         textForgotPasswordInline.setOnClickListener(v -> performDialogResetPassword(editTextEmailInline, errorTextEmailInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline));
 
         imageProfile = findViewById(R.id.image_profile);
+        progressImage = findViewById(R.id.progress_image);
         cardSyncPreferences = findViewById(R.id.card_sync_preferences);
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
@@ -1329,7 +1340,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSimpleSignOut() {
-        showLoading(getString(R.string.loading), true, true);
+        showLoading(getString(R.string.loading), false, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
@@ -1340,7 +1351,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performDestructiveSignOut() {
-        showLoading(getString(R.string.loading), true, true);
+        showLoading(getString(R.string.loading), false, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
@@ -1352,7 +1363,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSafeSignOut() {
-        showLoading(getString(R.string.loading), true, true);
+        showLoading(getString(R.string.loading), false, true);
         isSigningOut = true;
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.migrateLocalListsToCloud(() -> {
@@ -1366,28 +1377,33 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void removeImage() {
-        showLoading();
+        progressImage.setVisibility(View.VISIBLE);
+        imageProfile.setAlpha(0.5f);
         userRepository.removeProfileImage(new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
-                 hideLoading();
+                 progressImage.setVisibility(View.GONE);
+                 imageProfile.setAlpha(1.0f);
                  loadCurrentProfile();
                  UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_image_removed, Toast.LENGTH_SHORT).show();
             }
             @Override
             public void onError(String message) {
-                hideLoading();
+                progressImage.setVisibility(View.GONE);
+                imageProfile.setAlpha(1.0f);
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void uploadImage(Uri imageUri) {
-        showLoading(getString(R.string.loading_uploading), false);
+        progressImage.setVisibility(View.VISIBLE);
+        imageProfile.setAlpha(0.5f);
         userRepository.uploadProfileImage(imageUri, new UserRepository.OnImageUploadListener() {
             @Override
             public void onSuccess(String downloadUrl) {
-                hideLoading();
+                progressImage.setVisibility(View.GONE);
+                imageProfile.setAlpha(1.0f);
                 currentImageUrl = downloadUrl;
                 Glide.with(ProfileActivity.this).load(downloadUrl).apply(RequestOptions.circleCropTransform()).into(imageProfile);
                 imageProfile.setPadding(0,0,0,0);
@@ -1396,7 +1412,8 @@ public class ProfileActivity extends BaseActivity {
             }
             @Override
             public void onError(String message) {
-                hideLoading();
+                progressImage.setVisibility(View.GONE);
+                imageProfile.setAlpha(1.0f);
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
             }
         });
