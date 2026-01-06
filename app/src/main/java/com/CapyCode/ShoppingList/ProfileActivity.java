@@ -153,7 +153,7 @@ public class ProfileActivity extends BaseActivity {
         layoutViewMode = findViewById(R.id.layout_view_mode);
         layoutEditMode = findViewById(R.id.layout_edit_mode);
         View includeInline = findViewById(R.id.include_username_input_inline);
-        editTextUsernameInline = includeInline.findViewById(R.id.username_edit_text);
+        editTextUsernameInline = includeInline.findViewById(R.id.input_edit_text);
         buttonSaveUsernameInline = includeInline.findViewById(R.id.username_action_button);
         imageProfile = findViewById(R.id.image_profile);
         cardSyncPreferences = findViewById(R.id.card_sync_preferences);
@@ -561,7 +561,7 @@ public class ProfileActivity extends BaseActivity {
         }
 
         View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
-        EditText editText = includeDialog.findViewById(R.id.username_edit_text);
+        EditText editText = includeDialog.findViewById(R.id.input_edit_text);
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
         View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
         View btnSave = includeDialog.findViewById(R.id.username_action_button);
@@ -849,6 +849,9 @@ public class ProfileActivity extends BaseActivity {
                         currentLoadedUsername = null;
                         textViewCurrentUsername.setText("...");
                     }
+                    if (isSigningOut) {
+                        UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
+                    }
                     isSigningOut = false;
                     updateUIForUsername();
                     updateAuthUI();
@@ -1075,7 +1078,6 @@ public class ProfileActivity extends BaseActivity {
              repo.clearLocalDatabase();
              mAuth.signOut();
              mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-                 UiUtils.makeCustomToast(this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
                  loadCurrentProfile(); 
              });
         });
@@ -1104,6 +1106,7 @@ public class ProfileActivity extends BaseActivity {
             @Override
             public void onSuccess(String downloadUrl) {
                 hideLoading();
+                currentImageUrl = downloadUrl;
                 Glide.with(ProfileActivity.this).load(downloadUrl).apply(RequestOptions.circleCropTransform()).into(imageProfile);
                 imageProfile.setPadding(0,0,0,0);
                 imageProfile.clearColorFilter();
