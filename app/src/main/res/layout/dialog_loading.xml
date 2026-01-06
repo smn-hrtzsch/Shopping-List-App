@@ -18,14 +18,19 @@
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
         android:paddingTop="12dp"
-        android:paddingBottom="12dp">
+        android:paddingBottom="12dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:id="@+id/dots_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingTop="8dp">
 
             <View
                 android:id="@+id/dot1"
