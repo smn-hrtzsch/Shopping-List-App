@@ -186,16 +186,15 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     protected void hideKeyboard() {
-        hideKeyboard(getCurrentFocus());
+        hideKeyboard(this.getCurrentFocus());
     }
 
     protected void hideKeyboard(View view) {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            if (view == null) {
-                view = getWindow().getDecorView();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
             }
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
 }
