@@ -262,21 +262,6 @@ public class ProfileActivity extends BaseActivity {
         }
     }
 
-    private void triggerAuthScroll() {
-        // Delay to allow keyboard to appear and layout to resize
-        if (containerContent != null) {
-            containerContent.postDelayed(() -> {
-                if (layoutAuthInline != null && containerContent instanceof android.widget.ScrollView) {
-                    android.widget.ScrollView scrollView = (android.widget.ScrollView) containerContent;
-                    int bottom = layoutAuthInline.getBottom() + layoutAuthInline.getPaddingBottom();
-                    int height = scrollView.getHeight();
-                    int targetScrollY = bottom - height + 20; 
-                    scrollView.smoothScrollTo(0, Math.max(0, targetScrollY));
-                }
-            }, 500);
-        }
-    }
-
     // --- Auth Dialog Implementation ---
 
     private void showAuthDialog() {
