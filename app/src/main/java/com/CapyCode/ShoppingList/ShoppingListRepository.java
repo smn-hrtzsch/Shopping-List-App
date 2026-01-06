@@ -196,10 +196,12 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
-                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
+                    // Manual sorting to match local DB behavior (done ASC, position ASC, ID ASC)
                     items.sort((a, b) -> {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
-                        return Integer.compare(a.getPosition(), b.getPosition());
+                        int posComp = Integer.compare(a.getPosition(), b.getPosition());
+                        if (posComp != 0) return posComp;
+                        return a.getFirebaseId().compareTo(b.getFirebaseId());
                     });
                     listener.onItemsLoaded(items, false);
                 })
@@ -231,10 +233,12 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
-                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
+                    // Manual sorting to match local DB behavior (done ASC, position ASC, ID ASC)
                     items.sort((a, b) -> {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
-                        return Integer.compare(a.getPosition(), b.getPosition());
+                        int posComp = Integer.compare(a.getPosition(), b.getPosition());
+                        if (posComp != 0) return posComp;
+                        return a.getFirebaseId().compareTo(b.getFirebaseId());
                     });
                     
                     // If we have pending writes (local changes not yet on server), we should still update the UI
@@ -328,9 +332,17 @@ public class ShoppingListRepository {
             itemData.put("position", item.getPosition());
 
             db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId())
-                .set(itemData)
+                .update(itemData)
                 .addOnCompleteListener(task -> {
                     if (listener != null) listener.onActionComplete();
+                })
+                .addOnFailureListener(e -> {
+                    // Fallback to set if document doesn't exist (though it should)
+                    db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId())
+                        .set(itemData)
+                        .addOnCompleteListener(t -> {
+                             if (listener != null) listener.onActionComplete();
+                        });
                 });
         } else {
             dbHelper.updateItem(item);
