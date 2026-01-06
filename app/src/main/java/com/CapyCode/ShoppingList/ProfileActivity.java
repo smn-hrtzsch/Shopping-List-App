@@ -970,6 +970,7 @@ public class ProfileActivity extends BaseActivity {
             userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
                 @Override
                 public void onLoaded(String username, String imageUrl) {
+                    if (isFinishing() || isDestroyed()) return;
                     hideLoading();
                     containerContent.setVisibility(View.VISIBLE);
                     
@@ -1003,6 +1004,7 @@ public class ProfileActivity extends BaseActivity {
                             editTextUsernameInline.requestFocus();
                             // Show keyboard
                             containerContent.postDelayed(() -> {
+                                if (isFinishing() || isDestroyed()) return;
                                 android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
                                 imm.showSoftInput(editTextUsernameInline, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
                             }, 200);
@@ -1017,6 +1019,7 @@ public class ProfileActivity extends BaseActivity {
                 }
                 @Override
                 public void onError(String error) {
+                    if (isFinishing() || isDestroyed()) return;
                     hideLoading();
                     containerContent.setVisibility(View.VISIBLE);
                     // Ignore "offline" error for new users who might not have a doc yet
