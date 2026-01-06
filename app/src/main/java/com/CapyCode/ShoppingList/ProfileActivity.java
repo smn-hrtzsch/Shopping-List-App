@@ -202,17 +202,8 @@ public class ProfileActivity extends BaseActivity {
             if (hasFocus) {
                 // Delay to allow keyboard to appear and layout to resize
                 v.postDelayed(() -> {
-                    if (layoutAuthInline != null && containerContent instanceof android.widget.ScrollView) {
-                        android.widget.ScrollView scrollView = (android.widget.ScrollView) containerContent;
-                        // Calculate the Y position of the bottom of layoutAuthInline
-                        int bottom = layoutAuthInline.getBottom() + layoutAuthInline.getPaddingBottom();
-                        
-                        // Scroll so that this bottom Y is at the bottom of the visible ScrollView area
-                        // The visible area height is scrollView.getHeight()
-                        // So we want scrollY to be such that scrollY + height = bottom (roughly)
-                        int targetScrollY = bottom - scrollView.getHeight() + 20; // + padding
-                        
-                        scrollView.smoothScrollTo(0, Math.max(0, targetScrollY));
+                    if (containerContent instanceof android.widget.ScrollView) {
+                        ((android.widget.ScrollView) containerContent).fullScroll(View.FOCUS_DOWN);
                     }
                 }, 500);
             }
@@ -676,6 +667,13 @@ public class ProfileActivity extends BaseActivity {
                 setResult(RESULT_OK);
                 if (dialog != null) dialog.dismiss();
                 updateUIForUsername();
+                
+                // If launched with focus request (likely from MainActivity), finish to return
+                if (getIntent().getBooleanExtra("EXTRA_FOCUS_USERNAME", false)) {
+                    finish();
+                    return;
+                }
+                
                 if (isInitialProfileCreation) { loadCurrentProfile(); }
             }
             @Override
@@ -923,6 +921,15 @@ public class ProfileActivity extends BaseActivity {
                         isInitialProfileCreation = true;
                         currentLoadedUsername = null;
                         textViewCurrentUsername.setText("...");
+                        
+                        if (getIntent().getBooleanExtra("EXTRA_FOCUS_USERNAME", false)) {
+                            editTextUsernameInline.requestFocus();
+                            // Show keyboard
+                            containerContent.postDelayed(() -> {
+                                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                                imm.showSoftInput(editTextUsernameInline, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                            }, 200);
+                        }
                     }
                     if (isSigningOut) {
                         UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();

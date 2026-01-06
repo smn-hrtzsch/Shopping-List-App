@@ -350,6 +350,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
                                 getString(R.string.button_cancel),
                                 () -> {
                                     Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                                    intent.putExtra("EXTRA_FOCUS_USERNAME", true);
                                     profileActivityLauncher.launch(intent);
                                 },
                                 () -> pendingListName = null
