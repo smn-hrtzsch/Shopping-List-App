@@ -233,13 +233,18 @@ public class ProfileActivity extends BaseActivity {
     private void performDialogLogin(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
         String input = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
+
         if (input.isEmpty()) { showError(errorEmail, getString(R.string.error_email_or_username_required)); return; }
         if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
+
         hideKeyboard(emailField);
+        emailField.setEnabled(false);
+        passwordField.setEnabled(false);
         loadingContainer.setVisibility(View.VISIBLE);
         BaseActivity.startDotsAnimation(d1, d2, d3);
         btnLogin.setEnabled(false);
         btnRegister.setEnabled(false);
+
         Runnable onLoginSuccess = () -> {
             dialog.dismiss();
             userRepository.syncEmailToFirestore();
@@ -249,12 +254,16 @@ public class ProfileActivity extends BaseActivity {
                 loadCurrentProfile(); 
             });
         };
+        
         Runnable onError = () -> {
              loadingContainer.setVisibility(View.GONE);
              d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
              btnLogin.setEnabled(true);
              btnRegister.setEnabled(true);
+             emailField.setEnabled(true);
+             passwordField.setEnabled(true);
         };
+
         if (AuthValidator.isValidEmail(input)) {
             performAuthLogin(input, password, onLoginSuccess, errorGeneral, onError);
         } else {
@@ -361,21 +370,29 @@ public class ProfileActivity extends BaseActivity {
     private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
         String email = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
+
         if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
         if (!AuthValidator.isValidEmail(email)) { showError(errorEmail, getString(R.string.error_invalid_email)); return; }
         if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
         if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
+
         hideKeyboard(emailField);
+        emailField.setEnabled(false);
+        passwordField.setEnabled(false);
         loadingContainer.setVisibility(View.VISIBLE);
         BaseActivity.startDotsAnimation(d1, d2, d3);
         btnLogin.setEnabled(false);
         btnRegister.setEnabled(false);
+        
         Runnable onError = () -> {
              loadingContainer.setVisibility(View.GONE);
              d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
              btnLogin.setEnabled(true);
              btnRegister.setEnabled(true);
+             emailField.setEnabled(true);
+             passwordField.setEnabled(true);
         };
+
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
             AuthCredential credential = EmailAuthProvider.getCredential(email, password);
@@ -406,12 +423,16 @@ public class ProfileActivity extends BaseActivity {
     private void performDialogResetPassword(EditText emailField, TextView errorEmail, View loadingContainer, View d1, View d2, View d3) {
         String email = emailField.getText().toString().trim();
         if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
-        hideKeyboard();
+        
+        hideKeyboard(emailField);
+        emailField.setEnabled(false);
         loadingContainer.setVisibility(View.VISIBLE);
         BaseActivity.startDotsAnimation(d1, d2, d3);
+        
         mAuth.sendPasswordResetEmail(email).addOnCompleteListener(t -> {
             loadingContainer.setVisibility(View.GONE);
             d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+            emailField.setEnabled(true);
             if (t.isSuccessful()) UiUtils.makeCustomToast(this, getString(R.string.email_sent), Toast.LENGTH_SHORT).show();
             else showError(errorEmail, AuthErrorMapper.getErrorMessage(this, t.getException()));
         });
@@ -421,6 +442,8 @@ public class ProfileActivity extends BaseActivity {
         userRepository.syncEmailToFirestore();
         user.sendEmailVerification()
                 .addOnCompleteListener(task -> {
+                    // Dialog remains open but loading finished? Or dismiss dialog and show verification dialog?
+                    // We dismiss authDialog here.
                     authDialog.dismiss();
                     if (task.isSuccessful()) {
                         showVerificationDialog(user, isLinkedAccount);
@@ -438,14 +461,17 @@ public class ProfileActivity extends BaseActivity {
         builder.setCancelable(false);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+
         TextView textTitle = dialogView.findViewById(R.id.dialog_title);
         TextView textMessage = dialogView.findViewById(R.id.dialog_message);
         MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
         MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+
         textTitle.setText(R.string.dialog_verify_email_title);
         textMessage.setText(getString(R.string.dialog_verify_email_message, user.getEmail()));
         btnPositive.setText(R.string.button_confirmed);
         btnNegative.setText(R.string.button_cancel_delete);
+
         btnPositive.setOnClickListener(v -> {
             user.reload().addOnCompleteListener(reloadTask -> {
                 if (reloadTask.isSuccessful()) {
@@ -461,6 +487,7 @@ public class ProfileActivity extends BaseActivity {
                 }
             });
         });
+
         btnNegative.setOnClickListener(v -> {
              dialog.dismiss();
              revertRegistration(user, isLinkedAccount);
