@@ -271,25 +271,32 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performAuthLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
-        // Debug: Check App Check Token status
-        com.google.firebase.appcheck.FirebaseAppCheck.getInstance().getAppCheckToken(false)
-            .addOnSuccessListener(token -> android.util.Log.d("AppCheck", "Token received: " + token.getToken()))
-            .addOnFailureListener(e -> android.util.Log.e("AppCheck", "Token failed", e));
-
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null && currentUser.isAnonymous()) {
-             verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError);
-        } else {
-             mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        onSuccess.run();
-                    } else {
-                        onError.run();
-                        showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException()));
-                    }
-                });
-        }
+        // Force refresh App Check token to ensure validity before sensitive auth operation
+        com.google.firebase.appcheck.FirebaseAppCheck.getInstance().getAppCheckToken(true)
+            .addOnCompleteListener(tokenTask -> {
+                if (!tokenTask.isSuccessful()) {
+                    android.util.Log.e("AppCheck", "Token refresh failed", tokenTask.getException());
+                }
+                // Proceed regardless of token success (Auth might work if not enforced, or use cached)
+                // But mostly this delay ensures the provider is active.
+                
+                FirebaseUser currentUser = mAuth.getCurrentUser();
+                if (currentUser != null && currentUser.isAnonymous()) {
+                     // Note: verifyCredentialsAndSwitch uses secondary app which might need its own App Check token.
+                     // But we removed secondary app logic? Let's check verifyCredentialsAndSwitch implementation.
+                     verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError);
+                } else {
+                     mAuth.signInWithEmailAndPassword(email, password)
+                        .addOnCompleteListener(this, task -> {
+                            if (task.isSuccessful()) {
+                                onSuccess.run();
+                            } else {
+                                onError.run();
+                                showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException()));
+                            }
+                        });
+                }
+            });
     }
 
     private void verifyCredentialsAndSwitch(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
@@ -298,6 +305,14 @@ public class ProfileActivity extends BaseActivity {
         try { secondaryApp = com.google.firebase.FirebaseApp.getInstance("secondary"); } 
         catch (IllegalStateException e) { secondaryApp = com.google.firebase.FirebaseApp.initializeApp(this, options, "secondary"); }
         
+        // Install App Check for secondary app to avoid "No AppCheckProvider installed"
+        com.google.firebase.appcheck.FirebaseAppCheck secondaryAppCheck = com.google.firebase.appcheck.FirebaseAppCheck.getInstance(secondaryApp);
+        if (BuildConfig.DEBUG) {
+             secondaryAppCheck.installAppCheckProviderFactory(com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance());
+        } else {
+             secondaryAppCheck.installAppCheckProviderFactory(com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance());
+        }
+
         FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
         secondaryAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
