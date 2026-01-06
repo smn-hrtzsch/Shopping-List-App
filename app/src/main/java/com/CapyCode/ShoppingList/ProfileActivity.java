@@ -202,11 +202,31 @@ public class ProfileActivity extends BaseActivity {
             if (hasFocus) {
                 // Delay to allow keyboard to appear and layout to resize
                 v.postDelayed(() -> {
-                    if (layoutAuthInline != null) {
-                        android.graphics.Rect rect = new android.graphics.Rect(0, 0, layoutAuthInline.getWidth(), layoutAuthInline.getHeight());
-                        layoutAuthInline.requestRectangleOnScreen(rect, false);
+                    if (layoutAuthInline != null && containerContent instanceof android.widget.ScrollView) {
+                        android.widget.ScrollView scrollView = (android.widget.ScrollView) containerContent;
+                        // Calculate the bottom of layoutAuthInline relative to ScrollView
+                        int bottom = layoutAuthInline.getBottom();
+                        // Add some padding
+                        bottom += 20; 
+                        
+                        // We want to make sure 'bottom' is visible. 
+                        // The ScrollView displays from scrollY to scrollY + height.
+                        // So we want scrollY + height >= bottom.
+                        // scrollY >= bottom - height.
+                        
+                        int height = scrollView.getHeight();
+                        int targetScrollY = bottom - height;
+                        
+                        // Also ensure we don't scroll past the top (negative scrollY)
+                        // But smoothScrollTo handles bounds usually.
+                        // However, we probably want to show as much as possible, so aligning bottom to bottom is good.
+                        // But if the view is taller than the viewport (keyboard open), we might want to align top?
+                        // The user said: "buttons must be visible". Buttons are at the bottom of the card.
+                        // So aligning bottom is the priority.
+                        
+                        scrollView.smoothScrollTo(0, Math.max(0, targetScrollY));
                     }
-                }, 300);
+                }, 400); // Increased delay slightly
             }
         };
         editTextEmailInline.setOnFocusChangeListener(scrollListener);

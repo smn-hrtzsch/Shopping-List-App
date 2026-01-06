@@ -154,7 +154,8 @@
                             app:boxCornerRadiusTopStart="12dp"
                             app:boxCornerRadiusTopEnd="12dp"
                             app:boxCornerRadiusBottomStart="12dp"
-                            app:boxCornerRadiusBottomEnd="12dp">
+                            app:boxCornerRadiusBottomEnd="12dp"
+                            android:clipToOutline="true">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_text_email_inline"
@@ -162,6 +163,7 @@
                                 android:layout_height="wrap_content"
                                 android:inputType="textEmailAddress"
                                 android:autofillHints="emailAddress"
+                                android:importantForAutofill="yes"
                                 android:textSize="14sp"/>
                         </com.google.android.material.textfield.TextInputLayout>
 
@@ -189,7 +191,8 @@
                             app:endIconMode="password_toggle"
                             app:errorIconDrawable="@null"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:theme="@style/AccentInputTheme">
+                            android:theme="@style/AccentInputTheme"
+                            android:clipToOutline="true">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_text_password_inline"
@@ -197,6 +200,7 @@
                                 android:layout_height="wrap_content"
                                 android:inputType="textPassword"
                                 android:autofillHints="password"
+                                android:importantForAutofill="yes"
                                 android:textSize="14sp"/>
                         </com.google.android.material.textfield.TextInputLayout>
 
