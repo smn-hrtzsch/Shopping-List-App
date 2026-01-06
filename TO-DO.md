@@ -63,5 +63,6 @@
 
 - [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
 - [ ] Nach dem Ändern des Profilbildes wird im Vorschau Dialog immer noch das alte Profilbild angezeigt. Erst nach aktualisieren / neu starten der Activity wird das neue Bild korrekt angezeigt.
+- [ ] Beim Einladen eines Users zu einer geteilten Liste werden Vorschläge aus dem Passwort Manager gemacht, das sollte nicht so sein.
 
 ## Fixed Bugs
