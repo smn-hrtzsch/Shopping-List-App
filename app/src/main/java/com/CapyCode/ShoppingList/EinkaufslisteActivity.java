@@ -161,6 +161,9 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         if (recyclerView.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
             ((androidx.recyclerview.widget.SimpleItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
         }
+        // Completely disable item animator to prevent scroll issues during move
+        recyclerView.setItemAnimator(null);
+        
         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
         recyclerView.setAdapter(adapter);
 
