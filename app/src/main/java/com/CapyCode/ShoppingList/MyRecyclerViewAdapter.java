@@ -430,9 +430,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             }
             editingItemPosition = -1;
             notifyItemChanged(position);
-            if (interactionListener != null) {
-                interactionListener.requestItemResort();
-            }
+            
+            // Removing requestItemResort() here because it triggers a full reload (destroying listener)
+            // which can cause a race condition where the listener fetches stale data from server
+            // before the local write is fully committed/cached, resulting in UI reverting to old value.
+            // Since name change does not affect sort order (done/position), we don't need to resort.
+            // if (interactionListener != null) {
+            //    interactionListener.requestItemResort();
+            // }
         }
     }
 }
