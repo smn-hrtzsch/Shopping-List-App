@@ -201,54 +201,17 @@ public class ProfileActivity extends BaseActivity {
         
         View.OnFocusChangeListener scrollListener = (v, hasFocus) -> {
             if (hasFocus) {
-                // Delay to allow keyboard to appear and layout to resize
-                v.postDelayed(() -> {
-                    if (layoutAuthInline != null && containerContent instanceof android.widget.ScrollView) {
-                        android.widget.ScrollView scrollView = (android.widget.ScrollView) containerContent;
-                        int bottom = layoutAuthInline.getBottom() + layoutAuthInline.getPaddingBottom();
-                        int height = scrollView.getHeight();
-                        int targetScrollY = bottom - height + 20; 
-                        scrollView.smoothScrollTo(0, Math.max(0, targetScrollY));
-                    }
-                }, 500);
+                triggerAuthScroll();
             }
         };
-        // Only attach scroll listener if NOT launched for specific username focus to avoid conflict?
-        // Actually, the issue described "Wenn ich in das Email Feld klicke wird der Fokus automatisch auf das Nutzername Feld oben gelenkt"
-        // implies something else is stealing focus.
-        // It might be the 'requestFocus()' in loadCurrentProfile for 'EXTRA_FOCUS_USERNAME' triggering unexpectedly?
-        // No, that only happens if intent has extra.
-        // Wait, if the user clicks email, 'hasFocus' is true.
-        // Is there any other code setting focus?
-        // Ah, in 'loadCurrentProfile', if 'EXTRA_FOCUS_USERNAME' is true, we set focus.
-        // If the user navigates to ProfileActivity normally, extra is false.
-        // But if they came from "Create Shared List", extra is true.
-        // If they enter a name, save it, finish() is called.
-        // So 'loadCurrentProfile' shouldn't be called again with the same intent?
-        // The intent persists.
-        // But 'saveUsername' calls 'finish()'.
-        // If they stay (e.g. error), 'loadCurrentProfile' is NOT called in 'saveUsername' failure.
-        // In 'success', we 'updateUIForUsername'.
-        
-        // The issue "Cursor Fokus Switch" likely happens when the activity is RE-CREATED or RESUMED and logic runs again?
-        // Or maybe the 'scrollListener' causes a relayout that triggers something?
-        // The user says "wenn ich in das Email Feld klicke".
-        
-        // Let's remove the focus request from 'loadCurrentProfile' if it's already set or if the user is interacting elsewhere?
-        // No, 'loadCurrentProfile' is async.
-        // If 'loadCurrentProfile' finishes and requests focus on 'editTextUsernameInline' WHILE the user is typing in email...
-        // But 'loadCurrentProfile' is called in 'onCreate'.
-        // It fetches profile.
-        // If profile has no username, it checks extra and sets focus.
-        
-        // If I am in the activity, and I sign out. 'loadCurrentProfile' is called.
-        // 'EXTRA_FOCUS_USERNAME' might still be in the intent if I haven't cleared it?
-        // If I started with 'EXTRA_FOCUS_USERNAME', signed out...
-        // The intent is still the same.
-        // I should remove the extra after handling it.
         
         editTextEmailInline.setOnFocusChangeListener(scrollListener);
         editTextPasswordInline.setOnFocusChangeListener(scrollListener);
+        
+        // Also trigger scroll on click (e.g. if keyboard was closed but focus remained)
+        View.OnClickListener clickListener = v -> triggerAuthScroll();
+        editTextEmailInline.setOnClickListener(clickListener);
+        editTextPasswordInline.setOnClickListener(clickListener);
 
         buttonLoginInline.setOnClickListener(v -> performDialogLogin(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
         buttonRegisterInline.setOnClickListener(v -> performDialogRegister(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
@@ -282,6 +245,21 @@ public class ProfileActivity extends BaseActivity {
         });
 
         setupSyncSwitch();
+    }
+
+    private void triggerAuthScroll() {
+        // Delay to allow keyboard to appear and layout to resize
+        if (containerContent != null) {
+            containerContent.postDelayed(() -> {
+                if (layoutAuthInline != null && containerContent instanceof android.widget.ScrollView) {
+                    android.widget.ScrollView scrollView = (android.widget.ScrollView) containerContent;
+                    int bottom = layoutAuthInline.getBottom() + layoutAuthInline.getPaddingBottom();
+                    int height = scrollView.getHeight();
+                    int targetScrollY = bottom - height + 20; 
+                    scrollView.smoothScrollTo(0, Math.max(0, targetScrollY));
+                }
+            }, 500);
+        }
     }
 
     // --- Auth Dialog Implementation ---
