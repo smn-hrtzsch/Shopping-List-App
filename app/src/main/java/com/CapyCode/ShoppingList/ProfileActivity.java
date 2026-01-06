@@ -197,19 +197,6 @@ public class ProfileActivity extends BaseActivity {
         };
         editTextEmailInline.addTextChangedListener(clearErrorWatcherInline);
         editTextPasswordInline.addTextChangedListener(clearErrorWatcherInline);
-        
-        View.OnFocusChangeListener scrollListener = (v, hasFocus) -> {
-            if (hasFocus) {
-                // Delay to allow keyboard to appear and layout to resize
-                v.postDelayed(() -> {
-                    if (containerContent instanceof android.widget.ScrollView) {
-                        ((android.widget.ScrollView) containerContent).fullScroll(View.FOCUS_DOWN);
-                    }
-                }, 500);
-            }
-        };
-        editTextEmailInline.setOnFocusChangeListener(scrollListener);
-        editTextPasswordInline.setOnFocusChangeListener(scrollListener);
 
         buttonLoginInline.setOnClickListener(v -> performDialogLogin(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
         buttonRegisterInline.setOnClickListener(v -> performDialogRegister(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
