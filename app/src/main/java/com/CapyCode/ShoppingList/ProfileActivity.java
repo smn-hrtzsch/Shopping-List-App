@@ -273,6 +273,25 @@ public class ProfileActivity extends BaseActivity {
                 previousHeight = height;
             }
         });
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.view.autofill.AutofillManager autofillManager = getSystemService(android.view.autofill.AutofillManager.class);
+            if (autofillManager != null) {
+                autofillManager.registerCallback(new android.view.autofill.AutofillManager.AutofillCallback() {
+                    @Override
+                    public void onAutofillEvent(@NonNull View view, int event) {
+                        super.onAutofillEvent(view, event);
+                        if (event == EVENT_INPUT_HIDDEN) {
+                            // Autofill UI hidden (likely selected), try to close keyboard if open
+                            // We verify if text is present to assume success
+                            if (view instanceof EditText && ((EditText) view).getText().length() > 0) {
+                                hideKeyboard(view);
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         setupSyncSwitch();
     }
@@ -1387,6 +1406,7 @@ public class ProfileActivity extends BaseActivity {
         userRepository.removeProfileImage(new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
+                 if (isFinishing() || isDestroyed()) return;
                  progressImage.setVisibility(View.GONE);
                  imageProfile.setVisibility(View.VISIBLE);
                  loadCurrentProfile();
@@ -1394,6 +1414,7 @@ public class ProfileActivity extends BaseActivity {
             }
             @Override
             public void onError(String message) {
+                if (isFinishing() || isDestroyed()) return;
                 progressImage.setVisibility(View.GONE);
                 imageProfile.setVisibility(View.VISIBLE);
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
@@ -1407,6 +1428,7 @@ public class ProfileActivity extends BaseActivity {
         userRepository.uploadProfileImage(imageUri, new UserRepository.OnImageUploadListener() {
             @Override
             public void onSuccess(String downloadUrl) {
+                if (isFinishing() || isDestroyed()) return;
                 progressImage.setVisibility(View.GONE);
                 imageProfile.setVisibility(View.VISIBLE);
                 currentImageUrl = downloadUrl;
@@ -1417,6 +1439,7 @@ public class ProfileActivity extends BaseActivity {
             }
             @Override
             public void onError(String message) {
+                if (isFinishing() || isDestroyed()) return;
                 progressImage.setVisibility(View.GONE);
                 imageProfile.setVisibility(View.VISIBLE);
                 UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
