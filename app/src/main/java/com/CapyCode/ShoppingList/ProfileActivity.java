@@ -65,6 +65,11 @@ public class ProfileActivity extends BaseActivity {
     private LinearLayout layoutEditMode;
     private EditText editTextUsernameInline;
     private MaterialButton buttonSaveUsernameInline;
+    private LinearLayout layoutAuthInline;
+    private EditText editTextEmailInline;
+    private EditText editTextPasswordInline;
+    private MaterialButton buttonLoginInline;
+    private MaterialButton buttonRegisterInline;
     private ImageView imageProfile;
     private View containerContent;
     private View cardSyncPreferences;
@@ -156,6 +161,45 @@ public class ProfileActivity extends BaseActivity {
         View includeInline = findViewById(R.id.include_username_input_inline);
         editTextUsernameInline = includeInline.findViewById(R.id.input_edit_text);
         buttonSaveUsernameInline = includeInline.findViewById(R.id.username_action_button);
+        
+        layoutAuthInline = findViewById(R.id.layout_auth_inline);
+        editTextEmailInline = findViewById(R.id.edit_text_email_inline);
+        editTextPasswordInline = findViewById(R.id.edit_text_password_inline);
+        buttonLoginInline = findViewById(R.id.button_login_inline);
+        buttonRegisterInline = findViewById(R.id.button_register_inline);
+        TextView textForgotPasswordInline = findViewById(R.id.text_forgot_password_inline);
+        
+        // Setup inline auth listeners
+        TextView errorTextEmailInline = findViewById(R.id.error_text_email_inline);
+        TextView errorTextPasswordInline = findViewById(R.id.error_text_password_inline);
+        TextView errorTextGeneralInline = findViewById(R.id.error_text_general_inline);
+        View authLoadingContainerInline = findViewById(R.id.auth_loading_container_inline);
+        
+        // Find dots inside the included layout. 
+        // Note: include id is auth_loading_container_inline, so we need to find dots inside it if possible or just pass the container.
+        // Actually the include tag ID is the root of the included layout if merge wasn't used, but here it is a LinearLayout probably.
+        // Let's check dialog_loading.xml... it is a LinearLayout. So authLoadingContainerInline IS the view.
+        // But we need the dots inside it.
+        View dot1Inline = authLoadingContainerInline.findViewById(R.id.dot1);
+        View dot2Inline = authLoadingContainerInline.findViewById(R.id.dot2);
+        View dot3Inline = authLoadingContainerInline.findViewById(R.id.dot3);
+
+        android.text.TextWatcher clearErrorWatcherInline = new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                errorTextEmailInline.setVisibility(View.GONE);
+                errorTextPasswordInline.setVisibility(View.GONE);
+                errorTextGeneralInline.setVisibility(View.GONE);
+            }
+            @Override public void afterTextChanged(android.text.Editable s) {}
+        };
+        editTextEmailInline.addTextChangedListener(clearErrorWatcherInline);
+        editTextPasswordInline.addTextChangedListener(clearErrorWatcherInline);
+
+        buttonLoginInline.setOnClickListener(v -> performDialogLogin(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
+        buttonRegisterInline.setOnClickListener(v -> performDialogRegister(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
+        textForgotPasswordInline.setOnClickListener(v -> performDialogResetPassword(editTextEmailInline, errorTextEmailInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline));
+
         imageProfile = findViewById(R.id.image_profile);
         cardSyncPreferences = findViewById(R.id.card_sync_preferences);
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
@@ -186,60 +230,6 @@ public class ProfileActivity extends BaseActivity {
     }
 
     // --- Auth Dialog Implementation ---
-
-    private void showSubtleAuthDialog() {
-        if (currentAuthDialog != null && currentAuthDialog.isShowing()) return;
-
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_auth_subtle, null);
-        builder.setView(dialogView);
-        androidx.appcompat.app.AlertDialog dialog = builder.create();
-        currentAuthDialog = dialog;
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        }
-
-        EditText editTextEmail = dialogView.findViewById(R.id.edit_text_email);
-        EditText editTextPassword = dialogView.findViewById(R.id.edit_text_password);
-        TextView errorTextEmail = dialogView.findViewById(R.id.error_text_email);
-        TextView errorTextPassword = dialogView.findViewById(R.id.error_text_password);
-        TextView errorTextGeneral = dialogView.findViewById(R.id.error_text_general);
-        View authLoadingContainer = dialogView.findViewById(R.id.auth_loading_container);
-        View dot1 = dialogView.findViewById(R.id.dot1);
-        View dot2 = dialogView.findViewById(R.id.dot2);
-        View dot3 = dialogView.findViewById(R.id.dot3);
-        View buttonLogin = dialogView.findViewById(R.id.button_login);
-        View buttonRegister = dialogView.findViewById(R.id.button_register);
-        View textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
-        View buttonClose = dialogView.findViewById(R.id.button_dialog_close);
-
-        android.text.TextWatcher clearErrorWatcher = new android.text.TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                errorTextEmail.setVisibility(View.GONE);
-                errorTextPassword.setVisibility(View.GONE);
-                errorTextGeneral.setVisibility(View.GONE);
-            }
-            @Override public void afterTextChanged(android.text.Editable s) {}
-        };
-        editTextEmail.addTextChangedListener(clearErrorWatcher);
-        editTextPassword.addTextChangedListener(clearErrorWatcher);
-
-        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
-        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
-        textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail, authLoadingContainer, dot1, dot2, dot3));
-        if (buttonClose != null) {
-            buttonClose.setOnClickListener(v -> dialog.dismiss());
-        }
-        
-        dialog.setOnDismissListener(d -> {
-            currentAuthDialog = null;
-            if (buttonRegisterEmail != null) buttonRegisterEmail.setVisibility(View.VISIBLE);
-        });
-
-        dialog.show();
-    }
 
     private void showAuthDialog() {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
@@ -301,7 +291,7 @@ public class ProfileActivity extends BaseActivity {
         btnRegister.setEnabled(false);
 
         Runnable onLoginSuccess = () -> {
-            dialog.dismiss();
+            if (dialog != null) dialog.dismiss();
             userRepository.syncEmailToFirestore();
             UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
             ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
@@ -499,7 +489,7 @@ public class ProfileActivity extends BaseActivity {
                 .addOnCompleteListener(task -> {
                     // Dialog remains open but loading finished? Or dismiss dialog and show verification dialog?
                     // We dismiss authDialog here.
-                    authDialog.dismiss();
+                    if (authDialog != null) authDialog.dismiss();
                     if (task.isSuccessful()) {
                         showVerificationDialog(user, isLinkedAccount);
                     } else {
@@ -965,6 +955,7 @@ public class ProfileActivity extends BaseActivity {
             textViewWarning.setVisibility(View.GONE);
             cardSyncPreferences.setVisibility(View.VISIBLE);
             if (cardLinkedMethods != null) cardLinkedMethods.setVisibility(View.VISIBLE);
+            layoutAuthInline.setVisibility(View.GONE);
             
             layoutLinkedMethods.removeAllViews();
             
@@ -1021,19 +1012,19 @@ public class ProfileActivity extends BaseActivity {
             boolean shouldShowLinkText = currentLoadedUsername != null && !currentLoadedUsername.isEmpty();
             
             if (!shouldShowLinkText) {
-                // Anonymous & No Username -> Show Subtle Dialog
+                // Anonymous & No Username -> Show Inline Auth
                 buttonRegisterEmail.setVisibility(View.GONE);
-                showSubtleAuthDialog();
+                layoutAuthInline.setVisibility(View.VISIBLE);
             } else {
                 buttonRegisterEmail.setVisibility(View.VISIBLE);
-                buttonRegisterEmail.setText(R.string.action_link_email); // was "Sign in with Email" but logical if they have a username but no account yet? Or "Sign in / Register"?
+                layoutAuthInline.setVisibility(View.GONE);
+                
+                buttonRegisterEmail.setText(R.string.action_link_email); 
                 // Standard logic:
                 buttonRegisterEmail.setText(R.string.action_sign_in_email);
             }
             
             // Adjust button text based on username presence? 
-            // The original code was: buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
-            // I should preserve that for the else case.
             if (buttonRegisterEmail.getVisibility() == View.VISIBLE) {
                 buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
                 buttonRegisterEmail.setIconResource(R.drawable.ic_email);
