@@ -363,7 +363,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 }
                 if (interactionListener != null) {
                     interactionListener.onItemCheckboxChanged(item, isChecked);
-                    interactionListener.requestItemResort();
+                    // interactionListener.requestItemResort(); // DISABLE AUTO SCROLL ON CHECK
                 }
             });
 
