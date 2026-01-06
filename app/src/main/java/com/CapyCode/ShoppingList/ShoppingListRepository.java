@@ -318,7 +318,17 @@ public class ShoppingListRepository {
 
     public void updateItemInList(ShoppingItem item, String firebaseListId, OnActionListener listener) {
         if (firebaseListId != null && item.getFirebaseId() != null) {
-            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item)
+            // Use Map to ensure precise field updates and avoid potential POJO mapping issues
+            Map<String, Object> itemData = new HashMap<>();
+            itemData.put("name", item.getName());
+            itemData.put("quantity", item.getQuantity());
+            itemData.put("unit", item.getUnit());
+            itemData.put("done", item.isDone());
+            itemData.put("notes", item.getNotes());
+            itemData.put("position", item.getPosition());
+
+            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId())
+                .set(itemData)
                 .addOnCompleteListener(task -> {
                     if (listener != null) listener.onActionComplete();
                 });
