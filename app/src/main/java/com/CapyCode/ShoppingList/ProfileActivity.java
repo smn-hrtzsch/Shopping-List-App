@@ -75,6 +75,7 @@ public class ProfileActivity extends BaseActivity {
     private boolean isInitialProfileCreation = false;
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
+    private androidx.appcompat.app.AlertDialog currentAuthDialog = null;
 
     private String currentImageUrl = null;
     private boolean isSigningOut = false;
@@ -185,6 +186,60 @@ public class ProfileActivity extends BaseActivity {
     }
 
     // --- Auth Dialog Implementation ---
+
+    private void showSubtleAuthDialog() {
+        if (currentAuthDialog != null && currentAuthDialog.isShowing()) return;
+
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_auth_subtle, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        currentAuthDialog = dialog;
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        EditText editTextEmail = dialogView.findViewById(R.id.edit_text_email);
+        EditText editTextPassword = dialogView.findViewById(R.id.edit_text_password);
+        TextView errorTextEmail = dialogView.findViewById(R.id.error_text_email);
+        TextView errorTextPassword = dialogView.findViewById(R.id.error_text_password);
+        TextView errorTextGeneral = dialogView.findViewById(R.id.error_text_general);
+        View authLoadingContainer = dialogView.findViewById(R.id.auth_loading_container);
+        View dot1 = dialogView.findViewById(R.id.dot1);
+        View dot2 = dialogView.findViewById(R.id.dot2);
+        View dot3 = dialogView.findViewById(R.id.dot3);
+        View buttonLogin = dialogView.findViewById(R.id.button_login);
+        View buttonRegister = dialogView.findViewById(R.id.button_register);
+        View textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
+        View buttonClose = dialogView.findViewById(R.id.button_dialog_close);
+
+        android.text.TextWatcher clearErrorWatcher = new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                errorTextEmail.setVisibility(View.GONE);
+                errorTextPassword.setVisibility(View.GONE);
+                errorTextGeneral.setVisibility(View.GONE);
+            }
+            @Override public void afterTextChanged(android.text.Editable s) {}
+        };
+        editTextEmail.addTextChangedListener(clearErrorWatcher);
+        editTextPassword.addTextChangedListener(clearErrorWatcher);
+
+        buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
+        buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
+        textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail, authLoadingContainer, dot1, dot2, dot3));
+        if (buttonClose != null) {
+            buttonClose.setOnClickListener(v -> dialog.dismiss());
+        }
+        
+        dialog.setOnDismissListener(d -> {
+            currentAuthDialog = null;
+            if (buttonRegisterEmail != null) buttonRegisterEmail.setVisibility(View.VISIBLE);
+        });
+
+        dialog.show();
+    }
 
     private void showAuthDialog() {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
@@ -912,40 +967,24 @@ public class ProfileActivity extends BaseActivity {
             if (cardLinkedMethods != null) cardLinkedMethods.setVisibility(View.VISIBLE);
             
             layoutLinkedMethods.removeAllViews();
+            
+            // Define order: Email, Google, Apple (future)
+            UserInfo emailProfile = null;
+            UserInfo googleProfile = null;
+
             for (UserInfo profile : user.getProviderData()) {
-                if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) || EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
-                    LinearLayout row = new LinearLayout(this);
-                    row.setOrientation(LinearLayout.HORIZONTAL);
-                    row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-                    row.setPadding(0, 8, 0, 8);
-                    ImageView icon = new ImageView(this);
-                    int size = (int) (24 * getResources().getDisplayMetrics().density);
-                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
-                    lp.setMarginEnd((int) (16 * getResources().getDisplayMetrics().density));
-                    icon.setLayoutParams(lp);
-                    TextView text = new TextView(this);
-                    text.setTextColor(ContextCompat.getColor(this, R.color.text_primary_adaptive));
-                    if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
-                        if (profile.getPhotoUrl() != null) Glide.with(this).load(profile.getPhotoUrl()).apply(RequestOptions.circleCropTransform()).into(icon);
-                        else icon.setImageResource(R.drawable.ic_google_logo);
-                        text.setText(getString(R.string.linked_google, profile.getEmail()));
-                    } else {
-                        icon.setImageResource(R.drawable.ic_email);
-                        icon.setColorFilter(ContextCompat.getColor(this, R.color.text_primary_adaptive));
-                        text.setText(getString(R.string.linked_email, profile.getEmail()));
-                    }
-                    row.addView(icon);
-                    row.addView(text);
-                    layoutLinkedMethods.addView(row);
-                }
+                if (EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) emailProfile = profile;
+                else if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) googleProfile = profile;
             }
+
+            if (emailProfile != null) addProviderView(emailProfile, R.drawable.ic_email, getString(R.string.linked_email, emailProfile.getEmail()));
+            if (googleProfile != null) addProviderView(googleProfile, R.drawable.ic_google_logo, getString(R.string.linked_google, googleProfile.getEmail()));
+
             buttonSignOut.setVisibility(View.VISIBLE);
             findViewById(R.id.layout_auth_buttons).setVisibility(View.VISIBLE);
-            boolean isGoogleLinked = false; boolean isEmailLinked = false;
-            for (UserInfo profile : user.getProviderData()) {
-                if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) isGoogleLinked = true;
-                if (EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) isEmailLinked = true;
-            }
+            boolean isGoogleLinked = googleProfile != null;
+            boolean isEmailLinked = emailProfile != null;
+
             if (isGoogleLinked) {
                 buttonRegisterGoogle.setText(R.string.google_linked_disconnect);
                 buttonRegisterGoogle.setIconResource(R.drawable.ic_unlink);
@@ -978,18 +1017,65 @@ public class ProfileActivity extends BaseActivity {
             cardSyncPreferences.setVisibility(View.GONE);
             if (cardLinkedMethods != null) cardLinkedMethods.setVisibility(View.GONE);
             findViewById(R.id.layout_auth_buttons).setVisibility(View.VISIBLE);
+            
             boolean shouldShowLinkText = currentLoadedUsername != null && !currentLoadedUsername.isEmpty();
-            buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
-            buttonRegisterEmail.setIconResource(R.drawable.ic_email);
-            int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
-            buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
-            buttonRegisterEmail.setOnClickListener(v -> showAuthDialog());
+            
+            if (!shouldShowLinkText) {
+                // Anonymous & No Username -> Show Subtle Dialog
+                buttonRegisterEmail.setVisibility(View.GONE);
+                showSubtleAuthDialog();
+            } else {
+                buttonRegisterEmail.setVisibility(View.VISIBLE);
+                buttonRegisterEmail.setText(R.string.action_link_email); // was "Sign in with Email" but logical if they have a username but no account yet? Or "Sign in / Register"?
+                // Standard logic:
+                buttonRegisterEmail.setText(R.string.action_sign_in_email);
+            }
+            
+            // Adjust button text based on username presence? 
+            // The original code was: buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
+            // I should preserve that for the else case.
+            if (buttonRegisterEmail.getVisibility() == View.VISIBLE) {
+                buttonRegisterEmail.setText(shouldShowLinkText ? R.string.action_link_email : R.string.action_sign_in_email);
+                buttonRegisterEmail.setIconResource(R.drawable.ic_email);
+                int colorOnSurface = com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK);
+                buttonRegisterEmail.setIconTint(android.content.res.ColorStateList.valueOf(colorOnSurface));
+                buttonRegisterEmail.setOnClickListener(v -> showAuthDialog());
+            }
+
             buttonRegisterGoogle.setText(shouldShowLinkText ? R.string.action_link_google : R.string.sign_in_google);
             buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
             buttonRegisterGoogle.setIconTint(null);
             buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
             buttonSignOut.setVisibility(View.GONE);
         }
+    }
+    
+    private void addProviderView(UserInfo profile, int iconRes, String textContent) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(0, 8, 0, 8);
+        ImageView icon = new ImageView(this);
+        int size = (int) (24 * getResources().getDisplayMetrics().density);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+        lp.setMarginEnd((int) (16 * getResources().getDisplayMetrics().density));
+        icon.setLayoutParams(lp);
+        TextView text = new TextView(this);
+        text.setTextColor(ContextCompat.getColor(this, R.color.text_primary_adaptive));
+        
+        if (iconRes == R.drawable.ic_google_logo && profile.getPhotoUrl() != null) {
+            Glide.with(this).load(profile.getPhotoUrl()).apply(RequestOptions.circleCropTransform()).into(icon);
+        } else {
+            icon.setImageResource(iconRes);
+            if (iconRes == R.drawable.ic_email) {
+                icon.setColorFilter(ContextCompat.getColor(this, R.color.text_primary_adaptive));
+            }
+        }
+        
+        text.setText(textContent);
+        row.addView(icon);
+        row.addView(text);
+        layoutLinkedMethods.addView(row);
     }
 
     private void confirmUnlink(String providerId) {
