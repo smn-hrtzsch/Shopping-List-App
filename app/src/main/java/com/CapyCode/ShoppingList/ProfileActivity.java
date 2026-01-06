@@ -993,7 +993,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void confirmUnlink(String providerId) {
-        showCustomDialog(getString(R.string.dialog_unlink_title), getString(R.string.dialog_unlink_message), getString(R.string.button_unlink), () -> unlinkProvider(providerId));
+        showVerticalDialog(getString(R.string.dialog_unlink_title), getString(R.string.dialog_unlink_message), getString(R.string.button_unlink), () -> unlinkProvider(providerId));
     }
 
     private void unlinkProvider(String providerId) {
@@ -1106,6 +1106,29 @@ public class ProfileActivity extends BaseActivity {
 
         btnPositive.setOnClickListener(v -> { onPositive.run(); dialog.dismiss(); });
         btnNeutral.setOnClickListener(v -> { onNeutral.run(); dialog.dismiss(); });
+        btnNegative.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private void showVerticalDialog(String title, String message, String positiveText, Runnable onPositive) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_vertical_buttons, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+        TextView textTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        MaterialButton btnPositive = dialogView.findViewById(R.id.dialog_button_positive);
+        MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
+        MaterialButton btnNeutral = dialogView.findViewById(R.id.dialog_button_neutral);
+
+        textTitle.setText(title);
+        textMessage.setText(message);
+        btnPositive.setText(positiveText);
+        btnNeutral.setVisibility(View.GONE); // Hide neutral button for 2-option dialog
+
+        btnPositive.setOnClickListener(v -> { onPositive.run(); dialog.dismiss(); });
         btnNegative.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
