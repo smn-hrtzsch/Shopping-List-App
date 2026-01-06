@@ -63,8 +63,9 @@
 ## Bugs
 
 - [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
-- [ ] Lokale unsynced Listen werden beim Abmelden automatisch zu gesicherten synced Listen umgewandelt. Das sollte nicht by default der Fall sein. Es sollte eher beim Abmelden davor gewarnt werden, dass nicht gesyncte Listen verloren gehen und eine Option mehr angezeigt werden neben abbrechen und abmelden (Verlust von lokalen Listen) auch noch das automatische umwandeln zur synced list.
-- [ ] Beim Abhaken von Artikeln wird der Fokus / das Scrollen zum Ende der Liste gesetzt. Aber das ist nicht gewollt. Es sollte beim Abhaken kein automatisches Scrollen geben. Nur beim Hinzufügen von Artikeln.
-- [ ] In synced Listen: beim Abhaken von Artikeln und auch beim wieder Unchecken wird das Styling manchmal nicht korrekt gesetzt oder rückgängig gemacht. Dann sind plötzlich abgehakte Artikel nicht ausgegraut und nicht abgehakte Artikel ausgegraut.
+- [ ] Beim Abhaken von Artikeln wird manchmal der Fokus / das Scrollen zum Ende der Liste gesetzt. Aber das ist nicht gewollt. Es sollte beim Abhaken kein automatisches Scrollen geben. Nur beim Hinzufügen von Artikeln. Das Problem tritt hauptsächlich bei privaten synced Listen auf.
+- [ ] Es fehlen noch deutsche Strings für den Abmelden Dialog.
+- [ ] Beim entfernen einer Anmelde-Methode sollten die Buttons untereinander angezeigt werden, da horizontal der Text zu viel Platz einnimmt mit zwei Buttons nebeneinander. Du kannst dazu den dialog_vertical_buttons.xml verwenden.xml nutzen.
+- [ ] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
 
 ## Fixed Bugs

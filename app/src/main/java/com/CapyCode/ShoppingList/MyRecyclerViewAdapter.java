@@ -27,6 +27,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private final ShoppingListRepository repository;
     private final OnItemInteractionListener interactionListener;
     private final String firebaseListId;
+    private RecyclerView recyclerView;
 
     private int editingItemPosition = -1;
 
@@ -49,6 +50,18 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         this.interactionListener = listener;
         this.firebaseListId = firebaseListId;
         setHasStableIds(true);
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        this.recyclerView = recyclerView;
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        this.recyclerView = null;
     }
 
     @Override
@@ -121,11 +134,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 
                 return java.util.Objects.equals(oldItem.getName(), newItem.getName()) &&
                        oldItem.isDone() == newItem.isDone() &&
-                       oldItem.getPosition() == newItem.getPosition() &&
                        java.util.Objects.equals(oldItem.getQuantity(), newItem.getQuantity()) &&
                        java.util.Objects.equals(oldItem.getUnit(), newItem.getUnit());
             }
-        });
+        }, false); // Disable move detection to prevent "flying" animation
 
         this.items.clear();
         this.items.addAll(newList);
@@ -225,6 +237,18 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         notifyItemRemoved(position);
 
         if (interactionListener != null) {
+            // Capture scroll state BEFORE removal for Undo
+            int undoScrollPos = RecyclerView.NO_POSITION;
+            int undoScrollOffset = 0;
+            if (recyclerView != null && recyclerView.getLayoutManager() instanceof androidx.recyclerview.widget.LinearLayoutManager) {
+                androidx.recyclerview.widget.LinearLayoutManager llm = (androidx.recyclerview.widget.LinearLayoutManager) recyclerView.getLayoutManager();
+                undoScrollPos = llm.findFirstVisibleItemPosition();
+                View v = llm.findViewByPosition(undoScrollPos);
+                undoScrollOffset = (v != null) ? v.getTop() : 0;
+            }
+            final int finalUndoScrollPos = undoScrollPos;
+            final int finalUndoScrollOffset = undoScrollOffset;
+
             String message = "\"" + itemToDelete.getName() + "\" " + context.getString(R.string.deleted);
             interactionListener.showUndoBar(message, () -> {
                 
@@ -237,22 +261,18 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     itemToDelete.setId(newId);
                 }
 
-                // Create a new list with the restored item and let DiffUtil handle the insertion
-                List<ShoppingItem> newList = new ArrayList<>(items);
-                
-                // Shift existing items to make space for the restored item at its original position
-                // This prevents conflicts if other items have moved into that position (e.g. by drag & drop)
+                // Optimized Undo: Insert with animation and correct position
+                // 1. Shift positions of existing items to make room
                 int targetPos = itemToDelete.getPosition();
-                for (ShoppingItem item : newList) {
-                    if (item.getPosition() >= targetPos) {
-                        item.setPosition(item.getPosition() + 1);
+                for (ShoppingItem existingItem : items) {
+                    if (existingItem.getPosition() >= targetPos) {
+                        existingItem.setPosition(existingItem.getPosition() + 1);
                     }
                 }
                 
-                newList.add(itemToDelete);
-                
-                // Sort with tie-breaker
-                Collections.sort(newList, (item1, item2) -> {
+                // 2. Find insertion index using binary search for precision
+                List<ShoppingItem> searchList = new ArrayList<>(items);
+                int insertIndex = Collections.binarySearch(searchList, itemToDelete, (item1, item2) -> {
                     if (item1.isDone() == item2.isDone()) {
                         int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
                         if (posComp != 0) return posComp;
@@ -260,21 +280,32 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                     }
                     return item1.isDone() ? 1 : -1;
                 });
-
-                // Renormalize positions to fix any gaps or duplicates
-                for (int i = 0; i < newList.size(); i++) {
-                    newList.get(i).setPosition(i);
+                
+                if (insertIndex < 0) {
+                    insertIndex = -(insertIndex + 1);
                 }
                 
-                // Persist new positions
-                repository.updateItemPositions(newList);
+                // Safety clamp
+                if (insertIndex > items.size()) insertIndex = items.size();
+                
+                items.add(insertIndex, itemToDelete);
+                
+                // 3. Notify adapter
+                notifyItemInserted(insertIndex);
+                
+                // 4. Restore scroll position to where it was before deletion
+                if (recyclerView != null && finalUndoScrollPos != RecyclerView.NO_POSITION) {
+                    androidx.recyclerview.widget.LinearLayoutManager llm = (androidx.recyclerview.widget.LinearLayoutManager) recyclerView.getLayoutManager();
+                    if (llm != null) {
+                        llm.scrollToPositionWithOffset(finalUndoScrollPos, finalUndoScrollOffset);
+                    }
+                }
+                
+                // 5. Persist
+                repository.updateItemPositions(items);
                 if (firebaseListId != null) {
-                    repository.updateItemPositionsInCloud(firebaseListId, newList, null);
+                    repository.updateItemPositionsInCloud(firebaseListId, items, null);
                 }
-
-                setItems(newList);
-                
-                // requestItemResort is implicit via setItems/DiffUtil logic or handled by cloud update listener
             });
         }
     }
@@ -435,28 +466,70 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int newIndex = sortedList.indexOf(item);
                 
                 if (currentPos != newIndex) {
-                    // Capture current top position
+                    // Prevent auto-scrolling:
+                    
                     RecyclerView rv = (RecyclerView) itemView.getParent();
                     androidx.recyclerview.widget.LinearLayoutManager llm = (androidx.recyclerview.widget.LinearLayoutManager) rv.getLayoutManager();
+                    
+                    // 1. Capture anchor item (top visible)
                     int firstVisiblePos = llm.findFirstVisibleItemPosition();
                     View firstVisibleView = llm.findViewByPosition(firstVisiblePos);
                     int offset = (firstVisibleView != null) ? firstVisibleView.getTop() : 0;
-
-                    // Clear focus to be safe
-                    if (checkBox.hasFocus() || itemView.hasFocus()) {
-                        itemView.clearFocus();
-                        checkBox.clearFocus();
-                    }
                     
-                    // Move data
+                    // 2. Clear focus aggressively
+                    if (checkBox.hasFocus() || itemView.hasFocus()) {
+                        checkBox.clearFocus();
+                        itemView.clearFocus();
+                    }
+                    rv.stopScroll();
+                    View parent = (View) itemView.getParent();
+                    if (parent != null) parent.clearFocus();
+                    rv.clearFocus();
+                    
+                    // Disable ItemAnimator to prevent flickering/slide animations
+                    RecyclerView.ItemAnimator animator = rv.getItemAnimator();
+                    rv.setItemAnimator(null);
+
+                    // 3. Update data
                     items.remove(currentPos);
                     items.add(newIndex, item);
-                    notifyItemMoved(currentPos, newIndex);
                     
-                    // Restore position
-                    // If we moved the item that was at the top, we want the NEW item at that index to be at the top
+                    // 4. Update UI using Remove+Insert
+                    notifyItemRemoved(currentPos);
+                    notifyItemInserted(newIndex);
+                    
+                    // Restore ItemAnimator
+                    // We post it to ensure the layout pass happens without animation first
+                    // Actually, setting it to null immediately affects the next layout pass triggered by notify...
+                    // But we want to re-enable it for FUTURE interactions.
+                    // If we re-enable immediately, it might still animate if the loop isn't finished?
+                    // Safe to post.
+                    rv.post(() -> rv.setItemAnimator(animator));
+                    
+                    // 5. Restore scroll anchor strictly
                     if (firstVisiblePos != RecyclerView.NO_POSITION) {
-                        llm.scrollToPositionWithOffset(firstVisiblePos, offset);
+                        // If we removed an item ABOVE the anchor, the anchor index shifts down by 1.
+                        // (Because an item before it is gone).
+                        // wait, if we remove 'currentPos' and 'currentPos' < 'firstVisiblePos', then anchor becomes 'firstVisiblePos - 1'.
+                        
+                        int restoreIndex = firstVisiblePos;
+                        if (currentPos < firstVisiblePos) {
+                             restoreIndex--;
+                        }
+                        // We inserted at 'newIndex'. If 'newIndex' <= 'restoreIndex', it shifts up by 1.
+                        if (newIndex <= restoreIndex) {
+                             restoreIndex++;
+                        }
+                        
+                        // Clamp
+                        if (restoreIndex < 0) restoreIndex = 0;
+                        if (restoreIndex >= items.size()) restoreIndex = Math.max(0, items.size() - 1);
+                        
+                        final int finalPos = restoreIndex;
+                        final int finalOffset = offset;
+                        
+                        // Force restore immediately to minimize visual glitch
+                        llm.scrollToPositionWithOffset(finalPos, finalOffset);
                     }
                 }
 
@@ -533,9 +606,9 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             // which can cause a race condition where the listener fetches stale data from server
             // before the local write is fully committed/cached, resulting in UI reverting to old value.
             // Since name change does not affect sort order (done/position), we don't need to resort.
-            // if (interactionListener != null) {
-            //    interactionListener.requestItemResort();
-            // }
+            if (interactionListener != null) {
+                interactionListener.requestItemResort();
+            }
         }
     }
 }

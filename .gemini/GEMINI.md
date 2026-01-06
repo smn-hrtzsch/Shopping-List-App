@@ -16,4 +16,4 @@
     export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
     ```
 
-- Nutze für Standard Dialoge das vorgefertigte Layout 'app/src/main/res/layout/dialog_standard.xml'
+- Nutze für Standard Dialoge das vorgefertigte Layout 'app/src/main/res/layout/dialog_standard.xml' oder 'app/src/main/res/layout/dialog_vertical_buttons.xml'

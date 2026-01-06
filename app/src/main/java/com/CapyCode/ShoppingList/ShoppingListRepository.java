@@ -196,10 +196,12 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
-                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
+                    // Manual sorting to match local DB behavior (done ASC, position ASC, ID ASC)
                     items.sort((a, b) -> {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
-                        return Integer.compare(a.getPosition(), b.getPosition());
+                        int posComp = Integer.compare(a.getPosition(), b.getPosition());
+                        if (posComp != 0) return posComp;
+                        return a.getFirebaseId().compareTo(b.getFirebaseId());
                     });
                     listener.onItemsLoaded(items, false);
                 })
@@ -231,10 +233,12 @@ public class ShoppingListRepository {
                             items.add(item);
                         }
                     }
-                    // Manual sorting to match local DB behavior (done ASC, position ASC) without requiring Firestore indexes
+                    // Manual sorting to match local DB behavior (done ASC, position ASC, ID ASC)
                     items.sort((a, b) -> {
                         if (a.isDone() != b.isDone()) return a.isDone() ? 1 : -1;
-                        return Integer.compare(a.getPosition(), b.getPosition());
+                        int posComp = Integer.compare(a.getPosition(), b.getPosition());
+                        if (posComp != 0) return posComp;
+                        return a.getFirebaseId().compareTo(b.getFirebaseId());
                     });
                     
                     // If we have pending writes (local changes not yet on server), we should still update the UI
@@ -318,9 +322,27 @@ public class ShoppingListRepository {
 
     public void updateItemInList(ShoppingItem item, String firebaseListId, OnActionListener listener) {
         if (firebaseListId != null && item.getFirebaseId() != null) {
-            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item)
+            // Use Map to ensure precise field updates and avoid potential POJO mapping issues
+            Map<String, Object> itemData = new HashMap<>();
+            itemData.put("name", item.getName());
+            itemData.put("quantity", item.getQuantity());
+            itemData.put("unit", item.getUnit());
+            itemData.put("done", item.isDone());
+            itemData.put("notes", item.getNotes());
+            itemData.put("position", item.getPosition());
+
+            db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId())
+                .update(itemData)
                 .addOnCompleteListener(task -> {
                     if (listener != null) listener.onActionComplete();
+                })
+                .addOnFailureListener(e -> {
+                    // Fallback to set if document doesn't exist (though it should)
+                    db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId())
+                        .set(itemData)
+                        .addOnCompleteListener(t -> {
+                             if (listener != null) listener.onActionComplete();
+                        });
                 });
         } else {
             dbHelper.updateItem(item);

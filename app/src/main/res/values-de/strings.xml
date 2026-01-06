@@ -293,4 +293,7 @@
     <string name="dialog_username_required_title">Benutzername erforderlich</string>
     <string name="dialog_username_required_message">Um die Cloud-Synchronisation zu aktivieren, musst du einen Benutzernamen festlegen, damit andere dich finden können.</string>
     <string name="button_set_username">Benutzernamen festlegen</string>
+    <string name="dialog_sign_out_message_unsaved">Du hast lokale Listen, die nicht in der Cloud gesichert sind.\n\nMöchtest du sie vor dem Abmelden hochladen oder von diesem Gerät löschen?</string>
+    <string name="button_upload_and_sign_out">Hochladen &amp; Abmelden</string>
+    <string name="button_delete_and_sign_out">Löschen &amp; Abmelden</string>
 </resources>
