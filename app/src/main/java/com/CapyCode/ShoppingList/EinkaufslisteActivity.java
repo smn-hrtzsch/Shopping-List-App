@@ -445,7 +445,17 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         
         View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
         com.google.android.material.textfield.TextInputEditText editText = includeDialog.findViewById(R.id.input_edit_text);
-        com.google.android.material.textfield.TextInputLayout inputLayout = includeDialog.findViewById(R.id.username_input_layout); // Fixed ID
+        com.google.android.material.textfield.TextInputLayout inputLayout = includeDialog.findViewById(R.id.username_input_layout);
+
+        // Explicitly disable autofill for invite dialog container to prevent password manager suggestions
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            editText.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+            if (inputLayout != null) {
+                inputLayout.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
+            }
+        }
+        // Remove VISIBLE_PASSWORD as it might trigger password managers. Use TEXT_FLAG_NO_SUGGESTIONS.
+        editText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         com.google.android.material.button.MaterialButton btnPositive = includeDialog.findViewById(R.id.username_action_button);
         TextView messageView = dialogView.findViewById(R.id.dialog_message);
         
