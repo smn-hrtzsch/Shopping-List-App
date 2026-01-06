@@ -1364,49 +1364,78 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSimpleSignOut() {
-        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
-        showLoading(getString(R.string.loading), true, true);
-        isSigningOut = true;
-        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
-        repo.clearLocalDatabase();
-        mAuth.signOut();
-        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-             if (!isFinishing() && !isDestroyed()) {
-                 loadCurrentProfile();
-             }
-        });
+        try {
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+            showLoading(getString(R.string.loading), true, true);
+            isSigningOut = true;
+            ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+            repo.clearLocalDatabase();
+            mAuth.signOut();
+            mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+                 if (!isFinishing() && !isDestroyed()) {
+                     loadCurrentProfile();
+                 }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Try to recover state
+            if (!isFinishing() && !isDestroyed()) {
+                loadCurrentProfile();
+            }
+        }
     }
 
     private void performDestructiveSignOut() {
-        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
-        showLoading(getString(R.string.loading), true, true);
-        isSigningOut = true;
-        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
-        repo.clearLocalDatabase();
-        mAuth.signOut();
-        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-             if (!isFinishing() && !isDestroyed()) {
-                 UiUtils.makeCustomToast(this, R.string.toast_local_data_cleared, Toast.LENGTH_SHORT).show();
-                 loadCurrentProfile();
-             }
-        });
+        try {
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+            showLoading(getString(R.string.loading), true, true);
+            isSigningOut = true;
+            ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+            repo.clearLocalDatabase();
+            mAuth.signOut();
+            mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+                 if (!isFinishing() && !isDestroyed()) {
+                     UiUtils.makeCustomToast(this, R.string.toast_local_data_cleared, Toast.LENGTH_SHORT).show();
+                     loadCurrentProfile();
+                 }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (!isFinishing() && !isDestroyed()) {
+                loadCurrentProfile();
+            }
+        }
     }
 
     private void performSafeSignOut() {
-        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
-        showLoading(getString(R.string.loading), true, true);
-        isSigningOut = true;
-        ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
-        repo.migrateLocalListsToCloud(() -> {
-             repo.clearLocalDatabase();
-             mAuth.signOut();
-             mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
-                 if (!isFinishing() && !isDestroyed()) {
-                     UiUtils.makeCustomToast(this, R.string.toast_lists_uploaded, Toast.LENGTH_SHORT).show();
-                     loadCurrentProfile();
+        try {
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+            showLoading(getString(R.string.loading), true, true);
+            isSigningOut = true;
+            ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+            repo.migrateLocalListsToCloud(() -> {
+                 try {
+                     repo.clearLocalDatabase();
+                     mAuth.signOut();
+                     mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+                         if (!isFinishing() && !isDestroyed()) {
+                             UiUtils.makeCustomToast(this, R.string.toast_lists_uploaded, Toast.LENGTH_SHORT).show();
+                             loadCurrentProfile();
+                         }
+                     });
+                 } catch (Exception e) {
+                     e.printStackTrace();
+                     if (!isFinishing() && !isDestroyed()) {
+                         loadCurrentProfile();
+                     }
                  }
-             });
-        });
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (!isFinishing() && !isDestroyed()) {
+                loadCurrentProfile();
+            }
+        }
     }
 
     private void removeImage() {
