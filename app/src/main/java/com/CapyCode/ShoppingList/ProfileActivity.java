@@ -204,29 +204,17 @@ public class ProfileActivity extends BaseActivity {
                 v.postDelayed(() -> {
                     if (layoutAuthInline != null && containerContent instanceof android.widget.ScrollView) {
                         android.widget.ScrollView scrollView = (android.widget.ScrollView) containerContent;
-                        // Calculate the bottom of layoutAuthInline relative to ScrollView
-                        int bottom = layoutAuthInline.getBottom();
-                        // Add some padding
-                        bottom += 20; 
+                        // Calculate the Y position of the bottom of layoutAuthInline
+                        int bottom = layoutAuthInline.getBottom() + layoutAuthInline.getPaddingBottom();
                         
-                        // We want to make sure 'bottom' is visible. 
-                        // The ScrollView displays from scrollY to scrollY + height.
-                        // So we want scrollY + height >= bottom.
-                        // scrollY >= bottom - height.
-                        
-                        int height = scrollView.getHeight();
-                        int targetScrollY = bottom - height;
-                        
-                        // Also ensure we don't scroll past the top (negative scrollY)
-                        // But smoothScrollTo handles bounds usually.
-                        // However, we probably want to show as much as possible, so aligning bottom to bottom is good.
-                        // But if the view is taller than the viewport (keyboard open), we might want to align top?
-                        // The user said: "buttons must be visible". Buttons are at the bottom of the card.
-                        // So aligning bottom is the priority.
+                        // Scroll so that this bottom Y is at the bottom of the visible ScrollView area
+                        // The visible area height is scrollView.getHeight()
+                        // So we want scrollY to be such that scrollY + height = bottom (roughly)
+                        int targetScrollY = bottom - scrollView.getHeight() + 20; // + padding
                         
                         scrollView.smoothScrollTo(0, Math.max(0, targetScrollY));
                     }
-                }, 400); // Increased delay slightly
+                }, 500);
             }
         };
         editTextEmailInline.setOnFocusChangeListener(scrollListener);

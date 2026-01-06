@@ -106,7 +106,7 @@
                             android:text="@string/profile_username_hint"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textColor="?attr/colorOnSurface"
                             android:layout_marginBottom="16dp"/>
 
                         <include
