@@ -65,11 +65,12 @@ public class ProfileActivity extends BaseActivity {
     private LinearLayout layoutEditMode;
     private EditText editTextUsernameInline;
     private MaterialButton buttonSaveUsernameInline;
-    private LinearLayout layoutAuthInline;
+    private com.google.android.material.card.MaterialCardView layoutAuthInline;
     private EditText editTextEmailInline;
     private EditText editTextPasswordInline;
     private MaterialButton buttonLoginInline;
     private MaterialButton buttonRegisterInline;
+    private MaterialButton buttonGoogleInline;
     private ImageView imageProfile;
     private View containerContent;
     private View cardSyncPreferences;
@@ -167,6 +168,7 @@ public class ProfileActivity extends BaseActivity {
         editTextPasswordInline = findViewById(R.id.edit_text_password_inline);
         buttonLoginInline = findViewById(R.id.button_login_inline);
         buttonRegisterInline = findViewById(R.id.button_register_inline);
+        buttonGoogleInline = findViewById(R.id.button_google_inline);
         TextView textForgotPasswordInline = findViewById(R.id.text_forgot_password_inline);
         
         // Setup inline auth listeners
@@ -198,6 +200,7 @@ public class ProfileActivity extends BaseActivity {
 
         buttonLoginInline.setOnClickListener(v -> performDialogLogin(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
         buttonRegisterInline.setOnClickListener(v -> performDialogRegister(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
+        buttonGoogleInline.setOnClickListener(v -> signInWithGoogle());
         textForgotPasswordInline.setOnClickListener(v -> performDialogResetPassword(editTextEmailInline, errorTextEmailInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline));
 
         imageProfile = findViewById(R.id.image_profile);
@@ -1015,13 +1018,19 @@ public class ProfileActivity extends BaseActivity {
                 // Anonymous & No Username -> Show Inline Auth
                 buttonRegisterEmail.setVisibility(View.GONE);
                 layoutAuthInline.setVisibility(View.VISIBLE);
+                
+                // Show inline Google button, hide the one in standard list
+                buttonGoogleInline.setVisibility(View.VISIBLE);
+                buttonRegisterGoogle.setVisibility(View.GONE);
             } else {
                 buttonRegisterEmail.setVisibility(View.VISIBLE);
                 layoutAuthInline.setVisibility(View.GONE);
                 
-                buttonRegisterEmail.setText(R.string.action_link_email); 
                 // Standard logic:
                 buttonRegisterEmail.setText(R.string.action_sign_in_email);
+                
+                // Show standard Google button (will be handled by logic below)
+                buttonRegisterGoogle.setVisibility(View.VISIBLE);
             }
             
             // Adjust button text based on username presence? 
@@ -1033,10 +1042,13 @@ public class ProfileActivity extends BaseActivity {
                 buttonRegisterEmail.setOnClickListener(v -> showAuthDialog());
             }
 
-            buttonRegisterGoogle.setText(shouldShowLinkText ? R.string.action_link_google : R.string.sign_in_google);
-            buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
-            buttonRegisterGoogle.setIconTint(null);
-            buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
+            // Only update standard Google button if visible (it might be hidden if inline is shown)
+            if (buttonRegisterGoogle.getVisibility() == View.VISIBLE) {
+                buttonRegisterGoogle.setText(shouldShowLinkText ? R.string.action_link_google : R.string.sign_in_google);
+                buttonRegisterGoogle.setIconResource(R.drawable.ic_google_logo);
+                buttonRegisterGoogle.setIconTint(null);
+                buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
+            }
             buttonSignOut.setVisibility(View.GONE);
         }
     }
