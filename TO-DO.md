@@ -64,7 +64,8 @@
 
 ## Bugs
 
-- [ ] In der Anmeldung Section wird mir nicht immer konsistent Autofill von meinem Passwort Manager vorgeschlagen. Beim ersten mal Anmelden nach dem Öffnen der App schon, aber dann nach dem Abmelden schon nicht mehr. 
+- [ ] In der Anmeldung Section wird mir nicht immer konsistent Autofill von meinem Passwort Manager vorgeschlagen. Beim ersten mal Anmelden nach dem Öffnen der App schon, aber dann nach dem Abmelden schon nicht mehr.
+- [ ] Die Tastatur sollte nach einem Autofill immer geschlossen sein, aber sie ist manchmal immer noch offen. Das Verdeckt dann UI Elemtente und sollte nicht der Fall sein.
 - [ ] Im 'dialog_auth' Dialog und in der Anmelden Section gibt es einen Bug, bei dem die Tastatur sich von selbst schließt, während man noch dabei ist eine Eingabe zu tätigen. Das nervt und sollte nicht so sein.
 - [ ] Wenn man im 'dialog_auth' oder in der Anmelde Section, die per default angezeigt wird, wenn noch kein Benutzername oder andere Anmelde-Methode gesetzt ist angezeigt wird, im Passwort feld auf bestätigen auf der Tastatur drückt, sollte per default der Anmelde-Button betätigt werden.
 - [ ] Beim Eingeben eines Nutzernamens und dem klicken auf die Bestätigen Taste auf der Tastatur, sollte der Speichern Button betätigt werden, sodass der User direkt über die Tastatur seine Eingabe abschließen und den Nutzernamen setzen kann.
