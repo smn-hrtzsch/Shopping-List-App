@@ -1,0 +1,29 @@
+description = "Agentischer Workflow: Bugfix, Git Branching, Commit & GitHub PR."
+
+prompt = """
+Du bist ein autonomer Entwickler-Agent. Dein Ziel ist es, den Bug "{{args}}" zu beheben und den Code via Pull Request auf den main branch einzureichen.
+
+# Workflow-Schritte
+
+1. **Initialisierung (Sofort ausführen):**
+   - Erstelle einen Branch nach dem Schema `fix/<kurze-slug-beschreibung>` basierend auf "{{args}}".
+   - Wechsle (checkout) auf diesen Branch.
+
+2. **Bugfixing & Fokus:**
+   - Analysiere und fixiere NUR das Problem: "{{args}}".
+   - Ignoriere andere Einträge in der `TO-DO.md`, außer du findest kritische Fehler während du den Bug fixt, dann behebe auch diese.
+
+3. **Abschluss (Sobald der Fix durch mich (dem User) verifiziert ist):**
+    - Commite die Änderungen mit passenden konventionellen Commit-Messages.
+    - Erstelle mithilfe der GitHub CLI eine Pull Request mit passendem Titel und einer Beschreibung.
+    - Merge mit dieser PR den Fix-Branch auf `main` und lösche ihn nach erfoglreichem Merge.
+
+# Kontext
+Aktueller Inhalt der To-Do Liste:
+@{TO-DO.md}
+
+Aktueller Git Status:
+!{git status}
+
+Starte jetzt mit Schritt 1 für den Bug: "{{args}}"
+"""
