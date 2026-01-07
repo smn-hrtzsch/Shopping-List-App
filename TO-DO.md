@@ -64,7 +64,6 @@
 
 ## Bugs
 
-- [ ] Beim Wechseln zu einem anderen Konto muss sichergestellt werden, dass im Falle des Wechselns von einem Anonymen Accounts (nur Username gesetzt, keine anmelde methoden) das Konto des anonymen Users auch gelöscht wird. Sonst werden potenzielle Leichen in der Datenbank gepeischert, die nicht mehr erreichbar sind.
 - [ ] Es wird immer noch nach dem Abmelden von einem Konto automatisch ein anonymer User bei Firestore registriert, das sollte nicht der Fall sein. Erst wenn ein Nutzername festgelegt wird, sollte der User auch registriert werden.
 - [ ] Wenn man im 'dialog_auth' oder in der Anmelde Section, die per default angezeigt wird, wenn noch kein Benutzername oder andere Anmelde-Methode gesetzt ist angezeigt wird, im Passwort feld auf bestätigen auf der Tastatur drückt, sollte per default der Anmelde-Button betätigt werden.
 - [ ] Beim Eingeben eines Nutzernamens und dem klicken auf die Bestätigen Taste auf der Tastatur, sollte der Speichern Button betätigt werden, sodass der User direkt über die Tastatur seine Eingabe abschließen und den Nutzernamen setzen kann.
@@ -76,6 +75,7 @@
 
 ## Fixed Bugs
 
+- [x] Beim Wechseln zu einem anderen Konto muss sichergestellt werden, dass im Falle des Wechselns von einem Anonymen Accounts (nur Username gesetzt, keine anmelde methoden) das Konto des anonymen Users auch gelöscht wird. Sonst werden potenzielle Leichen in der Datenbank gepeischert, die nicht mehr erreichbar sind.
 - [x] Beim Anmelden über Google wird fälschlicherweise 'skeleton_logout' genutzt anstatt 'skeleton_profile'.
 - [x] Nach dem Autofill im Email oder Passwortfeld sollte die Tastatur automatisch schließen, momentan bleibt sie offen und verdeckt den Inhalt der Anmelde Section in der ProfileActivity.
 - [x] Beim Abmelden wird noch das falsche Skeleton genutzt als Lade Screen. Es sollte 'skeleton_logout' genutzt werden, aber es wird noch 'skeleton_profile' genutzt
@@ -84,7 +84,7 @@
 - [x] Beim entfernen einer Anmelde-Methode sollten die Buttons untereinander angezeigt werden, da horizontal der Text zu viel Platz einnimmt mit zwei Buttons nebeneinander. Du kannst dazu den dialog_vertical_buttons.xml verwenden.xml nutzen.
 - [x] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
 - [x] Switch zum Entscheiden, ob Private Listen automatisch synchronisiert werden sollten ist schlecht erkennbar, kann man die Farben vielleicht etwas deutlicher vom Hintergrund abheben?
-- [x] Momentan wird die Entscheidung, ob Private Listen automatisch synchronisiert werden sollten nicht an den Account gebunden, sondern in der App verwaltet, dass heißt, wenn ich mich abmelde und bei einem anderen Account den Switch betätige, wird diese Entscheidung auch beim Account wechsel mit übernommen, das sollte nicht so sein. Die Entscheidung sollte beim User liegen und der Switch sollte bei der ersten Registrierung des Users automatisch aktiviert werden (nach Verknüpfung oder Registrierung per Email oder Google).
+- [x] Momentan wird die Entscheidung, ob Private Listen automatisch synchronisiert werden sollten nicht an den Account gebunden, sondern in der App verwaltet, dass heißt, wenn ich mich abmelde und bei einem anderen Account den Switch betätige, wird diese Entscheidung auch beim Account wechsel mit übernommen, das sollte nicht so sein. Die Entscheidung sollte beim User liegen und der Switch sollte bei der ersten Registrierung des Users automatisch aktiviert werden (nach Verknpfung oder Registrierung per Email oder Google).
 - [x] In der Anmeldung Section wird mir nicht immer konsistent Autofill von meinem Passwort Manager vorgeschlagen. Beim ersten mal Anmelden nach dem Öffnen der App schon, aber dann nach dem Abmelden schon nicht mehr.
 - [x] Die Tastatur sollte nach einem Autofill immer geschlossen sein, aber sie ist manchmal immer noch offen. Es tritt zwar sehr selten auf, aber eben manchmal schon noch. Das Verdeckt dann UI Elemtente und sollte nicht der Fall sein.
 - [x] Im 'dialog_auth' Dialog und in der Anmelden Section gibt es einen Bug, bei dem die Tastatur sich von selbst schließt, während man noch dabei ist eine Eingabe zu tätigen. Das nervt und sollte nicht so sein.
