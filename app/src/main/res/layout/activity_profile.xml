@@ -158,28 +158,16 @@
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/input_layout_email_inline"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.App.TextInputLayout.Auth"
                             android:layout_marginBottom="4dp"
-                            android:hint="@string/prompt_email"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:theme="@style/AccentInputTheme"
-                            app:boxCornerRadiusTopStart="12dp"
-                            app:boxCornerRadiusTopEnd="12dp"
-                            app:boxCornerRadiusBottomStart="12dp"
-                            app:boxCornerRadiusBottomEnd="12dp"
-                            android:clipToOutline="true">
+                            android:hint="@string/prompt_email">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_text_email_inline"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                                style="@style/Widget.App.TextInputEditText.Auth"
                                 android:inputType="textEmailAddress"
-                                android:imeOptions="actionNext"
-                                android:singleLine="true"
                                 android:autofillHints="emailAddress"
-                                android:importantForAutofill="yes"
-                                android:textSize="14sp"/>
+                                android:imeOptions="actionNext" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <TextView
@@ -199,30 +187,18 @@
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/input_layout_password_inline"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            style="@style/Widget.App.TextInputLayout.Auth"
                             android:layout_marginBottom="24dp"
                             android:hint="@string/prompt_password"
                             app:endIconMode="password_toggle"
-                            app:errorIconDrawable="@null"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:theme="@style/AccentInputTheme"
-                            app:boxCornerRadiusTopStart="12dp"
-                            app:boxCornerRadiusTopEnd="12dp"
-                            app:boxCornerRadiusBottomStart="12dp"
-                            app:boxCornerRadiusBottomEnd="12dp"
-                            android:clipToOutline="true">
+                            app:errorIconDrawable="@null">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edit_text_password_inline"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                                style="@style/Widget.App.TextInputEditText.Auth"
                                 android:inputType="textPassword"
-                                android:imeOptions="actionDone"
-                                android:singleLine="true"
                                 android:autofillHints="password"
-                                android:importantForAutofill="yes"
-                                android:textSize="14sp"/>
+                                android:imeOptions="actionDone" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <TextView

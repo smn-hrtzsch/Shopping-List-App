@@ -88,4 +88,24 @@
         <!-- Ensure text is empty if set via style, though usually set in layout. 
              Ideally we don't set text in layout when using this style. -->
     </style>
+
+    <!-- Auth Input Styles -->
+    <style name="Widget.App.TextInputLayout.Auth" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:theme">@style/AccentInputTheme</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="android:clipToOutline">true</item>
+    </style>
+
+    <style name="Widget.App.TextInputEditText.Auth" parent="Widget.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:importantForAutofill">yes</item>
+    </style>
 </resources>
