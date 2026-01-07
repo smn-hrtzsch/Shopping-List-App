@@ -18,7 +18,7 @@ Falls ich keinen spezifischen Bug nenne, dann kümmere dich um den ersten offene
     - Wenn du fertig bist mit den Code Anpassungen, frage mich nach Feedback.
     - Wenn ich dir sage, dass alles klappt kannst du weiter mit den folgenden Schritten fortfahren, ansonsten muss du erst nochmal die Fehler, bearbeiten, die ich in meinem Feedback genannt habe.
     - Erst nach erfolgreichem Feedback: Markiere den Bug als erledigt und verschiebe ihn in die "Fixed Bugs" Sektion.
-    - Commite die Änderungen mit passenden konventionellen Commit-Messages und pushe den Fix-Branch.
+    - Commite die Änderungen mit passenden konventionellen Commit-Messages und pushe den Fix-Branch ins remote Repo.
     - Erstelle mithilfe der GitHub CLI eine Pull Request mit passendem Titel und einer Beschreibung.
     - Merge mit dieser PR den Fix-Branch auf `main` und lösche ihn nach erfoglreichem Merge.
 
