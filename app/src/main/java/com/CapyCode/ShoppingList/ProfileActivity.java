@@ -472,6 +472,7 @@ public class ProfileActivity extends BaseActivity {
                                 getString(R.string.dialog_switch_account_message_guest),
                                 getString(R.string.button_switch_and_link),
                                 () -> {
+                                    initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
                                     showLoading(getString(R.string.loading), true, true);
                                     performSwitchLogin(email, password, onSuccess, errorView, onError);
                                 }
@@ -628,6 +629,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void revertRegistration(FirebaseUser user, boolean isLinkedAccount) {
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showLoading(getString(R.string.loading), true, true);
         Runnable onComplete = () -> {
             hideLoading();
@@ -781,6 +783,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showLoading();
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -871,6 +874,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performGoogleSignIn(AuthCredential credential) {
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showLoading();
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
@@ -1233,6 +1237,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void unlinkProvider(String providerId) {
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showLoading(R.string.loading_saving);
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
@@ -1253,6 +1258,7 @@ public class ProfileActivity extends BaseActivity {
                         }
                         
                         if (!hasProvider) {
+                             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
                              showLoading();
                              ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
                              repo.unsyncAllLists(() -> {
