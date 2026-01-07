@@ -64,6 +64,7 @@
 
 ## Bugs
 
+- [ ] Wenn man in der Anmelde Sektion im Email Feld ist und etwas eingibt und dann seine Eingabe auf der Tastatur bestätigt schließt sich die Tastatur anstatt einfach zum Passwort Feld den Fokus zu wechseln und offen zu bleiben. Fixe das, ich möchte im Grunde, dass das Email Feld in der Anmelde Sektion in der ProfilActivity genau so funktioniert wie das Email Feld in 'dialog_auth', wenn dieser geöffnet ist.
 - [ ] Wenn man im 'dialog_auth' oder in der Anmelde Section, die per default angezeigt wird, wenn noch kein Benutzername oder andere Anmelde-Methode gesetzt ist angezeigt wird, im Passwort feld auf bestätigen auf der Tastatur drückt, sollte per default der Anmelde-Button betätigt werden.
 - [ ] Beim Eingeben eines Nutzernamens und dem klicken auf die Bestätigen Taste auf der Tastatur, sollte der Speichern Button betätigt werden, sodass der User direkt über die Tastatur seine Eingabe abschließen und den Nutzernamen setzen kann.
 - [ ] Es sollte die Fehlermeldung angepasst werden, wenn man auf registrieren klickt, aber schon Daten, die zu einem Account gehören angezeigt wird. Momentan wird wenn man den korrekten Benutzernamen und das korreke Passwort verwendete einfach nur angezeigt: "Bitte gib eine gültige E-Mail Adresse ein." Aber es sollte eher einen Verweis darauf geben, dass bereits ein Konto mit diesem Nutzernamen existiert.
