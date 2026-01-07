@@ -958,7 +958,8 @@ public class ProfileActivity extends BaseActivity {
 
     private void loadCurrentProfile() {
         // Reset skeleton to profile type in case it was changed to auth type during sign out
-        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
+        int skeletonResId = isSigningOut ? R.layout.skeleton_logout : R.layout.skeleton_profile;
+        initLoadingOverlay(findViewById(R.id.profile_content_container), skeletonResId, 1);
         showLoading(getString(R.string.loading_profile), true, true);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
@@ -1503,6 +1504,7 @@ public class ProfileActivity extends BaseActivity {
     private void deleteAccount() {
         initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
         showLoading(getString(R.string.loading), true, true);
+        isSigningOut = true;
         buttonDelete.setEnabled(false);
         ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
         repository.deleteAllUserData(() -> {
@@ -1520,6 +1522,7 @@ public class ProfileActivity extends BaseActivity {
                 public void onError(String message) {
                     if (isFinishing() || isDestroyed()) return;
                     hideLoading();
+                    isSigningOut = false;
                     UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
                     buttonDelete.setEnabled(true);
                     containerContent.setVisibility(View.VISIBLE);
