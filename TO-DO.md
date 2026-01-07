@@ -64,7 +64,6 @@
 
 ## Bugs
 
-- [ ] Es wird immer noch nach dem Abmelden von einem Konto automatisch ein anonymer User bei Firestore registriert, das sollte nicht der Fall sein. Erst wenn ein Nutzername festgelegt wird, sollte der User auch registriert werden.
 - [ ] Wenn man im 'dialog_auth' oder in der Anmelde Section, die per default angezeigt wird, wenn noch kein Benutzername oder andere Anmelde-Methode gesetzt ist angezeigt wird, im Passwort feld auf bestätigen auf der Tastatur drückt, sollte per default der Anmelde-Button betätigt werden.
 - [ ] Beim Eingeben eines Nutzernamens und dem klicken auf die Bestätigen Taste auf der Tastatur, sollte der Speichern Button betätigt werden, sodass der User direkt über die Tastatur seine Eingabe abschließen und den Nutzernamen setzen kann.
 - [ ] Es sollte die Fehlermeldung angepasst werden, wenn man auf registrieren klickt, aber schon Daten, die zu einem Account gehören angezeigt wird. Momentan wird wenn man den korrekten Benutzernamen und das korreke Passwort verwendete einfach nur angezeigt: "Bitte gib eine gültige E-Mail Adresse ein." Aber es sollte eher einen Verweis darauf geben, dass bereits ein Konto mit diesem Nutzernamen existiert.
@@ -75,6 +74,7 @@
 
 ## Fixed Bugs
 
+- [x] Es wird immer noch nach dem Abmelden von einem Konto automatisch ein anonymer User bei Firestore registriert, das sollte nicht der Fall sein. Erst wenn ein Nutzername festgelegt wird, sollte der User auch registriert werden.
 - [x] Beim Wechseln zu einem anderen Konto muss sichergestellt werden, dass im Falle des Wechselns von einem Anonymen Accounts (nur Username gesetzt, keine anmelde methoden) das Konto des anonymen Users auch gelöscht wird. Sonst werden potenzielle Leichen in der Datenbank gepeischert, die nicht mehr erreichbar sind.
 - [x] Beim Anmelden über Google wird fälschlicherweise 'skeleton_logout' genutzt anstatt 'skeleton_profile'.
 - [x] Nach dem Autofill im Email oder Passwortfeld sollte die Tastatur automatisch schließen, momentan bleibt sie offen und verdeckt den Inhalt der Anmelde Section in der ProfileActivity.
