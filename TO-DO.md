@@ -7,11 +7,12 @@
 - [x] Hint in EditText Dialog für den Nutzernamen in Profil Activity hinzufügen, z.B. "Nutzernamen eingeben"
 - [x] Reihenfolge der verknüpften Anmeldemethoden in der Profile Activity konsistent machen (z.B. immer Email zuerst, dann Google, dann Apple (für später))
 - [x] Wenn kein User Name festgelegt ist, sollte in der Profile Activity direkt ein Anmeldedialog geöffnet sein, bei dem man sich direkt anmelden kann ohne erst auf den Email Anmelde Button klicken zu müssen. Auch sollte dann der Button für die Email Anmeldung nicht angezeigt werden. Der Dialog sollte dezenter als die activity_auth sein, also kleinere Buttons, die gleich horizontal neben einander sein können (anmelden und registrieren). Die Anmeldung über den Google Button sollte aber weiterhin als Button in der Profile Activity angezeigt werden.
+- [ ] Je nach ausgewählter Sprache in der App sollten die Account Verifizierungs Emails und Seiten im Browser auch auf dieser Sprache sein.
 
 ## Fixes
 
 - [x] Ladezeit der MainActivity optimieren, lokale Kopie der Cloud Datenbank verwenden
-- [ ] Während Ladezeit (z.B. nach Account Wechsel) einen Ladebildschirm anzeigen
+- [x] Während Ladezeit (z.B. nach Account Wechsel) einen Ladebildschirm anzeigen
 
 ## Accounts
 
@@ -21,7 +22,7 @@
 - [x] Zurücksetzen des Passworts via E-Mail
 - [ ] 2FA (Two-Factor Authentication) implementieren
 - [x] Profilbild hochladen und ändern
-- [ ] Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen / zwei verschiedene Layouts?
+- [ ] Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen, ?-Button im Anmeldedialog, der genauer erklärt, was der Unterschied ist?
 - [ ] Wenn der Dialog zum Anzeigen des Profilbilds in der ProfileActivity geöffnet ist, sollte zusätzlich zum Schließen Button auch noch ein Bearbeiten Button im Dialog angezeigt werden, der einen dann direkt zum Profil Bearbeiten Dialog führt.
 
 ## Platformen
@@ -32,7 +33,7 @@
 ## Geteilte Listen
 
 - [ ] Verwaltung von Nutzerrechten (Admin, Editor, Viewer)
-- [ ] Benachrichtigungen bei Änderungen in geteilten Listen
+- [ ] Benachrichtigungen bei Änderungen in geteilten Listen (Name des Akteurs, Anzahl der Artikel, die neu hinzugrfügt wurden und Titel der Liste)
 
 ## Members & Einladungen
 
@@ -63,10 +64,19 @@
 ## Bugs
 
 - [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat.
+- [ ] Beim Abmelden wird noch das falsche Skeleton genutzt als Lade Screen. Es sollte 'skeleton_logout' genutzt werden, aber es wird noch 'skeleton_profile' genutzt
+- [ ] Nach dem Autofill im Email oder Passwortfeld sollte die Tastatur automatisch schließen, momentan bleibt sie offen und verdeckt den Inhalt der Anmelde Section in der ProfileActivity.
+- [ ] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
+- [ ] Switch zum Entscheiden, ob Private Listen automatisch synchronisiert werden sollten ist schlecht erkennbar, kann man die Farben vielleicht etwas deutlicher vom Hintergrund abheben?
+- [ ] Momentan wird die Entscheidung, ob Private Listen automatisch synchronisiert werden sollten nicht an den Account gebunden, sondern in der App verwaltet, dass heißt, wenn ich mich abmelde und bei einem anderen Account den Switch betätige, wird diese Entscheidung auch beim Account wechsel mit übernommen, das sollte nicht so sein. Die Entscheidung sollte beim User liegen und der Switch sollte bei der ersten Registrierung des Users automatisch aktiviert werden (nach Verknüpfung oder Registrierung per Email oder Google).
+- [ ] Im 'dialog_auth' Dialog gibt es einen Bug, bei dem die Tastatur sich von selbst schließt, während man noch dabei ist eine Eingabe zu tätigen. Das nervt und sollte nicht so sein.
+- [ ] Wenn man im 'dialog_auth' oder in der Anmelde Section, die per default angezeigt wird, wenn noch kein Benutzername oder andere Anmelde-Methode gesetzt ist angezeigt wird, im Passwort feld auf bestätigen auf der Tastatur drückt, sollte per default der Anmelde-Button betätigt werden.
+- [ ] Es sollte die Fehlermeldung angepasst werden, wenn man auf registrieren klickt, aber schon Daten, die zu einem Account gehören angezeigt wird. Momentan wird wenn man den korrekten Benutzernamen und das korreke Passwort verwendete einfach nur angezeigt: "Bitte gib eine gültige E-Mail Adresse ein." Aber es sollte eher einen Verweis darauf geben, dass bereits ein Konto mit diesem Nutzernamen existiert.
+- [ ] Für den Fall, dass ein anonymer Nutzer, der nur bereits einen Nutzernamen gesetzt hat sich mit Goole verknüpfen will, aber dabei darauf stößt, dass schon ein anderes Konto mit dem gewählten Google Account verknüpft ist, sollte in dem "konto wechseln?"-Dialog auch noch eindeutiger beschrieben werden, dass im Falle eines Wechsels das anonyme Konto gelöscht wird (da keine andere Anmeldemethode festgelegt ist). Überprüfe auch, ob wir das so korrekt umsetzen, also dass die Anonyme Leiche aus der Firestore Datenbank gelöscht wird, falls der Nutzer wirklich auf "Konto wechseln" klickt.
+- 
 
 ## Fixed Bugs
 
 - [x] Beim Abhaken von Artikeln wird manchmal der Fokus / das Scrollen zum Ende der Liste gesetzt. Aber das ist nicht gewollt. Es sollte beim Abhaken kein automatisches Scrollen geben. Nur beim Hinzufügen von Artikeln. Das Problem tritt hauptsächlich bei privaten synced Listen auf.
 - [x] Es fehlen noch deutsche Strings für den Abmelden Dialog.
 - [x] Beim entfernen einer Anmelde-Methode sollten die Buttons untereinander angezeigt werden, da horizontal der Text zu viel Platz einnimmt mit zwei Buttons nebeneinander. Du kannst dazu den dialog_vertical_buttons.xml verwenden.xml nutzen.
-- [x] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
