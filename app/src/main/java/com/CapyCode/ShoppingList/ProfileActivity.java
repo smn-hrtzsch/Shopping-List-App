@@ -81,6 +81,7 @@ public class ProfileActivity extends BaseActivity {
 
     private String currentImageUrl = null;
     private boolean isSigningOut = false;
+    private boolean autofillUiShown = false;
 
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -194,13 +195,14 @@ public class ProfileActivity extends BaseActivity {
                 errorTextPasswordInline.setVisibility(View.GONE);
                 errorTextGeneralInline.setVisibility(View.GONE);
                 
-                // If both fields have content, it might be an autofill. Hide keyboard.
-                if (editTextEmailInline.getText().length() > 0 && editTextPasswordInline.getText().length() > 0) {
+                // If many characters are added at once, it's very likely an autofill.
+                // We check if both fields are now filled.
+                if (count > 3 && editTextEmailInline.getText().length() > 0 && editTextPasswordInline.getText().length() > 0) {
                     editTextEmailInline.postDelayed(() -> {
                         hideKeyboard(editTextEmailInline);
                         editTextEmailInline.clearFocus();
                         editTextPasswordInline.clearFocus();
-                    }, 150);
+                    }, 100);
                 }
             }
             @Override public void afterTextChanged(android.text.Editable s) {}
@@ -289,16 +291,6 @@ public class ProfileActivity extends BaseActivity {
                     @Override
                     public void onAutofillEvent(@NonNull View view, int event) {
                         super.onAutofillEvent(view, event);
-                        if (event == EVENT_INPUT_HIDDEN) {
-                            // Autofill UI hidden (likely selected), try to close keyboard if open
-                            // We verify if text is present to assume success
-                            if (view instanceof EditText && ((EditText) view).getText().length() > 0) {
-                                view.postDelayed(() -> {
-                                    hideKeyboard(view);
-                                    view.clearFocus();
-                                }, 150);
-                            }
-                        }
                     }
                 });
             }
@@ -356,13 +348,13 @@ public class ProfileActivity extends BaseActivity {
                 errorTextPassword.setVisibility(View.GONE);
                 errorTextGeneral.setVisibility(View.GONE);
 
-                // If both fields have content, it might be an autofill. Hide keyboard.
-                if (editTextEmail.getText().length() > 0 && editTextPassword.getText().length() > 0) {
+                // If many characters are added at once, it's very likely an autofill.
+                if (count > 3 && editTextEmail.getText().length() > 0 && editTextPassword.getText().length() > 0) {
                     editTextEmail.postDelayed(() -> {
                         hideKeyboard(editTextEmail);
                         editTextEmail.clearFocus();
                         editTextPassword.clearFocus();
-                    }, 150);
+                    }, 100);
                 }
             }
             @Override public void afterTextChanged(android.text.Editable s) {}
