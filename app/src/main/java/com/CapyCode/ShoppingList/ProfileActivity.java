@@ -120,6 +120,10 @@ public class ProfileActivity extends BaseActivity {
         int savedTheme = sharedPreferences.getInt(KEY_THEME, androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(savedTheme);
 
+        if (getIntent().getBooleanExtra("EXTRA_IS_SIGNING_OUT", false)) {
+            isSigningOut = true;
+        }
+
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_profile);
@@ -314,6 +318,7 @@ public class ProfileActivity extends BaseActivity {
     // --- Auth Dialog Implementation ---
 
     private void showAuthDialog() {
+        cancelAutofill();
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_auth, null);
         builder.setView(dialogView);
@@ -379,6 +384,7 @@ public class ProfileActivity extends BaseActivity {
 
         Runnable onLoginSuccess = () -> {
             if (dialog != null) dialog.dismiss();
+            commitAutofill();
             userRepository.syncEmailToFirestore();
             UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
             ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
@@ -532,6 +538,7 @@ public class ProfileActivity extends BaseActivity {
             currentUser.linkWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        commitAutofill();
                         startVerificationFlow(currentUser, true, dialog);
                     } else {
                         onError.run();
@@ -544,6 +551,7 @@ public class ProfileActivity extends BaseActivity {
             mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        commitAutofill();
                         startVerificationFlow(task.getResult().getUser(), false, dialog);
                     } else {
                         onError.run();
@@ -1172,7 +1180,8 @@ public class ProfileActivity extends BaseActivity {
                 // Anonymous & No Username -> Show Inline Auth
                 buttonRegisterEmail.setVisibility(View.GONE);
                 layoutAuthInline.setVisibility(View.VISIBLE);
-                
+                cancelAutofill(); 
+
                 // Show inline Google button, hide the one in standard list
                 buttonGoogleInline.setVisibility(View.VISIBLE);
                 buttonRegisterGoogle.setVisibility(View.GONE);
@@ -1404,12 +1413,13 @@ public class ProfileActivity extends BaseActivity {
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
+            cancelAutofill();
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
             repo.clearLocalDatabase();
             mAuth.signOut();
             mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
                  if (!isFinishing() && !isDestroyed()) {
-                     loadCurrentProfile();
+                     restartActivityWithSignOut();
                  }
             });
         } catch (Exception e) {
@@ -1426,13 +1436,14 @@ public class ProfileActivity extends BaseActivity {
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
+            cancelAutofill();
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
             repo.clearLocalDatabase();
             mAuth.signOut();
             mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
                  if (!isFinishing() && !isDestroyed()) {
                      UiUtils.makeCustomToast(this, R.string.toast_local_data_cleared, Toast.LENGTH_SHORT).show();
-                     loadCurrentProfile();
+                     restartActivityWithSignOut();
                  }
             });
         } catch (Exception e) {
@@ -1448,6 +1459,7 @@ public class ProfileActivity extends BaseActivity {
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
+            cancelAutofill();
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
             repo.migrateLocalListsToCloud(() -> {
                  try {
@@ -1456,7 +1468,7 @@ public class ProfileActivity extends BaseActivity {
                      mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
                          if (!isFinishing() && !isDestroyed()) {
                              UiUtils.makeCustomToast(this, R.string.toast_lists_uploaded, Toast.LENGTH_SHORT).show();
-                             loadCurrentProfile();
+                             restartActivityWithSignOut();
                          }
                      });
                  } catch (Exception e) {
@@ -1541,6 +1553,29 @@ public class ProfileActivity extends BaseActivity {
         dialog.show();
     }
 
+    private void restartActivityWithSignOut() {
+        Intent intent = getIntent();
+        intent.putExtra("EXTRA_IS_SIGNING_OUT", true);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        finish();
+        startActivity(intent);
+        overridePendingTransition(0, 0);
+    }
+
+    private void commitAutofill() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.view.autofill.AutofillManager afm = getSystemService(android.view.autofill.AutofillManager.class);
+            if (afm != null) afm.commit();
+        }
+    }
+
+    private void cancelAutofill() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.view.autofill.AutofillManager afm = getSystemService(android.view.autofill.AutofillManager.class);
+            if (afm != null) afm.cancel();
+        }
+    }
+
     private void deleteAccount() {
         initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
         showLoading(getString(R.string.loading), true, true);
@@ -1554,8 +1589,8 @@ public class ProfileActivity extends BaseActivity {
                     if (isFinishing() || isDestroyed()) return;
                     hideLoading();
                     UiUtils.makeCustomToast(ProfileActivity.this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
-                    // Don't navigate to MainActivity, stay here and reload state (which will create a new anonymous user)
-                    loadCurrentProfile();
+                    // Don't navigate to MainActivity, stay here and restart (recreate) to reset Autofill
+                    restartActivityWithSignOut();
                     buttonDelete.setEnabled(true);
                 }
                 @Override
