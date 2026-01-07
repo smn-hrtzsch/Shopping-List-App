@@ -29,7 +29,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private final String firebaseListId;
     private RecyclerView recyclerView;
 
-    private int editingItemPosition = -1;
+    private long editingItemId = RecyclerView.NO_ID;
 
     public interface OnItemInteractionListener {
         void onItemCheckboxChanged(ShoppingItem item, boolean isChecked);
@@ -73,17 +73,22 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     }
 
     public void resetEditingPosition() {
-        if (editingItemPosition != -1 && editingItemPosition < items.size()) {
-            int oldEditingPosition = editingItemPosition;
-            editingItemPosition = -1;
-            notifyItemChanged(oldEditingPosition);
-        } else {
-            editingItemPosition = -1;
+        if (editingItemId != RecyclerView.NO_ID) {
+            long oldEditingId = editingItemId;
+            editingItemId = RecyclerView.NO_ID;
+            
+            // Find position of the item that was being edited to notify change
+            for (int i = 0; i < items.size(); i++) {
+                if (getItemId(i) == oldEditingId) {
+                    notifyItemChanged(i);
+                    break;
+                }
+            }
         }
     }
 
     public boolean isEditing() {
-        return editingItemPosition != -1;
+        return editingItemId != RecyclerView.NO_ID;
     }
 
     @NonNull
@@ -96,7 +101,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
         ShoppingItem currentItem = items.get(position);
-        holder.bind(currentItem, position == editingItemPosition);
+        holder.bind(currentItem, getItemId(position) == editingItemId);
     }
 
     @Override
@@ -113,6 +118,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             if (item1.isDone() == item2.isDone()) {
                 int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
                 if (posComp != 0) return posComp;
+                
+                // Stable tie-breaker: Use firebaseId if available (for cloud lists), else local id
+                if (item1.getFirebaseId() != null && item2.getFirebaseId() != null) {
+                    return item1.getFirebaseId().compareTo(item2.getFirebaseId());
+                }
                 return Long.compare(item1.getId(), item2.getId());
             }
             return item1.isDone() ? 1 : -1;
@@ -153,7 +163,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             if (item1.isDone() == item2.isDone()) {
                 int posComp = Integer.compare(item1.getPosition(), item2.getPosition());
                 if (posComp != 0) return posComp;
-                // Tie-breaker using ID to ensure stable sort order even with conflicting positions
+                
+                // Stable tie-breaker: Use firebaseId if available (for cloud lists), else local id
+                if (item1.getFirebaseId() != null && item2.getFirebaseId() != null) {
+                    return item1.getFirebaseId().compareTo(item2.getFirebaseId());
+                }
                 return Long.compare(item1.getId(), item2.getId());
             }
             return item1.isDone() ? 1 : -1;
@@ -375,12 +389,12 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int currentPos = getBindingAdapterPosition();
                 if (currentPos == RecyclerView.NO_POSITION) return;
 
-                if (editingItemPosition != -1 && editingItemPosition != currentPos) {
+                if (editingItemId != RecyclerView.NO_ID && editingItemId != MyRecyclerViewAdapter.this.getItemId(currentPos)) {
                     UiUtils.makeCustomToast(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
                 }
-                if (editingItemPosition != -1 && editingItemPosition == currentPos) {
+                if (editingItemId != RecyclerView.NO_ID && editingItemId == MyRecyclerViewAdapter.this.getItemId(currentPos)) {
                     UiUtils.makeCustomToast(context, R.string.toast_finish_editing_status, Toast.LENGTH_SHORT).show();
                     checkBox.setChecked(!isChecked);
                     return;
@@ -546,18 +560,24 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 int currentPos = getBindingAdapterPosition();
                 if (currentPos == RecyclerView.NO_POSITION) return;
 
-                if (editingItemPosition != -1 && editingItemPosition != currentPos) {
+                if (editingItemId != RecyclerView.NO_ID && editingItemId != MyRecyclerViewAdapter.this.getItemId(currentPos)) {
                     UiUtils.makeCustomToast(context, R.string.toast_finish_editing, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                int previousEditingPosition = editingItemPosition;
-                editingItemPosition = currentPos;
+                long previousEditingId = editingItemId;
+                editingItemId = MyRecyclerViewAdapter.this.getItemId(currentPos);
 
-                if (previousEditingPosition != -1) {
-                    notifyItemChanged(previousEditingPosition);
+                if (previousEditingId != RecyclerView.NO_ID) {
+                    // Notify old editing item
+                    for (int i = 0; i < items.size(); i++) {
+                        if (MyRecyclerViewAdapter.this.getItemId(i) == previousEditingId) {
+                            notifyItemChanged(i);
+                            break;
+                        }
+                    }
                 }
-                notifyItemChanged(editingItemPosition);
+                notifyItemChanged(currentPos);
             });
 
             buttonSave.setOnClickListener(v -> saveItemChanges(getBindingAdapterPosition()));
@@ -572,7 +592,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             buttonDelete.setOnClickListener(v -> {
                 int currentPos = getBindingAdapterPosition();
                 if (currentPos != RecyclerView.NO_POSITION) {
-                    if (editingItemPosition == currentPos) {
+                    if (editingItemId == MyRecyclerViewAdapter.this.getItemId(currentPos)) {
                         UiUtils.makeCustomToast(context, R.string.toast_finish_editing_delete, Toast.LENGTH_SHORT).show();
                         return;
                     }
@@ -594,21 +614,25 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 UiUtils.makeCustomToast(context, R.string.invalid_item_name, Toast.LENGTH_SHORT).show();
                 return;
             }
+            
+            // 1. Update local object state immediately
             item.setName(newName);
             
+            // 2. Exit edit mode and notify adapter immediately for instant feedback
+            editingItemId = RecyclerView.NO_ID;
+            notifyItemChanged(position);
+            
+            // 3. Persist to repository (Cloud or Local)
             repository.updateItemInList(item, firebaseListId, () -> {
                 if (firebaseListId != null) {
                     repository.updateListTimestamp(firebaseListId, null);
                 }
                 
-                // Refresh list only after write is confirmed to avoid fetching stale data
-                if (interactionListener != null) {
+                // For local lists, we still need to trigger a manual resort/refresh
+                if (firebaseListId == null && interactionListener != null) {
                     interactionListener.requestItemResort();
                 }
             });
-            
-            editingItemPosition = -1;
-            notifyItemChanged(position);
         }
     }
 }

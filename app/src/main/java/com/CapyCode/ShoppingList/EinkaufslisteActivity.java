@@ -663,23 +663,31 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
 
     private void refreshItemList() {
         if (shoppingListRepository == null) return;
-        if (adapter != null) adapter.resetEditingPosition();
         
-        if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
+        // Reset editing state before refresh
+        if (adapter != null) adapter.resetEditingPosition();
+
         if (firebaseListId != null) {
-            itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
-                hideLoading();
-                updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
-                this.shoppingItems = loadedItems;
-                if (adapter == null) {
-                    adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
-                    recyclerView.setAdapter(adapter);
-                } else {
-                    adapter.setItems(shoppingItems);
-                }
-                checkEmptyViewItems(shoppingItems.isEmpty());
-            });
+            // Only add listener if it doesn't exist yet to prevent flickering and race conditions
+            if (itemsSnapshotListener == null) {
+                itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
+                    hideLoading();
+                    updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
+                    this.shoppingItems = loadedItems;
+                    if (adapter == null) {
+                        adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
+                        recyclerView.setAdapter(adapter);
+                    } else {
+                        adapter.setItems(shoppingItems);
+                    }
+                    checkEmptyViewItems(shoppingItems.isEmpty());
+                });
+            }
+            // Note: If listener is active, we don't call adapter.setItems manually here anymore
+            // because 'this.shoppingItems' might contain stale data until the listener fires again.
+            // Firestore will automatically notify the listener of our local changes.
         } else {
+            // For local lists, we still need to re-fetch manually
             shoppingListRepository.getItemsForListId(currentShoppingListId, (loadedItems, hasPendingWrites) -> {
                 hideLoading();
                 this.shoppingItems = loadedItems;
