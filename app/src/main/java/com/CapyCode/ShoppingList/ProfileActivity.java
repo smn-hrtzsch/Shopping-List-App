@@ -786,31 +786,50 @@ public class ProfileActivity extends BaseActivity {
         if (username.contains(" ")) { UiUtils.makeCustomToast(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
         
         showLoading(getString(R.string.loading_saving), false);
-        userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
-            @Override
-            public void onSuccess() {
-                hideLoading();
-                UiUtils.makeCustomToast(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
-                currentLoadedUsername = username;
-                textViewCurrentUsername.setText(username);
-                setResult(RESULT_OK);
-                if (dialog != null) dialog.dismiss();
-                updateUIForUsername();
-                
-                // If launched with focus request (likely from MainActivity), finish to return
-                if (getIntent().getBooleanExtra("EXTRA_FOCUS_USERNAME", false)) {
-                    finish();
-                    return;
+        
+        Runnable proceedToSave = () -> {
+            userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
+                @Override
+                public void onSuccess() {
+                    hideLoading();
+                    UiUtils.makeCustomToast(ProfileActivity.this, R.string.profile_saved, Toast.LENGTH_SHORT).show();
+                    currentLoadedUsername = username;
+                    textViewCurrentUsername.setText(username);
+                    setResult(RESULT_OK);
+                    if (dialog != null) dialog.dismiss();
+                    updateUIForUsername();
+                    
+                    // If launched with focus request (likely from MainActivity), finish to return
+                    if (getIntent().getBooleanExtra("EXTRA_FOCUS_USERNAME", false)) {
+                        finish();
+                        return;
+                    }
+                    
+                    if (isInitialProfileCreation) { 
+                        loadCurrentProfile(); 
+                    }
                 }
-                
-                if (isInitialProfileCreation) { loadCurrentProfile(); }
-            }
-            @Override
-            public void onError(String message) { 
-                hideLoading();
-                UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); 
-            }
-        });
+                @Override
+                public void onError(String message) { 
+                    hideLoading();
+                    UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show(); 
+                }
+            });
+        };
+
+        if (mAuth.getCurrentUser() == null) {
+            mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
+                if (task.isSuccessful()) {
+                    proceedToSave.run();
+                } else {
+                    hideLoading();
+                    String msg = task.getException() != null ? task.getException().getMessage() : "Auth failed";
+                    UiUtils.makeCustomToast(ProfileActivity.this, msg, Toast.LENGTH_LONG).show();
+                }
+            });
+        } else {
+            proceedToSave.run();
+        }
     }
 
     private void updateUIForUsername() {
@@ -1108,22 +1127,7 @@ public class ProfileActivity extends BaseActivity {
                 }
             });
         };
-        if (mAuth.getCurrentUser() == null) {
-            mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
-                if (task.isSuccessful()) {
-                    FirebaseUser user = mAuth.getCurrentUser();
-                    if (user != null) {
-                        user.reload().addOnCompleteListener(t -> fetchProfileData.run());
-                    } else {
-                        fetchProfileData.run();
-                    }
-                } else {
-                    hideLoading();
-                    containerContent.setVisibility(View.VISIBLE);
-                    UiUtils.makeCustomToast(ProfileActivity.this, "Auth failed", Toast.LENGTH_LONG).show();
-                }
-            });
-        } else fetchProfileData.run();
+        fetchProfileData.run();
     }
 
     private void updateAuthUI() {

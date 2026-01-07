@@ -613,7 +613,23 @@ public class ShoppingListRepository {
 
     public void migrateLocalListsToCloud(Runnable onComplete) {
         FirebaseUser user = mAuth.getCurrentUser();
-        if (user == null) {
+        if (user == null || user.isAnonymous()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        // Check for permanent provider
+        boolean hasPermanentProvider = false;
+        for (com.google.firebase.auth.UserInfo profile : user.getProviderData()) {
+            String pid = profile.getProviderId();
+            if (com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID.equals(pid) || 
+                com.google.firebase.auth.GoogleAuthProvider.PROVIDER_ID.equals(pid)) {
+                hasPermanentProvider = true;
+                break;
+            }
+        }
+        
+        if (!hasPermanentProvider) {
             if (onComplete != null) onComplete.run();
             return;
         }
