@@ -26,7 +26,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     private final Context context;
     private final ShoppingListRepository repository;
     private final OnItemInteractionListener interactionListener;
-    private final String firebaseListId;
+    private String firebaseListId;
     private RecyclerView recyclerView;
 
     private long editingItemId = RecyclerView.NO_ID;
@@ -50,6 +50,10 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         this.interactionListener = listener;
         this.firebaseListId = firebaseListId;
         setHasStableIds(true);
+    }
+
+    public void setFirebaseListId(String firebaseListId) {
+        this.firebaseListId = firebaseListId;
     }
 
     @Override

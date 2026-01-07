@@ -8,7 +8,7 @@
 - [x] Reihenfolge der verknüpften Anmeldemethoden in der Profile Activity konsistent machen (z.B. immer Email zuerst, dann Google, dann Apple (für später))
 - [x] Wenn kein User Name festgelegt ist, sollte in der Profile Activity direkt ein Anmeldedialog geöffnet sein, bei dem man sich direkt anmelden kann ohne erst auf den Email Anmelde Button klicken zu müssen. Auch sollte dann der Button für die Email Anmeldung nicht angezeigt werden. Der Dialog sollte dezenter als die activity_auth sein, also kleinere Buttons, die gleich horizontal neben einander sein können (anmelden und registrieren). Die Anmeldung über den Google Button sollte aber weiterhin als Button in der Profile Activity angezeigt werden.
 - [ ] Je nach ausgewählter Sprache in der App sollten die Account Verifizierungs Emails und Seiten im Browser auch auf dieser Sprache sein.
-- [ ] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat. Das muss gefixt werden, sodass nach dem Unsync Prozess die Activity einfach offen bleibt und der User direkt weiter machen kann mit der Liste.
+- [x] Einkaufsliste Activity schließt / stürzt ab, nachdem man eine Liste unsynced hat. Das muss gefixt werden, sodass nach dem Unsync Prozess die Activity einfach offen bleibt und der User direkt weiter machen kann mit der Liste.
 
 ## Fixes
 

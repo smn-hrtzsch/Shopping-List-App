@@ -211,7 +211,6 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
             });
         } else {
             showCustomDialog(getString(R.string.dialog_stop_sync_title), getString(R.string.dialog_stop_sync_message), getString(R.string.button_stop_sync), () -> {
-                isUnsyncing = true; // Set early here!
                 performSafeUnsync();
             }, null);
         }
@@ -256,21 +255,23 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
     }
 
     private void performSafeUnsync() {
-        if (firebaseListId == null) return;
-        isUnsyncing = true; // Set early here!
+        if (firebaseListId == null || isUnsyncing) return;
+        isUnsyncing = true; 
         UiUtils.makeCustomToast(this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
 
         // Remove listeners immediately to prevent any updates during unsync
         if (listSnapshotListener != null) { listSnapshotListener.remove(); listSnapshotListener = null; }
         if (itemsSnapshotListener != null) { itemsSnapshotListener.remove(); itemsSnapshotListener = null; }
 
+        final String listToDeleteId = firebaseListId;
+
         // 1. Fetch items from cloud (One-Time) to ensure we have latest state
-        shoppingListRepository.fetchItemsFromCloudOneTime(firebaseListId, (cloudItems, hasPendingWrites) -> {
+        shoppingListRepository.fetchItemsFromCloudOneTime(listToDeleteId, (cloudItems, hasPendingWrites) -> {
+            if (isFinishing() || isDestroyed()) return;
+
             // 3. Atomically decouple list and replace items locally
             // This prevents "deleteObsoleteCloudLists" from deleting this list because firebaseId becomes NULL
             shoppingListRepository.decoupleListAndReplaceItems(currentShoppingListId, cloudItems);
-
-            String listToDeleteId = firebaseListId;
 
             // 4. Update RAM objects
             currentShoppingList.setFirebaseId(null);
@@ -285,15 +286,16 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
 
             // 5. Update UI immediately
             updateSyncIcon(R.drawable.ic_cloud_unsynced_24);
+            invalidateOptionsMenu(); // Update menu (hide "View Members", show "Share")
             UiUtils.makeCustomToast(this, R.string.toast_sync_disabled, Toast.LENGTH_SHORT).show();
             
-            // Force adapter recreation to switch to local mode
-            adapter = null; 
             refreshItemList(); // Reloads items from DB (which are now the decoupled ones)
 
             // 6. Delete from Cloud
             // Even if MainActivity listener fires now, it won't find this list in "obsolete" check because it has no firebaseId locally.
-            shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, null);
+            shoppingListRepository.deleteSingleListFromCloud(listToDeleteId, () -> {
+                isUnsyncing = false; // Reset only after everything is finished
+            });
         });
     }
 
@@ -321,7 +323,10 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         super.onDestroy();
         syncIconHandler.removeCallbacksAndMessages(null);
         if (listSnapshotListener != null) listSnapshotListener.remove();
-        if (itemsSnapshotListener != null) itemsSnapshotListener.remove();
+        if (itemsSnapshotListener != null) {
+            itemsSnapshotListener.remove();
+            itemsSnapshotListener = null;
+        }
     }
 
     @Override
@@ -665,6 +670,7 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
             // Only add listener if it doesn't exist yet to prevent flickering and race conditions
             if (itemsSnapshotListener == null) {
                 itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
+                    if (isFinishing() || isDestroyed()) return;
                     android.util.Log.d("ActivityDebug", "Listener delivered " + loadedItems.size() + " items. hasPendingWrites=" + hasPendingWrites);
                     hideLoading();
                     updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
@@ -672,7 +678,12 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
                     if (adapter == null) {
                         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
                         recyclerView.setAdapter(adapter);
+                        
+                        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
+                        ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+                        touchHelper.attachToRecyclerView(recyclerView);
                     } else {
+                        adapter.setFirebaseListId(firebaseListId);
                         adapter.setItems(shoppingItems);
                     }
                     checkEmptyViewItems(shoppingItems.isEmpty());
@@ -684,12 +695,18 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         } else {
             // For local lists, we still need to re-fetch manually
             shoppingListRepository.getItemsForListId(currentShoppingListId, (loadedItems, hasPendingWrites) -> {
+                if (isFinishing() || isDestroyed()) return;
                 hideLoading();
                 this.shoppingItems = loadedItems;
                 if (adapter == null) {
                     adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, null);
                     recyclerView.setAdapter(adapter);
+                    
+                    ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
+                    ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+                    touchHelper.attachToRecyclerView(recyclerView);
                 } else {
+                    adapter.setFirebaseListId(null);
                     adapter.setItems(shoppingItems);
                 }
                 checkEmptyViewItems(shoppingItems.isEmpty());
