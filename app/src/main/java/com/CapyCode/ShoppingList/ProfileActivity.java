@@ -189,6 +189,11 @@ public class ProfileActivity extends BaseActivity {
                 errorTextEmailInline.setVisibility(View.GONE);
                 errorTextPasswordInline.setVisibility(View.GONE);
                 errorTextGeneralInline.setVisibility(View.GONE);
+                
+                // If both fields have content, it might be an autofill. Hide keyboard.
+                if (editTextEmailInline.getText().length() > 0 && editTextPasswordInline.getText().length() > 0) {
+                    hideKeyboard(editTextEmailInline);
+                }
             }
             @Override public void afterTextChanged(android.text.Editable s) {}
         };
@@ -338,6 +343,11 @@ public class ProfileActivity extends BaseActivity {
                 errorTextEmail.setVisibility(View.GONE);
                 errorTextPassword.setVisibility(View.GONE);
                 errorTextGeneral.setVisibility(View.GONE);
+
+                // If both fields have content, it might be an autofill. Hide keyboard.
+                if (editTextEmail.getText().length() > 0 && editTextPassword.getText().length() > 0) {
+                    hideKeyboard(editTextEmail);
+                }
             }
             @Override public void afterTextChanged(android.text.Editable s) {}
         };
