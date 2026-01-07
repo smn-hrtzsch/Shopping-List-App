@@ -12,4 +12,5 @@
     <color name="input_stroke_inactive_adaptive">#616161</color>
     <color name="input_stroke_focused_adaptive">#EEEEEE</color>
     <color name="dialog_action_text_adaptive">#EEEEEE</color>
+    <color name="switch_accent_adaptive">@color/teal_200</color>
 </resources>

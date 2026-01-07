@@ -30,4 +30,5 @@
     <color name="input_stroke_inactive_adaptive">#BDBDBD</color>
     <color name="input_stroke_focused_adaptive">#757575</color>
     <color name="dialog_action_text_adaptive">#424242</color>
+    <color name="switch_accent_adaptive">@color/teal_700</color>
 </resources>
