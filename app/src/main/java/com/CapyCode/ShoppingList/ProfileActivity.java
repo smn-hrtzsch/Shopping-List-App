@@ -573,6 +573,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void startVerificationFlow(FirebaseUser user, boolean isLinkedAccount, androidx.appcompat.app.AlertDialog authDialog) {
         userRepository.syncEmailToFirestore();
+        userRepository.setSyncPreference(true, null); // Enable sync by default on registration
         user.sendEmailVerification()
                 .addOnCompleteListener(task -> {
                     // Dialog remains open but loading finished? Or dismiss dialog and show verification dialog?
@@ -683,10 +684,20 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void setupSyncSwitch() {
-        SharedPreferences prefs = getSharedPreferences(ShoppingListManager.SETTINGS_PREFS, MODE_PRIVATE);
-        switchSyncPrivate.setChecked(prefs.getBoolean(ShoppingListManager.KEY_SYNC_PRIVATE_DEFAULT, true));
         switchSyncPrivate.setOnCheckedChangeListener((v, isChecked) -> {
-            prefs.edit().putBoolean(ShoppingListManager.KEY_SYNC_PRIVATE_DEFAULT, isChecked).apply();
+            userRepository.setSyncPreference(isChecked, new UserRepository.OnProfileActionListener() {
+                @Override
+                public void onSuccess() {
+                    // Also update local prefs for immediate use in other parts of the app if needed
+                    SharedPreferences prefs = getSharedPreferences(ShoppingListManager.SETTINGS_PREFS, MODE_PRIVATE);
+                    prefs.edit().putBoolean(ShoppingListManager.KEY_SYNC_PRIVATE_DEFAULT, isChecked).apply();
+                }
+
+                @Override
+                public void onError(String message) {
+                    // Optional: revert switch if needed
+                }
+            });
         });
     }
 
@@ -800,6 +811,7 @@ public class ProfileActivity extends BaseActivity {
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
                             UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_google_linked, Toast.LENGTH_SHORT).show();
+                            userRepository.setSyncPreference(true, null);
                             syncGoogleProfilePicture();
                             triggerSync();
                             loadCurrentProfile();
@@ -846,7 +858,7 @@ public class ProfileActivity extends BaseActivity {
         }
         userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
             @Override
-            public void onLoaded(String username, String imageUrl) {
+            public void onLoaded(String username, String imageUrl, boolean syncPrivate) {
                 if (username != null && !username.isEmpty()) {
                     listener.onResult(false);
                     return;
@@ -881,6 +893,9 @@ public class ProfileActivity extends BaseActivity {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        if (task.getResult().getAdditionalUserInfo() != null && task.getResult().getAdditionalUserInfo().isNewUser()) {
+                            userRepository.setSyncPreference(true, null);
+                        }
                         syncGoogleProfilePicture();
                         loadCurrentProfile();
                     } else {
@@ -894,7 +909,7 @@ public class ProfileActivity extends BaseActivity {
     private void syncGoogleProfilePicture() {
         userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
             @Override
-            public void onLoaded(String username, String imageUrl) {
+            public void onLoaded(String username, String imageUrl, boolean syncPrivate) {
                 if (imageUrl == null || imageUrl.isEmpty()) {
                     // No image set, try to get from Google
                     for (UserInfo profile : mAuth.getCurrentUser().getProviderData()) {
@@ -979,12 +994,21 @@ public class ProfileActivity extends BaseActivity {
         Runnable fetchProfileData = () -> {
             userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
                 @Override
-                public void onLoaded(String username, String imageUrl) {
+                public void onLoaded(String username, String imageUrl, boolean syncPrivate) {
                     if (isFinishing() || isDestroyed()) return;
                     hideLoading();
                     containerContent.setVisibility(View.VISIBLE);
                     
                     currentImageUrl = imageUrl;
+
+                    // Update sync switch without triggering listener
+                    switchSyncPrivate.setOnCheckedChangeListener(null);
+                    switchSyncPrivate.setChecked(syncPrivate);
+                    setupSyncSwitch();
+
+                    // Also update local prefs to be in sync
+                    SharedPreferences prefs = getSharedPreferences(ShoppingListManager.SETTINGS_PREFS, MODE_PRIVATE);
+                    prefs.edit().putBoolean(ShoppingListManager.KEY_SYNC_PRIVATE_DEFAULT, syncPrivate).apply();
 
                     if (imageUrl != null && !imageUrl.isEmpty()) {
                         Glide.with(ProfileActivity.this)
