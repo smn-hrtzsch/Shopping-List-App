@@ -293,7 +293,7 @@ public class UserRepository {
 
     public void getUserProfile(OnUserProfileLoadedListener listener) {
         if (!isAuthenticated()) {
-             listener.onLoaded(null, null); // Or handle error
+             listener.onLoaded(null, null, true); // Default to true
              return;
         }
 
@@ -302,16 +302,38 @@ public class UserRepository {
                     if (documentSnapshot.exists()) {
                         String username = documentSnapshot.getString("username");
                         String imageUrl = documentSnapshot.getString("profileImageUrl");
-                        listener.onLoaded(username, imageUrl);
+                        boolean syncPrivate = true;
+                        if (documentSnapshot.contains("syncPrivateByDefault")) {
+                            Boolean value = documentSnapshot.getBoolean("syncPrivateByDefault");
+                            if (value != null) syncPrivate = value;
+                        }
+                        listener.onLoaded(username, imageUrl, syncPrivate);
                     } else {
-                        listener.onLoaded(null, null);
+                        listener.onLoaded(null, null, true);
                     }
                 })
                 .addOnFailureListener(e -> listener.onError("Ladefehler: " + e.getMessage()));
     }
 
+    public void setSyncPreference(boolean isChecked, OnProfileActionListener listener) {
+        if (!isAuthenticated()) {
+            if (listener != null) listener.onError(context.getString(R.string.auth_required));
+            return;
+        }
+        Map<String, Object> update = new HashMap<>();
+        update.put("syncPrivateByDefault", isChecked);
+        db.collection("users").document(getCurrentUserId())
+                .set(update, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(aVoid -> {
+                    if (listener != null) listener.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (listener != null) listener.onError(e.getMessage());
+                });
+    }
+
     public interface OnUserProfileLoadedListener {
-        void onLoaded(String username, String imageUrl);
+        void onLoaded(String username, String imageUrl, boolean syncPrivateByDefault);
         void onError(String error);
     }
 
