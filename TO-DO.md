@@ -64,7 +64,6 @@
 
 ## Bugs
 
-- [ ] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
 - [ ] Switch zum Entscheiden, ob Private Listen automatisch synchronisiert werden sollten ist schlecht erkennbar, kann man die Farben vielleicht etwas deutlicher vom Hintergrund abheben?
 - [ ] Momentan wird die Entscheidung, ob Private Listen automatisch synchronisiert werden sollten nicht an den Account gebunden, sondern in der App verwaltet, dass heißt, wenn ich mich abmelde und bei einem anderen Account den Switch betätige, wird diese Entscheidung auch beim Account wechsel mit übernommen, das sollte nicht so sein. Die Entscheidung sollte beim User liegen und der Switch sollte bei der ersten Registrierung des Users automatisch aktiviert werden (nach Verknüpfung oder Registrierung per Email oder Google).
 - [ ] Im 'dialog_auth' Dialog und in der Anmelden Section gibt es einen Bug, bei dem die Tastatur sich von selbst schließt, während man noch dabei ist eine Eingabe zu tätigen. Das nervt und sollte nicht so sein.
@@ -84,3 +83,4 @@
 - [x] Beim Abhaken von Artikeln wird manchmal der Fokus / das Scrollen zum Ende der Liste gesetzt. Aber das ist nicht gewollt. Es sollte beim Abhaken kein automatisches Scrollen geben. Nur beim Hinzufügen von Artikeln. Das Problem tritt hauptsächlich bei privaten synced Listen auf.
 - [x] Es fehlen noch deutsche Strings für den Abmelden Dialog.
 - [x] Beim entfernen einer Anmelde-Methode sollten die Buttons untereinander angezeigt werden, da horizontal der Text zu viel Platz einnimmt mit zwei Buttons nebeneinander. Du kannst dazu den dialog_vertical_buttons.xml verwenden.xml nutzen.
+- [x] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
