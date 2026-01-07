@@ -199,7 +199,7 @@
     <string name="error_login_wrong_password">E-Mail, Benutzername oder Passwort falsch.</string>
     <string name="dialog_switch_account_title">Konto wechseln?</string>
     <string name="dialog_switch_account_message">Du bist dabei, dich mit einem anderen Konto anzumelden. Deine aktuellen lokalen Listen und Daten werden gelöscht.\n\nMöchtest du wirklich das Konto wechseln?</string>
-    <string name="dialog_switch_account_message_guest">Dieses Konto ist bereits mit einem anderen Profil verknüpft.\n\nMöchtest du zu diesem Profil wechseln? Deine aktuellen, nicht synchronisierten Listen werden gelöscht.</string>
+    <string name="dialog_switch_account_message_guest">Dieses Konto ist bereits mit einem anderen Profil verknüpft.\n\nMöchtest du zu diesem Profil wechseln? Dein aktuelles Gast-Profil und alle darin gespeicherten Daten (inkl. Listen) werden dabei unwiderruflich gelöscht.</string>
     <string name="dialog_switch_account_message_conflict">Dieses Konto ist bereits mit einem anderen Profil verknüpft.\n\nDu kannst es nicht mit deinem aktuellen Profil verknüpfen. Möchtest du stattdessen zu diesem anderen Profil wechseln?</string>
     <string name="button_switch_and_link">Konto wechseln</string>
     <string name="action_link_email">Mit E-Mail verknüpfen</string>

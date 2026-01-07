@@ -499,14 +499,40 @@ public class ProfileActivity extends BaseActivity {
             });
     }
 
+    private void cleanupAnonymousUserAndThen(Runnable nextAction) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && user.isAnonymous()) {
+            ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
+            repo.deleteAllUserData(() -> {
+                userRepository.deleteAccount(new UserRepository.OnProfileActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        nextAction.run();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        // Even if deletion fails (e.g. network), we proceed to avoid blocking the user
+                        android.util.Log.e("ProfileActivity", "Failed to delete anonymous account: " + error);
+                        nextAction.run();
+                    }
+                });
+            });
+        } else {
+            nextAction.run();
+        }
+    }
+
     private void performSwitchLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
-        mAuth.signInWithEmailAndPassword(email, password)
+        cleanupAnonymousUserAndThen(() -> {
+            mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) onSuccess.run();
                     else { onError.run(); showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException())); }
                 });
+        });
     }
 
     private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
@@ -901,7 +927,8 @@ public class ProfileActivity extends BaseActivity {
         showLoading();
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
-        mAuth.signInWithCredential(credential)
+        cleanupAnonymousUserAndThen(() -> {
+            mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         if (task.getResult().getAdditionalUserInfo() != null && task.getResult().getAdditionalUserInfo().isNewUser()) {
@@ -912,9 +939,10 @@ public class ProfileActivity extends BaseActivity {
                     } else {
                         hideLoading();
                         String msg = task.getException() != null ? task.getException().getMessage() : "Authentication failed";
-                        UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.error_auth_failed, msg), Toast.LENGTH_SHORT).show();
+                        UiUtils.makeCustomToast(ProfileActivity.this, msg, Toast.LENGTH_LONG).show();
                     }
                 });
+        });
     }
 
     private void syncGoogleProfilePicture() {
