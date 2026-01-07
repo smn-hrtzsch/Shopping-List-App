@@ -110,8 +110,17 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
     }
 
     public void setItems(List<ShoppingItem> newItems) {
+        if (newItems != null) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(newItems.size(), 10); i++) {
+                sb.append(i).append(":").append(newItems.get(i).getName()).append(" ");
+            }
+            android.util.Log.d("AdapterDebug", "setItems: size=" + newItems.size() + " items=[" + sb.toString().trim() + "]");
+        } else {
+            android.util.Log.d("AdapterDebug", "setItems: size=0 (null)");
+        }
         final List<ShoppingItem> oldList = new ArrayList<>(this.items);
-        final List<ShoppingItem> newList = new ArrayList<>(newItems);
+        final List<ShoppingItem> newList = new ArrayList<>(newItems != null ? newItems : new ArrayList<>());
         
         // Sort the new list before comparing
         Collections.sort(newList, (item1, item2) -> {
@@ -142,10 +151,15 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 ShoppingItem oldItem = oldList.get(oldItemPosition);
                 ShoppingItem newItem = newList.get(newItemPosition);
                 
-                return java.util.Objects.equals(oldItem.getName(), newItem.getName()) &&
+                boolean same = java.util.Objects.equals(oldItem.getName(), newItem.getName()) &&
                        oldItem.isDone() == newItem.isDone() &&
                        java.util.Objects.equals(oldItem.getQuantity(), newItem.getQuantity()) &&
                        java.util.Objects.equals(oldItem.getUnit(), newItem.getUnit());
+                       
+                if (!same && oldItem.equals(newItem)) {
+                     android.util.Log.d("AdapterDebug", "Diff content changed for ID " + oldItem.getId() + ": '" + oldItem.getName() + "' -> '" + newItem.getName() + "'");
+                }
+                return same;
             }
         }, false); // Disable move detection to prevent "flying" animation
 
@@ -348,6 +362,8 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         }
 
         public void bind(final ShoppingItem item, boolean isInEditMode) {
+            android.util.Log.d("AdapterDebug", "bind: name='" + item.getName() + "' editMode=" + isInEditMode + " done=" + item.isDone());
+            // Set text initially, but ensure it's visible in display mode
             textViewName.setText(item.getName());
 
             if (item.isDone()) {
@@ -365,6 +381,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             textViewName.setPaintFlags(textViewName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
 
             if (isInEditMode && !item.isDone()) {
+                android.util.Log.d("AdapterDebug", "bind: showing EDIT layout for '" + item.getName() + "'");
                 layoutDisplay.setVisibility(View.GONE);
                 layoutEdit.setVisibility(View.VISIBLE);
                 buttonEdit.setVisibility(View.GONE);
@@ -374,13 +391,18 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
                 editTextName.setSelection(editTextName.getText().length());
                 editTextName.post(() -> {
                     android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.showSoftInput(editTextName, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                    if (imm != null) {
+                        imm.showSoftInput(editTextName, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                    }
                 });
             } else {
+                android.util.Log.d("AdapterDebug", "bind: showing DISPLAY layout for '" + item.getName() + "'");
                 layoutDisplay.setVisibility(View.VISIBLE);
                 layoutEdit.setVisibility(View.GONE);
                 buttonEdit.setVisibility(item.isDone() ? View.GONE : View.VISIBLE);
                 buttonSave.setVisibility(View.GONE);
+                // Re-set text here to be absolutely sure it's up to date when switching back to display
+                textViewName.setText(item.getName());
             }
 
             checkBox.setOnCheckedChangeListener(null);
@@ -605,10 +627,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             if (position == RecyclerView.NO_POSITION || position >= items.size()) return;
 
             android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(editTextName.getWindowToken(), 0);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(editTextName.getWindowToken(), 0);
+            }
 
             ShoppingItem item = items.get(position);
             String newName = editTextName.getText().toString().trim();
+            
+            android.util.Log.d("AdapterDebug", "saveItemChanges: pos=" + position + " oldName=" + item.getName() + " newName=" + newName);
 
             if (newName.isEmpty()) {
                 UiUtils.makeCustomToast(context, R.string.invalid_item_name, Toast.LENGTH_SHORT).show();
@@ -618,8 +644,11 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
             // 1. Update local object state immediately
             item.setName(newName);
             
-            // 2. Exit edit mode and notify adapter immediately for instant feedback
+            // 2. Exit edit mode
             editingItemId = RecyclerView.NO_ID;
+            android.util.Log.d("AdapterDebug", "saveItemChanges: editingItemId reset to NO_ID, calling notifyItemChanged(" + position + ")");
+            
+            // 3. Notify adapter immediately for instant feedback
             notifyItemChanged(position);
             
             // 3. Persist to repository (Cloud or Local)

@@ -212,6 +212,7 @@ public class ShoppingListRepository {
         return db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .addSnapshotListener((value, e) -> {
                     if (e != null) {
+                        android.util.Log.e("RepoDebug", "Error listening for items", e);
                         listener.onItemsLoaded(new ArrayList<>(), false);
                         return;
                     }
@@ -219,6 +220,7 @@ public class ShoppingListRepository {
                     boolean hasPendingWrites = false;
                     if (value != null) {
                         hasPendingWrites = value.getMetadata().hasPendingWrites();
+                        android.util.Log.d("RepoDebug", "Snapshot received. hasPendingWrites=" + hasPendingWrites + " count=" + value.size());
                         for (QueryDocumentSnapshot doc : value) {
                             ShoppingItem item = new ShoppingItem();
                             item.setName(doc.getString("name"));
@@ -231,6 +233,7 @@ public class ShoppingListRepository {
                             item.setPosition(pos != null ? pos.intValue() : 0);
                             item.setFirebaseId(doc.getId());
                             items.add(item);
+                            // Log specific item if needed, but let's keep it quiet for now
                         }
                     }
                     // Manual sorting to match local DB behavior (done ASC, position ASC, ID ASC)
@@ -240,19 +243,6 @@ public class ShoppingListRepository {
                         if (posComp != 0) return posComp;
                         return a.getFirebaseId().compareTo(b.getFirebaseId());
                     });
-                    
-                    // If we have pending writes (local changes not yet on server), we should still update the UI
-                    // BUT we must ensure that we don't overwrite our local optimistic state with "old" server state
-                    // if the listener fires for other reasons.
-                    // However, with Firestore, the listener usually fires immediately with the local "pending" state.
-                    // The issue might be that the ID mapping or some other property is causing DiffUtil to reset.
-                    // Since the user says "only for cloud synced lists", it confirms it's a listener/latency issue.
-                    
-                    // The "fix" for flickering was to ignore updates if hasPendingWrites is true?
-                    // No, usually we WANT to show pending writes (optimistic UI).
-                    // But if the "local write" has already updated the adapter via notifyItemChanged,
-                    // and THEN this listener fires with the SAME data (but from cache), it should be fine.
-                    // If it fires with OLD data for some reason, that's bad.
                     
                     listener.onItemsLoaded(items, hasPendingWrites);
                 });

@@ -157,12 +157,6 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
 
         recyclerView = findViewById(R.id.item_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        // Disable change animations to prevent flickering during cloud updates
-        if (recyclerView.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
-            ((androidx.recyclerview.widget.SimpleItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
-        }
-        // Completely disable item animator to prevent scroll issues during move
-        recyclerView.setItemAnimator(null);
         
         adapter = new MyRecyclerViewAdapter(this, shoppingItems, shoppingListRepository, this, firebaseListId);
         recyclerView.setAdapter(adapter);
@@ -671,6 +665,7 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
             // Only add listener if it doesn't exist yet to prevent flickering and race conditions
             if (itemsSnapshotListener == null) {
                 itemsSnapshotListener = shoppingListRepository.getItemsForListId(firebaseListId, (loadedItems, hasPendingWrites) -> {
+                    android.util.Log.d("ActivityDebug", "Listener delivered " + loadedItems.size() + " items. hasPendingWrites=" + hasPendingWrites);
                     hideLoading();
                     updateSyncIcon(hasPendingWrites ? R.drawable.ic_cloud_upload_24 : R.drawable.ic_cloud_download_24);
                     this.shoppingItems = loadedItems;
