@@ -54,3 +54,6 @@ functions/lib/
 
 # Account files
 TestAccounts.md
+
+# Debug pngs
+*.png
