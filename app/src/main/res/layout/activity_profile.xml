@@ -368,6 +368,9 @@
                             android:id="@+id/switch_sync_private"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:thumbTint="@color/switch_thumb_selector"
+                            app:trackTint="@color/switch_track_selector"
+                            app:useMaterialThemeColors="false"
                             android:checked="true"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
