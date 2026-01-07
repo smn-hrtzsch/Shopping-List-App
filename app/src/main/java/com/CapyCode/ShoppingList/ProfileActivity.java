@@ -408,10 +408,23 @@ public class ProfileActivity extends BaseActivity {
         if (AuthValidator.isValidEmail(input)) {
             performAuthLogin(input, password, onLoginSuccess, errorGeneral, onError);
         } else {
-            userRepository.findEmailByUsername(input, new UserRepository.OnEmailLoadedListener() {
+            Runnable findAction = () -> userRepository.findEmailByUsername(input, new UserRepository.OnEmailLoadedListener() {
                 @Override public void onLoaded(String email) { performAuthLogin(email, password, onLoginSuccess, errorGeneral, onError); }
                 @Override public void onError(String error) { onError.run(); showError(errorEmail, error); }
             });
+
+            if (mAuth.getCurrentUser() == null) {
+                mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        findAction.run();
+                    } else {
+                        onError.run();
+                        showError(errorEmail, getString(R.string.error_auth_failed, task.getException() != null ? task.getException().getMessage() : "Unknown error"));
+                    }
+                });
+            } else {
+                findAction.run();
+            }
         }
     }
 
