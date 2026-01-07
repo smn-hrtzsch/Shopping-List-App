@@ -17,7 +17,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -34,7 +33,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -43,9 +41,6 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.UserInfo;
-
-import java.util.List;
-import java.util.Map;
 
 public class ProfileActivity extends BaseActivity {
 
@@ -1365,7 +1360,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void performSimpleSignOut() {
         try {
-            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
@@ -1387,7 +1382,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void performDestructiveSignOut() {
         try {
-            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
@@ -1409,7 +1404,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void performSafeSignOut() {
         try {
-            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
@@ -1506,7 +1501,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void deleteAccount() {
-        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_auth, 1);
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
         showLoading(getString(R.string.loading), true, true);
         buttonDelete.setEnabled(false);
         ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
