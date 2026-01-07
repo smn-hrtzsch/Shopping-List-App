@@ -196,7 +196,11 @@ public class ProfileActivity extends BaseActivity {
                 
                 // If both fields have content, it might be an autofill. Hide keyboard.
                 if (editTextEmailInline.getText().length() > 0 && editTextPasswordInline.getText().length() > 0) {
-                    hideKeyboard(editTextEmailInline);
+                    editTextEmailInline.postDelayed(() -> {
+                        hideKeyboard(editTextEmailInline);
+                        editTextEmailInline.clearFocus();
+                        editTextPasswordInline.clearFocus();
+                    }, 150);
                 }
             }
             @Override public void afterTextChanged(android.text.Editable s) {}
@@ -289,7 +293,10 @@ public class ProfileActivity extends BaseActivity {
                             // Autofill UI hidden (likely selected), try to close keyboard if open
                             // We verify if text is present to assume success
                             if (view instanceof EditText && ((EditText) view).getText().length() > 0) {
-                                hideKeyboard(view);
+                                view.postDelayed(() -> {
+                                    hideKeyboard(view);
+                                    view.clearFocus();
+                                }, 150);
                             }
                         }
                     }
@@ -351,7 +358,11 @@ public class ProfileActivity extends BaseActivity {
 
                 // If both fields have content, it might be an autofill. Hide keyboard.
                 if (editTextEmail.getText().length() > 0 && editTextPassword.getText().length() > 0) {
-                    hideKeyboard(editTextEmail);
+                    editTextEmail.postDelayed(() -> {
+                        hideKeyboard(editTextEmail);
+                        editTextEmail.clearFocus();
+                        editTextPassword.clearFocus();
+                    }, 150);
                 }
             }
             @Override public void afterTextChanged(android.text.Editable s) {}
