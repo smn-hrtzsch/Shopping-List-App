@@ -175,6 +175,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="textEmailAddress"
+                                android:imeOptions="actionNext"
+                                android:singleLine="true"
                                 android:autofillHints="emailAddress"
                                 android:importantForAutofill="yes"
                                 android:textSize="14sp"/>
@@ -216,6 +218,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="textPassword"
+                                android:imeOptions="actionDone"
+                                android:singleLine="true"
                                 android:autofillHints="password"
                                 android:importantForAutofill="yes"
                                 android:textSize="14sp"/>
