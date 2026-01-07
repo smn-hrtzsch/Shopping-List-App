@@ -18,8 +18,8 @@
 ## Accounts
 
 - [x] Erstellen eines Accounts mit E-Mail und Passwort
-- [x] Verknüpfung mit Google Account
-- [ ] Verknüpfung mit Apple-Account
+- [x] Verknpüfung mit Google Account
+- [ ] Verknpüfung mit Apple-Account
 - [x] Zurücksetzen des Passworts via E-Mail
 - [ ] 2FA (Two-Factor Authentication) implementieren
 - [x] Profilbild hochladen und ändern
@@ -48,7 +48,7 @@
 - [ ] **Kategorien:** Artikel kategorisieren (z.B. Obst, Drogerie) und Liste danach gruppieren
 - [ ] **Bilder:** Fotos zu Artikeln hinzufügen (z.B. spezifisches Produktfoto)
 - [ ] **Preis-Tracking:** Preis pro Artikel hinterlegen und Gesamtsumme der Liste berechnen
-- [ ] **Autovervollständigung:** Vorschläge beim Tippen basierend auf zuletzt genutzten Artikeln
+- [ ] **Kaufempfehlungen:** Vorschläge beim Tippen basierend auf zuletzt genutzten Artikeln
 - [ ] **Display-Modus:** Option "Bildschirm anlassen" während die Liste geöffnet ist
 
 ## Erweiterte Listen-Verwaltung
@@ -64,12 +64,9 @@
 
 ## Bugs
 
-- [ ] Wenn man in der Anmelde Sektion im Email Feld ist und etwas eingibt und dann seine Eingabe auf der Tastatur bestätigt schließt sich die Tastatur anstatt einfach zum Passwort Feld den Fokus zu wechseln und offen zu bleiben. Fixe das, ich möchte im Grunde, dass das Email Feld in der Anmelde Sektion in der ProfilActivity genau so funktioniert wie das Email Feld in 'dialog_auth', wenn dieser geöffnet ist.
-- [ ] Wenn man im 'dialog_auth' oder in der Anmelde Section, die per default angezeigt wird, wenn noch kein Benutzername oder andere Anmelde-Methode gesetzt ist angezeigt wird, im Passwort feld auf bestätigen auf der Tastatur drückt, sollte per default der Anmelde-Button betätigt werden.
-- [ ] Beim Eingeben eines Nutzernamens und dem klicken auf die Bestätigen Taste auf der Tastatur, sollte der Speichern Button betätigt werden, sodass der User direkt über die Tastatur seine Eingabe abschließen und den Nutzernamen setzen kann.
 - [ ] Es sollte die Fehlermeldung angepasst werden, wenn man auf registrieren klickt, aber schon Daten, die zu einem Account gehören angezeigt wird. Momentan wird wenn man den korrekten Benutzernamen und das korreke Passwort verwendete einfach nur angezeigt: "Bitte gib eine gültige E-Mail Adresse ein." Aber es sollte eher einen Verweis darauf geben, dass bereits ein Konto mit diesem Nutzernamen existiert.
 - [ ] Es sollte die Fehlermeldung angepasst werden, die man bekommt, wenn man sich mit noch nicht registrierten Nutzerdaten anmelden möchte. Momentan heißt es nur: "E-Mail, Benutzername oder Passwort falsch." Was noch eine gute Ergänzung wäre: Ein Hinweise, dass man sich registrieren muss, wenn man noch kein Konto mit den eingegebenen Daten hat. Dieser sollte als separate String ressource unter der eigentlichen Fehlermeldung angezeigt werden.
-- [ ] Für den Fall, dass ein anonymer Nutzer, der nur bereits einen Nutzernamen gesetzt hat sich mit Goole verknüpfen will, aber dabei darauf stößt, dass schon ein anderes Konto mit dem gewählten Google Account verknüpft ist, sollte in dem "konto wechseln?"-Dialog auch noch eindeutiger beschrieben werden, dass im Falle eines Wechsels das anonyme Konto gelöscht wird (da keine andere Anmeldemethode festgelegt ist). Überprüfe auch, ob wir das so korrekt umsetzen, also dass die Anonyme Leiche aus der Firestore Datenbank gelöscht wird, falls der Nutzer wirklich auf "Konto wechseln" klickt.
+- [ ] Für den Fall, dass ein anonymer Nutzer, der nur bereits einen Nutzernamen gesetzt hat sich mit Goole verknpüfen will, aber dabei darauf stößt, dass schon ein anderes Konto mit dem gewählten Google Account verknüpft ist, sollte in dem "konto wechseln?"-Dialog auch noch eindeutiger beschrieben werden, dass im Falle eines Wechsels das anonyme Konto gelöscht wird (da keine andere Anmeldemethode festgelegt ist). Überprüfe auch, ob wir das so korrekt umsetzen, also dass die Anonyme Leiche aus der Firestore Datenbank gelöscht wird, falls der Nutzer wirklich auf "Konto wechseln" klickt.
 - [ ] E-Mail bestätigen dialog sollte lieber 'dialog_vertical_buttons' verwenden, um den Text für die Buttons sauberer darstellen zu können.
 - [ ] Google-Verknpüfung vom Konto sollte unabhängig von der E-Mail des Google Kontos geschehen. Momentan gibt es ein Problem, wenn ein User eine Google-Mail Adresse nutzt für den E-Mail login und ein anderer User seinen Account mit dem Google Konto eben gleicher Google-Mail verknpüfen möchte. Es sollte möglich sein, dass beide Konten getrennt voneinander funktionieren, da der eine User die Google-Mail als Email Login nutzt und der andere User die Google Mail zum anmelden und verknüpfen über den Google Account nutzen möchte. Fixe diese Behandlung
 
@@ -89,3 +86,7 @@
 - [x] In der Anmeldung Section wird mir nicht immer konsistent Autofill von meinem Passwort Manager vorgeschlagen. Beim ersten mal Anmelden nach dem Öffnen der App schon, aber dann nach dem Abmelden schon nicht mehr.
 - [x] Die Tastatur sollte nach einem Autofill immer geschlossen sein, aber sie ist manchmal immer noch offen. Es tritt zwar sehr selten auf, aber eben manchmal schon noch. Das Verdeckt dann UI Elemtente und sollte nicht der Fall sein.
 - [x] Im 'dialog_auth' Dialog und in der Anmelden Section gibt es einen Bug, bei dem die Tastatur sich von selbst schließt, während man noch dabei ist eine Eingabe zu tätigen. Das nervt und sollte nicht so sein.
+- [x] Wenn man in der Anmelde Sektion im Email Feld ist und etwas eingibt und dann seine Eingabe auf der Tastatur bestätigt schließt sich die Tastatur anstatt einfach zum Passwort Feld den Fokus zu wechseln und offen zu bleiben. Fixe das, ich möchte im Grunde, dass das Email Feld in der Anmelde Sektion in der ProfilActivity genau so funktioniert wie das Email Feld in 'dialog_auth', wenn dieser geöffnet ist.
+- [x] Wenn man im 'dialog_auth' oder in der Anmelde Section, die per default angezeigt wird, wenn noch kein Benutzername oder andere Anmelde-Methode gesetzt ist angezeigt wird, im Passwort feld auf bestätigen auf der Tastatur drückt, sollte per default der Anmelde-Button betätigt werden.
+- [x] Beim Eingeben eines Nutzernamens und dem klicken auf die Bestätigen Taste auf der Tastatur, sollte der Speichern Button betätigt werden, sodass der User direkt über die Tastatur seine Eingabe abschließen und den Nutzernamen setzen kann.
+- [x] Beim Klicken auf das Augen Symbol zum Anzeigen des Passworts schließt sich die Tastatur, aber sie sollte einfach offen bleiben, um im Falle, dass man direkt noch das Passwort anpassen möchte los schreiben kann.

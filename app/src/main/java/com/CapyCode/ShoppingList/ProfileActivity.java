@@ -33,6 +33,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -82,6 +83,7 @@ public class ProfileActivity extends BaseActivity {
     private String currentImageUrl = null;
     private boolean isSigningOut = false;
     private boolean autofillUiShown = false;
+    private boolean isTogglingPasswordVisibility = false;
 
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -168,6 +170,34 @@ public class ProfileActivity extends BaseActivity {
         layoutAuthInline = findViewById(R.id.layout_auth_inline);
         editTextEmailInline = findViewById(R.id.edit_text_email_inline);
         editTextPasswordInline = findViewById(R.id.edit_text_password_inline);
+        com.google.android.material.textfield.TextInputLayout inputLayoutPasswordInline = findViewById(R.id.input_layout_password_inline);
+        if (inputLayoutPasswordInline != null) {
+            // Find the end icon view and make it non-focusable to prevent focus loss from EditText
+            View endIconView = inputLayoutPasswordInline.findViewById(com.google.android.material.R.id.text_input_end_icon);
+            if (endIconView != null) {
+                endIconView.setFocusable(false);
+                endIconView.setFocusableInTouchMode(false);
+            }
+            
+            inputLayoutPasswordInline.setEndIconOnClickListener(v -> {
+                isTogglingPasswordVisibility = true;
+                int selection = editTextPasswordInline.getSelectionEnd();
+                boolean isPasswordVisible = editTextPasswordInline.getTransformationMethod() instanceof android.text.method.HideReturnsTransformationMethod;
+                
+                if (isPasswordVisible) {
+                    editTextPasswordInline.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+                    if (v instanceof android.widget.Checkable) ((android.widget.Checkable) v).setChecked(false);
+                } else {
+                    editTextPasswordInline.setTransformationMethod(android.text.method.HideReturnsTransformationMethod.getInstance());
+                    if (v instanceof android.widget.Checkable) ((android.widget.Checkable) v).setChecked(true);
+                }
+                
+                editTextPasswordInline.setSelection(selection);
+                // The non-focusable icon should prevent focus loss, but we reinforce it here
+                editTextPasswordInline.requestFocus();
+                isTogglingPasswordVisibility = false;
+            });
+        }
         buttonLoginInline = findViewById(R.id.button_login_inline);
         buttonRegisterInline = findViewById(R.id.button_register_inline);
         buttonGoogleInline = findViewById(R.id.button_google_inline);
@@ -197,7 +227,7 @@ public class ProfileActivity extends BaseActivity {
                 
                 // If many characters are added at once, it's very likely an autofill.
                 // We check if both fields are now filled.
-                if (count > 3 && editTextEmailInline.getText().length() > 0 && editTextPasswordInline.getText().length() > 0) {
+                if (!isTogglingPasswordVisibility && count > 3 && editTextEmailInline.getText().length() > 0 && editTextPasswordInline.getText().length() > 0) {
                     editTextEmailInline.postDelayed(() -> {
                         hideKeyboard(editTextEmailInline);
                         editTextEmailInline.clearFocus();
@@ -222,10 +252,17 @@ public class ProfileActivity extends BaseActivity {
         // Also trigger scroll on click (e.g. if keyboard was closed but focus remained)
         View.OnClickListener clickListener = v -> triggerAuthScroll();
         editTextEmailInline.setOnClickListener(clickListener);
-        editTextPasswordInline.setOnClickListener(clickListener);
+        
+        editTextEmailInline.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_NEXT) {
+                editTextPasswordInline.requestFocus();
+                return true;
+            }
+            return false;
+        });
         
         editTextPasswordInline.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO) {
                 hideKeyboard(editTextPasswordInline);
                 buttonLoginInline.performClick();
                 return true;
@@ -257,6 +294,15 @@ public class ProfileActivity extends BaseActivity {
         buttonRegisterEmail.setOnClickListener(v -> showAuthDialog());
         buttonRegisterGoogle.setOnClickListener(v -> signInWithGoogle());
         buttonSignOut.setOnClickListener(v -> confirmSignOut());
+        
+        editTextUsernameInline.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO) {
+                hideKeyboard(editTextUsernameInline);
+                buttonSaveUsernameInline.performClick();
+                return true;
+            }
+            return false;
+        });
         buttonSaveUsernameInline.setOnClickListener(v -> saveUsername(editTextUsernameInline.getText().toString().trim(), null));
         
         imageProfile.setOnClickListener(v -> {
@@ -329,6 +375,32 @@ public class ProfileActivity extends BaseActivity {
 
         EditText editTextEmail = dialogView.findViewById(R.id.edit_text_email);
         EditText editTextPassword = dialogView.findViewById(R.id.edit_text_password);
+        com.google.android.material.textfield.TextInputLayout inputLayoutPassword = dialogView.findViewById(R.id.input_layout_password);
+        if (inputLayoutPassword != null) {
+            View endIconView = inputLayoutPassword.findViewById(com.google.android.material.R.id.text_input_end_icon);
+            if (endIconView != null) {
+                endIconView.setFocusable(false);
+                endIconView.setFocusableInTouchMode(false);
+            }
+            
+            inputLayoutPassword.setEndIconOnClickListener(v -> {
+                isTogglingPasswordVisibility = true;
+                int selection = editTextPassword.getSelectionEnd();
+                boolean isPasswordVisible = editTextPassword.getTransformationMethod() instanceof android.text.method.HideReturnsTransformationMethod;
+
+                if (isPasswordVisible) {
+                    editTextPassword.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+                    if (v instanceof android.widget.Checkable) ((android.widget.Checkable) v).setChecked(false);
+                } else {
+                    editTextPassword.setTransformationMethod(android.text.method.HideReturnsTransformationMethod.getInstance());
+                    if (v instanceof android.widget.Checkable) ((android.widget.Checkable) v).setChecked(true);
+                }
+
+                editTextPassword.setSelection(selection);
+                editTextPassword.requestFocus();
+                isTogglingPasswordVisibility = false;
+            });
+        }
         TextView errorTextEmail = dialogView.findViewById(R.id.error_text_email);
         TextView errorTextPassword = dialogView.findViewById(R.id.error_text_password);
         TextView errorTextGeneral = dialogView.findViewById(R.id.error_text_general);
@@ -349,7 +421,7 @@ public class ProfileActivity extends BaseActivity {
                 errorTextGeneral.setVisibility(View.GONE);
 
                 // If many characters are added at once, it's very likely an autofill.
-                if (count > 3 && editTextEmail.getText().length() > 0 && editTextPassword.getText().length() > 0) {
+                if (!isTogglingPasswordVisibility && count > 3 && editTextEmail.getText().length() > 0 && editTextPassword.getText().length() > 0) {
                     editTextEmail.postDelayed(() -> {
                         hideKeyboard(editTextEmail);
                         editTextEmail.clearFocus();
@@ -361,6 +433,23 @@ public class ProfileActivity extends BaseActivity {
         };
         editTextEmail.addTextChangedListener(clearErrorWatcher);
         editTextPassword.addTextChangedListener(clearErrorWatcher);
+
+        editTextEmail.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_NEXT) {
+                editTextPassword.requestFocus();
+                return true;
+            }
+            return false;
+        });
+
+        editTextPassword.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO) {
+                hideKeyboard(editTextPassword);
+                buttonLogin.performClick();
+                return true;
+            }
+            return false;
+        });
 
         buttonLogin.setOnClickListener(v -> performDialogLogin(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
         buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
@@ -768,6 +857,15 @@ public class ProfileActivity extends BaseActivity {
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         editText.setText(currentLoadedUsername != null ? currentLoadedUsername : "");
+
+        editText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO) {
+                hideKeyboard(editText);
+                saveUsername(editText.getText().toString().trim(), dialog);
+                return true;
+            }
+            return false;
+        });
 
         btnNew.setOnClickListener(v -> {
             if (currentLoadedUsername == null || currentLoadedUsername.isEmpty()) {
