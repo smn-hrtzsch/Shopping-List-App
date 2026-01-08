@@ -512,6 +512,16 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
                 }
             }
         });
+
+        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        editText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                btnPositive.performClick();
+                return true;
+            }
+            return false;
+        });
+
         btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
