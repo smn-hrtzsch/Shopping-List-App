@@ -634,13 +634,51 @@ public class ShoppingListRepository {
              onComplete.run();
              return;
          }
+         String uid = user.getUid();
          
-         db.collection("shopping_lists").whereEqualTo("ownerId", user.getUid()).get()
+         // Query all lists where user is a member (this includes lists they own)
+         db.collection("shopping_lists").whereArrayContains("members", uid).get()
              .addOnSuccessListener(snaps -> {
                  List<com.google.firebase.firestore.DocumentSnapshot> docs = snaps.getDocuments();
-                 deleteNextListRecursive(docs, 0, onComplete);
+                 cleanupNextListRecursive(docs, 0, uid, onComplete);
              })
              .addOnFailureListener(e -> onComplete.run());
+    }
+
+    private void cleanupNextListRecursive(List<com.google.firebase.firestore.DocumentSnapshot> docs, int index, String uid, Runnable onComplete) {
+        if (index >= docs.size()) {
+            onComplete.run();
+            return;
+        }
+
+        com.google.firebase.firestore.DocumentSnapshot doc = docs.get(index);
+        String ownerId = doc.getString("ownerId");
+        
+        if (uid.equals(ownerId)) {
+            // User is owner -> Delete list and items
+            deleteListInternal(doc.getReference(), () -> cleanupNextListRecursive(docs, index + 1, uid, onComplete));
+        } else {
+            // User is member -> Remove from members array
+            doc.getReference().update("members", com.google.firebase.firestore.FieldValue.arrayRemove(uid))
+                .addOnCompleteListener(t -> {
+                     cleanupNextListRecursive(docs, index + 1, uid, onComplete);
+                });
+        }
+    }
+
+    private void deleteListInternal(com.google.firebase.firestore.DocumentReference listRef, Runnable onDone) {
+        listRef.collection("items").get().addOnSuccessListener(itemSnaps -> {
+            com.google.firebase.firestore.WriteBatch batch = db.batch();
+            for(com.google.firebase.firestore.DocumentSnapshot item : itemSnaps) {
+                batch.delete(item.getReference());
+            }
+            batch.commit().addOnCompleteListener(t -> {
+                listRef.delete().addOnCompleteListener(t2 -> onDone.run());
+            });
+        }).addOnFailureListener(e -> {
+             // If items fetch fails, try deleting list anyway
+             listRef.delete().addOnCompleteListener(t2 -> onDone.run());
+        });
     }
 
     private void deleteNextListRecursive(List<com.google.firebase.firestore.DocumentSnapshot> docs, int index, Runnable onComplete) {
@@ -648,25 +686,7 @@ public class ShoppingListRepository {
             onComplete.run();
             return;
         }
-        
-        com.google.firebase.firestore.DocumentReference listRef = docs.get(index).getReference();
-        
-        listRef.collection("items").get().addOnSuccessListener(itemSnaps -> {
-            com.google.firebase.firestore.WriteBatch batch = db.batch();
-            for(com.google.firebase.firestore.DocumentSnapshot item : itemSnaps) {
-                batch.delete(item.getReference());
-            }
-            batch.commit().addOnCompleteListener(t -> {
-                listRef.delete().addOnCompleteListener(t2 -> {
-                     deleteNextListRecursive(docs, index + 1, onComplete);
-                });
-            });
-        }).addOnFailureListener(e -> {
-             // If items fetch fails, try deleting list anyway
-             listRef.delete().addOnCompleteListener(t2 -> {
-                  deleteNextListRecursive(docs, index + 1, onComplete);
-             });
-        });
+        deleteListInternal(docs.get(index).getReference(), () -> deleteNextListRecursive(docs, index + 1, onComplete));
     }
 
     public void migrateLocalListsToCloud(Runnable onComplete) {
