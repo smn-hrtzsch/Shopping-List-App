@@ -181,6 +181,7 @@
     <string name="email_sent">Falls ein Konto existiert, wurde eine E-Mail gesendet.</string>
     <string name="error_email_required">E-Mail ist erforderlich</string>
     <string name="error_invalid_email">Bitte gib eine gültige E-Mail Adresse ein.</string>
+    <string name="error_username_exists_during_registration">Ein Konto mit diesem Benutzernamen existiert bereits. Falls es deines ist, melde dich bitte stattdessen an.</string>
     <string name="error_password_required">Passwort ist erforderlich</string>
     <string name="error_password_short">Passwort muss mindestens 6 Zeichen lang sein.</string>
     <string name="dialog_create_account_title">Konto erstellen?</string>

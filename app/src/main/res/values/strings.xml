@@ -162,6 +162,7 @@
     <string name="email_sent">If an account exists, an email has been sent.</string>
     <string name="error_email_required">Email is required</string>
     <string name="error_invalid_email">Please enter a valid email address.</string>
+    <string name="error_username_exists_during_registration">An account with this username already exists. If it is yours, please sign in instead.</string>
     <string name="error_password_required">Password is required</string>
     <string name="error_password_short">Password must be at least 6 characters long.</string>
     <string name="dialog_create_account_title">Create Account?</string>

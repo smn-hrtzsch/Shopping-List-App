@@ -31,6 +31,6 @@
 
     <include
         android:id="@+id/include_input"
-        layout="@layout/merge_input_with_button" />
+        layout="@layout/text_input_with_button" />
 
 </LinearLayout>
