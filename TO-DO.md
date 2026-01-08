@@ -64,11 +64,12 @@
 
 ## Bugs
 
-- [ ] E-Mail bestätigen dialog sollte lieber 'dialog_vertical_buttons' verwenden, um den Text für die Buttons sauberer darstellen zu können.
+- [ ] Email Bestätigen Funktionalität kann ausgetrickst werden, indem man die App komplett schließt und neu öffnet. Dann wird der Account trotzdem korrekt erstellt und registriert, obwohl die Email noch gar nicht bestätigt ist.
 - [ ] Google-Verknpüfung vom Konto sollte unabhängig von der E-Mail des Google Kontos geschehen. Momentan gibt es ein Problem, wenn ein User eine Google-Mail Adresse nutzt für den E-Mail login und ein anderer User seinen Account mit dem Google Konto eben gleicher Google-Mail verknpüfen möchte. Es sollte möglich sein, dass beide Konten getrennt voneinander funktionieren, da der eine User die Google-Mail als Email Login nutzt und der andere User die Google Mail zum anmelden und verknüpfen über den Google Account nutzen möchte. Fixe diese Behandlung
 
 ## Fixed Bugs
 
+- [x] E-Mail bestätigen dialog sollte lieber 'dialog_vertical_buttons' verwenden, um den Text für die Buttons sauberer darstellen zu können.
 - [x] Für den Fall, dass ein anonymer Nutzer, der nur bereits einen Nutzernamen gesetzt hat sich mit Goole verknpüfen will, aber dabei darauf stößt, dass schon ein anderes Konto mit dem gewählten Google Account verknüpft ist, sollte in dem "konto wechseln?"-Dialog auch noch eindeutiger beschrieben werden, dass im Falle eines Wechsels das anonyme Konto gelöscht wird (da keine andere Anmelde-Methode festgelegt ist). Überprüfe auch, ob wir das so korrekt umsetzen, also dass die Anonyme Leiche aus der Firestore Datenbank gelöscht wird, falls der Nutzer wirklich auf "Konto wechseln" klickt.
 - [x] Es sollte die Fehlermeldung angepasst werden, die man bekommt, wenn man sich mit noch nicht registrierten Nutzerdaten anmelden möchte. Momentan heißt es nur: "E-Mail, Benutzername oder Passwort falsch." Was noch eine gute Ergänzung wäre: Ein Hinweise, dass man sich registrieren muss, wenn man noch kein Konto mit den eingegebenen Daten hat. Dieser sollte als separate String ressource unter der eigentlichen Fehlermeldung angezeigt werden.
 - [x] Es wird immer noch nach dem Abmelden von einem Konto automatisch ein anonymer User bei Firestore registriert, das sollte nicht der Fall sein. Erst wenn ein Nutzername festgelegt wird, sollte der User auch registriert werden.
@@ -79,7 +80,7 @@
 - [x] Beim Abhaken von Artikeln wird manchmal der Fokus / das Scrollen zum Ende der Liste gesetzt. Aber das ist nicht gewollt. Es sollte beim Abhaken kein automatisches Scrollen geben. Nur beim Hinzufügen von Artikeln. Das Problem tritt hauptsächlich bei privaten synced Listen auf.
 - [x] Es fehlen noch deutsche Strings für den Abmelden Dialog.
 - [x] Beim entfernen einer Anmelde-Methode sollten die Buttons untereinander angezeigt werden, da horizontal der Text zu viel Platz einnimmt mit zwei Buttons nebeneinander. Du kannst dazu den dialog_vertical_buttons.xml verwenden.xml nutzen.
-- [x] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitete Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
+- [x] Nach dem Bearbeiten eines Items und dem Speichern wird die bearbeitte Version erst nach dem erneuten Laden / neu Öffnen der Liste angezeigt. Die UI wird also nicht korrekt aktualisiert.
 - [x] Switch zum Entscheiden, ob Private Listen automatisch synchronisiert werden sollten ist schlecht erkennbar, kann man die Farben vielleicht etwas deutlicher vom Hintergrund abheben?
 - [x] Momentan wird die Entscheidung, ob Private Listen automatisch synchronisiert werden sollten nicht an den Account gebunden, sondern in der App verwaltet, dass heißt, wenn ich mich abmelde und bei einem anderen Account den Switch betätige, wird diese Entscheidung auch beim Account wechsel mit übernommen, das sollte nicht so sein. Die Entscheidung sollte beim User liegen und der Switch sollte bei der ersten Registrierung des Users automatisch aktiviert werden (nach Verknpfung oder Registrierung per Email oder Google).
 - [x] In der Anmeldung Section wird mir nicht immer konsistent Autofill von meinem Passwort Manager vorgeschlagen. Beim ersten mal Anmelden nach dem Öffnen der App schon, aber dann nach dem Abmelden schon nicht mehr.
