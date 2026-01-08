@@ -450,10 +450,10 @@ public class ProfileActivity extends BaseActivity {
         };
 
         if (AuthValidator.isValidEmail(input)) {
-            performAuthLogin(input, password, onLoginSuccess, errorGeneral, onError);
+            performAuthLogin(input, password, onLoginSuccess, errorGeneral, onError, emailField, passwordField);
         } else {
             Runnable findAction = () -> userRepository.findEmailByUsername(input, new UserRepository.OnEmailLoadedListener() {
-                @Override public void onLoaded(String email) { performAuthLogin(email, password, onLoginSuccess, errorGeneral, onError); }
+                @Override public void onLoaded(String email) { performAuthLogin(email, password, onLoginSuccess, errorGeneral, onError, emailField, passwordField); }
                 @Override public void onError(String error) { onError.run(); showError(errorEmail, error); }
             });
 
@@ -472,7 +472,7 @@ public class ProfileActivity extends BaseActivity {
         }
     }
 
-    private void performAuthLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
+    private void performAuthLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError, EditText emailField, EditText passwordField) {
         // Force refresh App Check token to ensure validity before sensitive auth operation
         com.google.firebase.appcheck.FirebaseAppCheck.getInstance().getAppCheckToken(true)
             .addOnCompleteListener(tokenTask -> {
@@ -486,7 +486,7 @@ public class ProfileActivity extends BaseActivity {
                 if (currentUser != null && currentUser.isAnonymous()) {
                      // Note: verifyCredentialsAndSwitch uses secondary app which might need its own App Check token.
                      // But we removed secondary app logic? Let's check verifyCredentialsAndSwitch implementation.
-                     verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError);
+                     verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError, emailField, passwordField);
                 } else if (currentUser == null) {
                      checkIfAccountIsEmpty(isEmpty -> {
                          if (isEmpty) {
@@ -509,6 +509,13 @@ public class ProfileActivity extends BaseActivity {
                                      initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
                                      showLoading(getString(R.string.loading), true, true);
                                      performSwitchLogin(email, password, onSuccess, errorView, onError);
+                                 },
+                                 () -> {
+                                     hideLoading();
+                                     onError.run();
+                                     cancelAutofill();
+                                     if (emailField != null) emailField.setText("");
+                                     if (passwordField != null) passwordField.setText("");
                                  }
                              );
                          }
@@ -527,7 +534,7 @@ public class ProfileActivity extends BaseActivity {
             });
     }
 
-    private void verifyCredentialsAndSwitch(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
+    private void verifyCredentialsAndSwitch(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError, EditText emailField, EditText passwordField) {
         com.google.firebase.FirebaseOptions options = com.google.firebase.FirebaseApp.getInstance().getOptions();
         com.google.firebase.FirebaseApp secondaryApp;
         try { secondaryApp = com.google.firebase.FirebaseApp.getInstance("secondary"); } 
@@ -567,6 +574,13 @@ public class ProfileActivity extends BaseActivity {
                                     initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
                                     showLoading(getString(R.string.loading), true, true);
                                     performSwitchLogin(email, password, onSuccess, errorView, onError);
+                                },
+                                () -> {
+                                    hideLoading();
+                                    onError.run();
+                                    cancelAutofill();
+                                    if (emailField != null) emailField.setText("");
+                                    if (passwordField != null) passwordField.setText("");
                                 }
                             );
                             // If user cancels custom dialog? Auth dialog is hidden forever.
@@ -1031,7 +1045,11 @@ public class ProfileActivity extends BaseActivity {
                                              getString(R.string.dialog_switch_account_title),
                                              getString(messageId),
                                              getString(R.string.button_switch_and_link),
-                                             () -> performGoogleSignIn(credential)
+                                             () -> performGoogleSignIn(credential),
+                                             () -> {
+                                                 hideLoading();
+                                                 cancelAutofill();
+                                             }
                                          );
                                      }
                                  });
@@ -1052,7 +1070,11 @@ public class ProfileActivity extends BaseActivity {
                         getString(R.string.dialog_switch_account_title),
                         getString(R.string.dialog_switch_account_message),
                         getString(R.string.button_switch_and_link),
-                        () -> performGoogleSignIn(credential)
+                        () -> performGoogleSignIn(credential),
+                        () -> {
+                            hideLoading();
+                            cancelAutofill();
+                        }
                     );
                 }
             });
@@ -1741,6 +1763,10 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction) {
+        showCustomDialog(title, message, positiveButtonText, onPositiveAction, null);
+    }
+
+    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
         builder.setView(dialogView);
@@ -1752,7 +1778,10 @@ public class ProfileActivity extends BaseActivity {
         MaterialButton btnNegative = dialogView.findViewById(R.id.dialog_button_negative);
         textTitle.setText(title); textMessage.setText(message); btnPositive.setText(positiveButtonText);
         btnPositive.setOnClickListener(v -> { onPositiveAction.run(); dialog.dismiss(); });
-        btnNegative.setOnClickListener(v -> dialog.dismiss());
+        btnNegative.setOnClickListener(v -> { 
+            if (onNegativeAction != null) onNegativeAction.run();
+            dialog.dismiss(); 
+        });
         dialog.show();
     }
 
