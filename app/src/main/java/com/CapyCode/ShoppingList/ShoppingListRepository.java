@@ -18,6 +18,7 @@ public class ShoppingListRepository {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private Context context;
+    private UserRepository userRepository;
 
     public interface OnListsLoadedListener {
         void onListsLoaded(List<ShoppingList> shoppingLists, boolean fromServer);
@@ -36,6 +37,7 @@ public class ShoppingListRepository {
         this.db = db;
         this.mAuth = mAuth;
         this.context = context;
+        this.userRepository = new UserRepository(context, db, mAuth, com.google.firebase.storage.FirebaseStorage.getInstance());
     }
 
     public ShoppingListDatabaseHelper getShoppingListDatabaseHelper() {
@@ -67,6 +69,10 @@ public class ShoppingListRepository {
         listener.onListsLoaded(dbHelper.getAllShoppingLists(), currentUser == null);
 
         if (currentUser == null) return;
+
+        if (!userRepository.isUserVerified()) {
+            return; // Don't sync cloud lists if email is not verified
+        }
 
         String userId = currentUser.getUid();
         
@@ -177,6 +183,10 @@ public class ShoppingListRepository {
     }
 
     public void fetchItemsFromCloudOneTime(String firebaseListId, OnItemsLoadedListener listener) {
+        if (!userRepository.isUserVerified()) {
+            listener.onItemsLoaded(new ArrayList<>(), false);
+            return;
+        }
         db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -209,6 +219,10 @@ public class ShoppingListRepository {
     }
 
     public com.google.firebase.firestore.ListenerRegistration getItemsForListId(String firebaseListId, OnItemsLoadedListener listener) {
+        if (!userRepository.isUserVerified()) {
+            listener.onItemsLoaded(new ArrayList<>(), false);
+            return null;
+        }
         return db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .addSnapshotListener((value, e) -> {
                     if (e != null) {
@@ -290,6 +304,10 @@ public class ShoppingListRepository {
     }
 
     public void addItemToShoppingList(String firebaseListId, ShoppingItem item, OnActionListener listener) {
+        if (!userRepository.isUserVerified()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
         com.google.firebase.firestore.DocumentReference ref = db.collection("shopping_lists").document(firebaseListId).collection("items").document();
         item.setFirebaseId(ref.getId());
         ref.set(item)
@@ -299,6 +317,10 @@ public class ShoppingListRepository {
     }
 
     public void restoreItemToShoppingList(String firebaseListId, ShoppingItem item, OnActionListener listener) {
+        if (!userRepository.isUserVerified()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
         if (item.getFirebaseId() != null) {
             // Ensure we set the item with its original position
             db.collection("shopping_lists").document(firebaseListId).collection("items").document(item.getFirebaseId()).set(item)
@@ -312,6 +334,10 @@ public class ShoppingListRepository {
 
     public void updateItemInList(ShoppingItem item, String firebaseListId, OnActionListener listener) {
         if (firebaseListId != null && item.getFirebaseId() != null) {
+            if (!userRepository.isUserVerified()) {
+                if (listener != null) listener.onActionComplete();
+                return;
+            }
             // Use Map to ensure precise field updates and avoid potential POJO mapping issues
             Map<String, Object> itemData = new HashMap<>();
             itemData.put("name", item.getName());
@@ -350,6 +376,11 @@ public class ShoppingListRepository {
             return;
         }
 
+        if (!userRepository.isUserVerified()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
+
         com.google.firebase.firestore.WriteBatch batch = db.batch();
         com.google.firebase.firestore.CollectionReference itemsRef = db.collection("shopping_lists").document(firebaseListId).collection("items");
 
@@ -368,6 +399,7 @@ public class ShoppingListRepository {
 
     public void updateShoppingList(ShoppingList list) {
         if (list.getFirebaseId() != null) {
+            if (!userRepository.isUserVerified()) return;
             db.collection("shopping_lists").document(list.getFirebaseId()).update("name", list.getName());
         } else {
             dbHelper.updateShoppingList(list);
@@ -379,6 +411,7 @@ public class ShoppingListRepository {
     }
 
     public void deleteItemFromList(String firebaseListId, String firebaseItemId) {
+        if (!userRepository.isUserVerified()) return;
         db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).delete();
     }
 
@@ -391,6 +424,10 @@ public class ShoppingListRepository {
     }
 
     public void toggleItemChecked(String firebaseListId, String firebaseItemId, boolean isChecked, OnActionListener listener) {
+        if (!userRepository.isUserVerified()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
         db.collection("shopping_lists").document(firebaseListId).collection("items").document(firebaseItemId).update("done", isChecked)
             .addOnCompleteListener(task -> {
                 if (listener != null) listener.onActionComplete();
@@ -402,6 +439,10 @@ public class ShoppingListRepository {
     }
 
     public void clearCheckedItemsFromList(String firebaseListId, OnActionListener listener) {
+        if (!userRepository.isUserVerified()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
         db.collection("shopping_lists").document(firebaseListId).collection("items")
                 .whereEqualTo("done", true).get().addOnSuccessListener(snaps -> {
                     com.google.firebase.firestore.WriteBatch batch = db.batch();
@@ -417,6 +458,10 @@ public class ShoppingListRepository {
     }
 
     public void clearAllItemsFromList(String firebaseListId, OnActionListener listener) {
+        if (!userRepository.isUserVerified()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
         db.collection("shopping_lists").document(firebaseListId).collection("items").get().addOnSuccessListener(snaps -> {
                     com.google.firebase.firestore.WriteBatch batch = db.batch();
                     for (QueryDocumentSnapshot doc : snaps) batch.delete(doc.getReference());
@@ -437,6 +482,10 @@ public class ShoppingListRepository {
     }
 
     public void addMemberToList(String firebaseListId, String userId, OnMemberAddListener listener) {
+        if (!userRepository.isUserVerified()) {
+            listener.onError("Email not verified.");
+            return;
+        }
         db.collection("shopping_lists").document(firebaseListId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
@@ -460,29 +509,34 @@ public class ShoppingListRepository {
     }
 
     public void acceptInvitation(String firebaseListId, UserRepository.OnProfileActionListener listener) {
-        String userId = getCurrentUserId();
-        if (userId == null) return;
+        if (!userRepository.isUserVerified()) return;
+        String uid = mAuth.getUid();
+        if (uid == null) return;
+        
         db.collection("shopping_lists").document(firebaseListId)
-                .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(userId),
-                        "pending_members", com.google.firebase.firestore.FieldValue.arrayRemove(userId))
+                .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(uid),
+                        "pending_members", com.google.firebase.firestore.FieldValue.arrayRemove(uid))
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
 
     public void declineInvitation(String firebaseListId, UserRepository.OnProfileActionListener listener) {
-        String userId = getCurrentUserId();
-        if (userId == null) return;
+        if (!userRepository.isUserVerified()) return;
+        String uid = mAuth.getUid();
+        if (uid == null) return;
+
         db.collection("shopping_lists").document(firebaseListId)
-                .update("pending_members", com.google.firebase.firestore.FieldValue.arrayRemove(userId))
+                .update("pending_members", com.google.firebase.firestore.FieldValue.arrayRemove(uid))
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
 
     public void leaveList(String firebaseListId, UserRepository.OnProfileActionListener listener) {
-        String userId = getCurrentUserId();
-        if (userId == null) return;
+        String uid = mAuth.getUid();
+        if (uid == null || !userRepository.isUserVerified()) return;
+        
         db.collection("shopping_lists").document(firebaseListId)
-                .update("members", com.google.firebase.firestore.FieldValue.arrayRemove(userId))
+                .update("members", com.google.firebase.firestore.FieldValue.arrayRemove(uid))
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
@@ -564,6 +618,10 @@ public class ShoppingListRepository {
     }
 
     public void updateListTimestamp(String firebaseListId, OnActionListener listener) {
+        if (!userRepository.isUserVerified()) {
+            if (listener != null) listener.onActionComplete();
+            return;
+        }
         db.collection("shopping_lists").document(firebaseListId).update("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp())
             .addOnCompleteListener(task -> {
                 if (listener != null) listener.onActionComplete();
@@ -614,6 +672,11 @@ public class ShoppingListRepository {
     public void migrateLocalListsToCloud(Runnable onComplete) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null || user.isAnonymous()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        if (!userRepository.isUserVerified()) {
             if (onComplete != null) onComplete.run();
             return;
         }
@@ -785,6 +848,7 @@ public class ShoppingListRepository {
     }
 
     public void updateProfileImage(String url, UserRepository.OnProfileActionListener listener) {
+        if (!userRepository.isUserVerified()) return;
         Map<String, Object> updateData = new HashMap<>();
         updateData.put("profileImageUrl", url);
         

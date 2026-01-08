@@ -64,11 +64,12 @@
 
 ## Bugs
 
-- [ ] Email Bestätigen Funktionalität kann ausgetrickst werden, indem man die App komplett schließt und neu öffnet. Dann wird der Account trotzdem korrekt erstellt und registriert, obwohl die Email noch gar nicht bestätigt ist.
+- [ ] Nach Abmelden von einem Account werden keine Autofill Vorschläge mehr im Email Feld für die Anmelden Section gemacht. Erst nachdem man die Activity neu lädt oder neu öffnet.
 - [ ] Google-Verknpüfung vom Konto sollte unabhängig von der E-Mail des Google Kontos geschehen. Momentan gibt es ein Problem, wenn ein User eine Google-Mail Adresse nutzt für den E-Mail login und ein anderer User seinen Account mit dem Google Konto eben gleicher Google-Mail verknpüfen möchte. Es sollte möglich sein, dass beide Konten getrennt voneinander funktionieren, da der eine User die Google-Mail als Email Login nutzt und der andere User die Google Mail zum anmelden und verknüpfen über den Google Account nutzen möchte. Fixe diese Behandlung
 
 ## Fixed Bugs
 
+- [x] Email Bestätigen Funktionalität kann ausgetrickst werden, indem man die App komplett schließt und neu öffnet. Dann wird der Account trotzdem korrekt erstellt und registriert, obwohl die Email noch gar nicht bestätigt ist.
 - [x] E-Mail bestätigen dialog sollte lieber 'dialog_vertical_buttons' verwenden, um den Text für die Buttons sauberer darstellen zu können.
 - [x] Für den Fall, dass ein anonymer Nutzer, der nur bereits einen Nutzernamen gesetzt hat sich mit Goole verknpüfen will, aber dabei darauf stößt, dass schon ein anderes Konto mit dem gewählten Google Account verknüpft ist, sollte in dem "konto wechseln?"-Dialog auch noch eindeutiger beschrieben werden, dass im Falle eines Wechsels das anonyme Konto gelöscht wird (da keine andere Anmelde-Methode festgelegt ist). Überprüfe auch, ob wir das so korrekt umsetzen, also dass die Anonyme Leiche aus der Firestore Datenbank gelöscht wird, falls der Nutzer wirklich auf "Konto wechseln" klickt.
 - [x] Es sollte die Fehlermeldung angepasst werden, die man bekommt, wenn man sich mit noch nicht registrierten Nutzerdaten anmelden möchte. Momentan heißt es nur: "E-Mail, Benutzername oder Passwort falsch." Was noch eine gute Ergänzung wäre: Ein Hinweise, dass man sich registrieren muss, wenn man noch kein Konto mit den eingegebenen Daten hat. Dieser sollte als separate String ressource unter der eigentlichen Fehlermeldung angezeigt werden.

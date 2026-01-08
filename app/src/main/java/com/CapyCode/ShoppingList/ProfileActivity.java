@@ -79,6 +79,7 @@ public class ProfileActivity extends BaseActivity {
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
     private androidx.appcompat.app.AlertDialog currentAuthDialog = null;
+    private androidx.appcompat.app.AlertDialog verificationDialog = null;
 
     private String currentImageUrl = null;
     private boolean isSigningOut = false;
@@ -301,6 +302,35 @@ public class ProfileActivity extends BaseActivity {
         }
 
         setupSyncSwitch();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && !user.isAnonymous()) {
+            user.reload().addOnCompleteListener(task -> {
+                if (isFinishing() || isDestroyed()) return;
+                checkEmailVerification();
+            });
+        }
+    }
+
+    private void checkEmailVerification() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && !userRepository.isUserVerified()) {
+            // Determine if it was a link or a new registration for revert logic
+            // If they have other providers, it was likely a link.
+            boolean hasOtherProvider = false;
+            for (UserInfo profile : user.getProviderData()) {
+                if (!EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) &&
+                    !profile.getProviderId().equals("firebase")) {
+                    hasOtherProvider = true;
+                    break;
+                }
+            }
+            showVerificationDialog(user, hasOtherProvider);
+        }
     }
 
     private void triggerAuthScroll() {
@@ -702,12 +732,14 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void showVerificationDialog(FirebaseUser user, boolean isLinkedAccount) {
+        if (verificationDialog != null && verificationDialog.isShowing()) return;
+
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_vertical_buttons, null);
         builder.setView(dialogView);
         builder.setCancelable(false);
-        androidx.appcompat.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        verificationDialog = builder.create();
+        if (verificationDialog.getWindow() != null) verificationDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
 
         TextView textTitle = dialogView.findViewById(R.id.dialog_title);
         TextView textMessage = dialogView.findViewById(R.id.dialog_message);
@@ -723,7 +755,8 @@ public class ProfileActivity extends BaseActivity {
             user.reload().addOnCompleteListener(reloadTask -> {
                 if (reloadTask.isSuccessful()) {
                     if (user.isEmailVerified()) {
-                        dialog.dismiss();
+                        verificationDialog.dismiss();
+                        verificationDialog = null;
                         UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
                         loadCurrentProfile();
                     } else {
@@ -736,10 +769,11 @@ public class ProfileActivity extends BaseActivity {
         });
 
         btnNegative.setOnClickListener(v -> {
-             dialog.dismiss();
+             verificationDialog.dismiss();
+             verificationDialog = null;
              revertRegistration(user, isLinkedAccount);
         });
-        dialog.show();
+        verificationDialog.show();
     }
 
     private void revertRegistration(FirebaseUser user, boolean isLinkedAccount) {
