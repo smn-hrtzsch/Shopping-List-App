@@ -9,9 +9,9 @@ public class AuthErrorMapper {
 
     public static String getErrorMessage(Context context, Exception e) {
         if (e instanceof FirebaseAuthInvalidUserException) {
-            return context.getString(R.string.error_login_user_not_found);
+            return context.getString(R.string.error_login_user_not_found) + "\n" + context.getString(R.string.error_login_register_hint);
         } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
-            return context.getString(R.string.error_login_wrong_password);
+            return context.getString(R.string.error_login_wrong_password) + "\n" + context.getString(R.string.error_login_register_hint);
         } else if (e instanceof FirebaseAuthUserCollisionException) {
             return context.getString(R.string.error_email_collision);
         } else {

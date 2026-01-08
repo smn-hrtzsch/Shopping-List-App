@@ -198,6 +198,7 @@
     <string name="auth_dialog_title">Anmelden oder Registrieren</string>
     <string name="error_login_user_not_found">E-Mail, Benutzername oder Passwort falsch.</string>
     <string name="error_login_wrong_password">E-Mail, Benutzername oder Passwort falsch.</string>
+    <string name="error_login_register_hint">Wenn du noch kein Konto hast, registriere dich bitte.</string>
     <string name="dialog_switch_account_title">Konto wechseln?</string>
     <string name="dialog_switch_account_message">Du bist dabei, dich mit einem anderen Konto anzumelden. Deine aktuellen lokalen Listen und Daten werden gelöscht.\n\nMöchtest du wirklich das Konto wechseln?</string>
     <string name="dialog_switch_account_message_guest">Dieses Konto ist bereits mit einem anderen Profil verknüpft.\n\nMöchtest du zu diesem Profil wechseln? Dein aktuelles Gast-Profil und alle darin gespeicherten Daten (inkl. Listen) werden dabei unwiderruflich gelöscht.</string>

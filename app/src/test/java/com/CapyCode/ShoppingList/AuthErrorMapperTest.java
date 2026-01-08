@@ -24,6 +24,7 @@ public class AuthErrorMapperTest {
         // Mock specific string resources
         when(mockContext.getString(R.string.error_login_user_not_found)).thenReturn("User not found");
         when(mockContext.getString(R.string.error_login_wrong_password)).thenReturn("Wrong password");
+        when(mockContext.getString(R.string.error_login_register_hint)).thenReturn("Please register");
         when(mockContext.getString(R.string.error_email_collision)).thenReturn("Email exists");
     }
 
@@ -31,14 +32,14 @@ public class AuthErrorMapperTest {
     public void testUserNotFoundException() {
         FirebaseAuthInvalidUserException e = mock(FirebaseAuthInvalidUserException.class);
         String result = AuthErrorMapper.getErrorMessage(mockContext, e);
-        assertEquals("User not found", result);
+        assertEquals("User not found\nPlease register", result);
     }
 
     @Test
     public void testWrongPasswordException() {
         FirebaseAuthInvalidCredentialsException e = mock(FirebaseAuthInvalidCredentialsException.class);
         String result = AuthErrorMapper.getErrorMessage(mockContext, e);
-        assertEquals("Wrong password", result);
+        assertEquals("Wrong password\nPlease register", result);
     }
 
     @Test
