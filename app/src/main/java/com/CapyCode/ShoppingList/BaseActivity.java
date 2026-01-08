@@ -1,14 +1,8 @@
 package com.CapyCode.ShoppingList;
 
-import android.app.Dialog;
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
-import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
@@ -16,7 +10,6 @@ import android.view.animation.TranslateAnimation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 public abstract class BaseActivity extends AppCompatActivity {
@@ -40,7 +33,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         if (loadingOverlay != null) {
             container.removeView(loadingOverlay);
         }
-        loadingOverlay = getLayoutInflater().inflate(R.layout.layout_loading_overlay, container, false);
+        loadingOverlay = getLayoutInflater().inflate(R.layout.loading_overlay, container, false);
         
         ViewGroup skeletonContainer = loadingOverlay.findViewById(R.id.skeleton_content_container);
         if (skeletonContainer != null) {

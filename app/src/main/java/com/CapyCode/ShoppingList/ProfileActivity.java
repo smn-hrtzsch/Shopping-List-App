@@ -164,7 +164,10 @@ public class ProfileActivity extends BaseActivity {
         layoutViewMode = findViewById(R.id.layout_view_mode);
         layoutEditMode = findViewById(R.id.layout_edit_mode);
         View includeInline = findViewById(R.id.include_username_input_inline);
-        editTextUsernameInline = includeInline.findViewById(R.id.input_edit_text);
+        editTextUsernameInline = includeInline.findViewById(R.id.field_id_x_secure_no_fill);
+        
+        AuthUiHelper.disableAutofillForView(editTextUsernameInline);
+        
         buttonSaveUsernameInline = includeInline.findViewById(R.id.username_action_button);
         
         layoutAuthInline = findViewById(R.id.layout_auth_inline);
@@ -556,57 +559,110 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performDialogRegister(androidx.appcompat.app.AlertDialog dialog, EditText emailField, EditText passwordField, TextView errorEmail, TextView errorPassword, TextView errorGeneral, View loadingContainer, View d1, View d2, View d3, View btnLogin, View btnRegister) {
-        String email = emailField.getText().toString().trim();
+        String input = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
 
-        if (email.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
-        if (!AuthValidator.isValidEmail(email)) { showError(errorEmail, getString(R.string.error_invalid_email)); return; }
-        if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
-        if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
+        if (input.isEmpty()) { showError(errorEmail, getString(R.string.error_email_required)); return; }
 
-        hideKeyboard(emailField);
-        emailField.setEnabled(false);
-        passwordField.setEnabled(false);
-        loadingContainer.setVisibility(View.VISIBLE);
-        BaseActivity.startDotsAnimation(d1, d2, d3);
-        btnLogin.setEnabled(false);
-        btnRegister.setEnabled(false);
-        
-        Runnable onError = () -> {
-             loadingContainer.setVisibility(View.GONE);
-             d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
-             btnLogin.setEnabled(true);
-             btnRegister.setEnabled(true);
-             emailField.setEnabled(true);
-             passwordField.setEnabled(true);
+        Runnable startRegistration = () -> {
+            if (password.isEmpty()) { showError(errorPassword, getString(R.string.error_password_required)); return; }
+            if (!AuthValidator.isValidPassword(password)) { showError(errorPassword, getString(R.string.error_password_short)); return; }
+
+            hideKeyboard(emailField);
+            emailField.setEnabled(false);
+            passwordField.setEnabled(false);
+            loadingContainer.setVisibility(View.VISIBLE);
+            BaseActivity.startDotsAnimation(d1, d2, d3);
+            btnLogin.setEnabled(false);
+            btnRegister.setEnabled(false);
+
+            Runnable onErrorAction = () -> {
+                loadingContainer.setVisibility(View.GONE);
+                d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+                btnLogin.setEnabled(true);
+                btnRegister.setEnabled(true);
+                emailField.setEnabled(true);
+                passwordField.setEnabled(true);
+            };
+
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if (currentUser != null) {
+                AuthCredential credential = EmailAuthProvider.getCredential(input, password);
+                currentUser.linkWithCredential(credential)
+                        .addOnCompleteListener(this, task -> {
+                            if (task.isSuccessful()) {
+                                commitAutofill();
+                                startVerificationFlow(currentUser, true, dialog);
+                            } else {
+                                onErrorAction.run();
+                                String msg = AuthErrorMapper.getErrorMessage(this, task.getException());
+                                if (task.getException() instanceof FirebaseAuthUserCollisionException) msg = getString(R.string.error_email_collision_link);
+                                showError(errorEmail, msg);
+                            }
+                        });
+            } else {
+                mAuth.createUserWithEmailAndPassword(input, password)
+                        .addOnCompleteListener(this, task -> {
+                            if (task.isSuccessful()) {
+                                commitAutofill();
+                                startVerificationFlow(task.getResult().getUser(), false, dialog);
+                            } else {
+                                onErrorAction.run();
+                                showError(errorEmail, AuthErrorMapper.getErrorMessage(this, task.getException()));
+                            }
+                        });
+            }
         };
 
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
-            AuthCredential credential = EmailAuthProvider.getCredential(email, password);
-            currentUser.linkWithCredential(credential)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        commitAutofill();
-                        startVerificationFlow(currentUser, true, dialog);
-                    } else {
-                        onError.run();
-                        String msg = AuthErrorMapper.getErrorMessage(this, task.getException());
-                        if (task.getException() instanceof FirebaseAuthUserCollisionException) msg = getString(R.string.error_email_collision_link);
-                        showError(errorEmail, msg);
-                    }
-                });
+        if (AuthValidator.isValidEmail(input)) {
+            startRegistration.run();
         } else {
-            mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        commitAutofill();
-                        startVerificationFlow(task.getResult().getUser(), false, dialog);
-                    } else {
-                        onError.run();
-                        showError(errorEmail, AuthErrorMapper.getErrorMessage(this, task.getException()));
+            // Not a valid email, check if it's a potential username
+            if (!isTogglingPasswordVisibility && !input.contains("@") && input.length() >= 3) {
+                hideKeyboard(emailField);
+                loadingContainer.setVisibility(View.VISIBLE);
+                BaseActivity.startDotsAnimation(d1, d2, d3);
+                btnLogin.setEnabled(false);
+                btnRegister.setEnabled(false);
+
+                Runnable findAction = () -> userRepository.findEmailByUsername(input, new UserRepository.OnEmailLoadedListener() {
+                    @Override
+                    public void onLoaded(String email) {
+                        loadingContainer.setVisibility(View.GONE);
+                        d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+                        btnLogin.setEnabled(true);
+                        btnRegister.setEnabled(true);
+                        showError(errorEmail, getString(R.string.error_username_exists_during_registration));
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        loadingContainer.setVisibility(View.GONE);
+                        d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+                        btnLogin.setEnabled(true);
+                        btnRegister.setEnabled(true);
+                        // If it's a "not found" error, it's just an invalid email for registration
+                        showError(errorEmail, getString(R.string.error_invalid_email));
                     }
                 });
+
+                if (mAuth.getCurrentUser() == null) {
+                    mAuth.signInAnonymously().addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) findAction.run();
+                        else {
+                            loadingContainer.setVisibility(View.GONE);
+                            d1.clearAnimation(); d2.clearAnimation(); d3.clearAnimation();
+                            btnLogin.setEnabled(true);
+                            btnRegister.setEnabled(true);
+                            showError(errorEmail, getString(R.string.error_invalid_email));
+                        }
+                    });
+                } else {
+                    findAction.run();
+                }
+            } else {
+                showError(errorEmail, getString(R.string.error_invalid_email));
+            }
         }
     }
 
@@ -768,7 +824,10 @@ public class ProfileActivity extends BaseActivity {
         }
 
         View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
-        EditText editText = includeDialog.findViewById(R.id.input_edit_text);
+        EditText editText = includeDialog.findViewById(R.id.field_id_x_secure_no_fill);
+        
+        AuthUiHelper.disableAutofillForView(editText);
+        
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
         View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
         View btnSave = includeDialog.findViewById(R.id.username_action_button);
@@ -1237,7 +1296,11 @@ public class ProfileActivity extends BaseActivity {
                 // Anonymous & No Username -> Show Inline Auth
                 buttonRegisterEmail.setVisibility(View.GONE);
                 layoutAuthInline.setVisibility(View.VISIBLE);
-                cancelAutofill(); 
+                
+                // Disable autofill for username field to prevent it from being filled with login data
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    editTextUsernameInline.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+                }
 
                 // Show inline Google button, hide the one in standard list
                 buttonGoogleInline.setVisibility(View.VISIBLE);

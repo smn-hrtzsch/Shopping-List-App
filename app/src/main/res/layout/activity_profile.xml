@@ -102,6 +102,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
+                    android:importantForAutofill="noExcludeDescendants"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp"
@@ -124,7 +125,7 @@
 
                         <include
                             android:id="@+id/include_username_input_inline"
-                            layout="@layout/merge_input_with_button" />
+                            layout="@layout/text_input_with_button" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
