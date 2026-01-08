@@ -53,7 +53,7 @@
 
 ## Erweiterte Listen-Verwaltung
 
-- [ ] **Listen-Anpassung:** Eigene Farben oder Icons für Listen zur besseren Unterscheidung im Hauptmenü
+- [ ] **Listen-Anpassung:** Eigene Farben oder icons für Listen zur besseren Unterscheidung im Hauptmenü
 - [ ] **Sortierung:** Optionen zum Sortieren innerhalb einer Liste (Alphabetisch, nach Kategorie, Erledigte nach unten)
 
 ## Backend & Technik
@@ -64,12 +64,12 @@
 
 ## Bugs
 
-- [ ] Lade Animation hört nicht auf, wenn man beim Account Switch Dialog in der ProfileAcitivity auf abbrechen klickt.
 - [ ] Beim klicken auf Account Löschen bei einem anonymen Nutzer mit Nutzernamen sollten auch alle geteilten Listen, die der Nutzer erstellt hat aus der Datenbank gelöscht werden. Auch sollte er aus den Listen entfernt werden, in denen er Mitglied ist.
 - [ ] Google-Verknpüfung vom Konto sollte unabhängig von der E-Mail des Google Kontos geschehen. Momentan gibt es ein Problem, wenn ein User eine Google-Mail Adresse nutzt für den E-Mail login und ein anderer User seinen Account mit dem Google Konto eben gleicher Google-Mail verknpüfen möchte. Es sollte möglich sein, dass beide Konten getrennt voneinander funktionieren, da der eine User die Google-Mail als Email Login nutzt und der andere User die Google Mail zum anmelden und verknüpfen über den Google Account nutzen möchte. Fixe diese Behandlung
 
 ## Fixed Bugs
 
+- [x] Lade Animation hört nicht auf, wenn man beim Account Switch Dialog in der ProfileAcitivity auf abbrechen klickt.
 - [x] Wenn lokal Listen erstellt wurden (auch ohne User oder Benutzername) und auf den Google Anmelden Button oder die Anmeldung über Email geklickt wird, sollte vor dem Anmelden und Wechseln auf den Account erst noch der Account wechseln Dialog kommen, der einem klar macht, dass die lokalen Listen verloren gehen, falls man zu einem anderen bestehenden Account wechselt.
 - [x] Nach Abmelden von einem Account werden keine Autofill Vorschläge mehr im Email Feld für die Anmelden Section gemacht. Erst nachdem man die Activity neu lädt oder neu öffnet.
 - [x] Email Bestätigen Funktionalität kann ausgetrickst werden, indem man die App komplett schließt und neu öffnet. Dann wird der Account trotzdem korrekt erstellt und registriert, obwohl die Email noch gar nicht bestätigt ist.
