@@ -225,6 +225,10 @@ public class ProfileActivity extends BaseActivity {
         View.OnFocusChangeListener scrollListener = (v, hasFocus) -> {
             if (hasFocus) {
                 triggerAuthScroll();
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    android.view.autofill.AutofillManager afm = getSystemService(android.view.autofill.AutofillManager.class);
+                    if (afm != null) afm.requestAutofill(v);
+                }
             }
         };
         
@@ -1219,8 +1223,8 @@ public class ProfileActivity extends BaseActivity {
                     }
                     if (isSigningOut) {
                         UiUtils.makeCustomToast(ProfileActivity.this, R.string.toast_signed_out, Toast.LENGTH_SHORT).show();
+                        isSigningOut = false;
                     }
-                    isSigningOut = false;
                     updateUIForUsername();
                     updateAuthUI();
                 }
@@ -1331,11 +1335,6 @@ public class ProfileActivity extends BaseActivity {
                 buttonRegisterEmail.setVisibility(View.GONE);
                 layoutAuthInline.setVisibility(View.VISIBLE);
                 
-                // Disable autofill for username field to prevent it from being filled with login data
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    editTextUsernameInline.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
-                }
-
                 // Show inline Google button, hide the one in standard list
                 buttonGoogleInline.setVisibility(View.VISIBLE);
                 buttonRegisterGoogle.setVisibility(View.GONE);
@@ -1567,6 +1566,7 @@ public class ProfileActivity extends BaseActivity {
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
+            commitAutofill();
             cancelAutofill();
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
             repo.clearLocalDatabase();
@@ -1590,6 +1590,7 @@ public class ProfileActivity extends BaseActivity {
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
+            commitAutofill();
             cancelAutofill();
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
             repo.clearLocalDatabase();
@@ -1613,6 +1614,7 @@ public class ProfileActivity extends BaseActivity {
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
+            commitAutofill();
             cancelAutofill();
             ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
             repo.migrateLocalListsToCloud(() -> {
@@ -1708,7 +1710,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void restartActivityWithSignOut() {
-        Intent intent = getIntent();
+        Intent intent = new Intent(this, ProfileActivity.class);
         intent.putExtra("EXTRA_IS_SIGNING_OUT", true);
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
         finish();
@@ -1734,6 +1736,8 @@ public class ProfileActivity extends BaseActivity {
         initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
         showLoading(getString(R.string.loading), true, true);
         isSigningOut = true;
+        commitAutofill();
+        cancelAutofill();
         buttonDelete.setEnabled(false);
         ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
         repository.deleteAllUserData(() -> {

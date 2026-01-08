@@ -95,15 +95,6 @@ public class AuthUiHelper {
         
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             view.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
-            
-            view.setOnFocusChangeListener((v, hasFocus) -> {
-                if (hasFocus) {
-                    android.view.autofill.AutofillManager afm = v.getContext().getSystemService(android.view.autofill.AutofillManager.class);
-                    if (afm != null) {
-                        afm.cancel();
-                    }
-                }
-            });
         }
     }
 }
