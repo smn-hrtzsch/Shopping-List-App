@@ -487,6 +487,32 @@ public class ProfileActivity extends BaseActivity {
                      // Note: verifyCredentialsAndSwitch uses secondary app which might need its own App Check token.
                      // But we removed secondary app logic? Let's check verifyCredentialsAndSwitch implementation.
                      verifyCredentialsAndSwitch(email, password, onSuccess, errorView, onError);
+                } else if (currentUser == null) {
+                     checkIfAccountIsEmpty(isEmpty -> {
+                         if (isEmpty) {
+                             mAuth.signInWithEmailAndPassword(email, password)
+                                .addOnCompleteListener(this, task -> {
+                                    if (task.isSuccessful()) {
+                                        onSuccess.run();
+                                    } else {
+                                        onError.run();
+                                        showError(errorView, AuthErrorMapper.getErrorMessage(this, task.getException()));
+                                    }
+                                });
+                         } else {
+                             hideLoading();
+                             showCustomDialog(
+                                 getString(R.string.dialog_switch_account_title),
+                                 getString(R.string.dialog_switch_account_message),
+                                 getString(R.string.button_switch_and_link),
+                                 () -> {
+                                     initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
+                                     showLoading(getString(R.string.loading), true, true);
+                                     performSwitchLogin(email, password, onSuccess, errorView, onError);
+                                 }
+                             );
+                         }
+                     });
                 } else {
                      mAuth.signInWithEmailAndPassword(email, password)
                         .addOnCompleteListener(this, task -> {
@@ -535,7 +561,7 @@ public class ProfileActivity extends BaseActivity {
                             
                             showCustomDialog(
                                 getString(R.string.dialog_switch_account_title),
-                                getString(R.string.dialog_switch_account_message_guest),
+                                getString(R.string.dialog_switch_account_message),
                                 getString(R.string.button_switch_and_link),
                                 () -> {
                                     initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
@@ -998,7 +1024,7 @@ public class ProfileActivity extends BaseActivity {
                                      } else {
                                          hideLoading();
                                          int messageId = mAuth.getCurrentUser().isAnonymous() 
-                                             ? R.string.dialog_switch_account_message_guest 
+                                             ? R.string.dialog_switch_account_message 
                                              : R.string.dialog_switch_account_message_conflict;
                                          
                                          showCustomDialog(
@@ -1017,7 +1043,19 @@ public class ProfileActivity extends BaseActivity {
                         }
                     });
         } else {
-            performGoogleSignIn(credential);
+            checkIfAccountIsEmpty(isEmpty -> {
+                if (isEmpty) {
+                    performGoogleSignIn(credential);
+                } else {
+                    hideLoading();
+                    showCustomDialog(
+                        getString(R.string.dialog_switch_account_title),
+                        getString(R.string.dialog_switch_account_message),
+                        getString(R.string.button_switch_and_link),
+                        () -> performGoogleSignIn(credential)
+                    );
+                }
+            });
         }
     }
 
@@ -1027,10 +1065,20 @@ public class ProfileActivity extends BaseActivity {
 
     private void checkIfAccountIsEmpty(OnAccountEmptyCheckListener listener) {
         FirebaseUser user = mAuth.getCurrentUser();
-        if (user == null || !user.isAnonymous()) {
-            listener.onResult(false);
+        ShoppingListRepository listRepo = new ShoppingListRepository(ProfileActivity.this);
+        boolean hasLocalLists = listRepo.getLocalListCount() > 0;
+
+        if (user == null) {
+            listener.onResult(!hasLocalLists);
             return;
         }
+
+        if (!user.isAnonymous()) {
+            // Already logged in with permanent account
+            listener.onResult(!hasLocalLists);
+            return;
+        }
+
         userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
             @Override
             public void onLoaded(String username, String imageUrl, boolean syncPrivate) {
@@ -1038,8 +1086,7 @@ public class ProfileActivity extends BaseActivity {
                     listener.onResult(false);
                     return;
                 }
-                ShoppingListRepository listRepo = new ShoppingListRepository(ProfileActivity.this);
-                if (listRepo.getLocalListCount() > 0) {
+                if (hasLocalLists) {
                      listener.onResult(false);
                 } else {
                      listener.onResult(true);
@@ -1047,7 +1094,7 @@ public class ProfileActivity extends BaseActivity {
             }
             @Override
             public void onError(String error) {
-                listener.onResult(false);
+                listener.onResult(!hasLocalLists);
             }
         });
     }
