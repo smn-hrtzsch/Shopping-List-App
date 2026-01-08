@@ -137,6 +137,7 @@
                     android:layout_marginTop="24dp"
                     android:visibility="gone"
                     tools:visibility="visible"
+                    android:importantForAutofill="yes"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp"
@@ -146,6 +147,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
+                        android:importantForAutofill="yes"
                         android:padding="24dp">
 
                         <TextView
@@ -161,6 +163,7 @@
                             android:id="@+id/input_layout_email_inline"
                             style="@style/Widget.App.TextInputLayout.Auth"
                             android:layout_marginBottom="4dp"
+                            android:importantForAutofill="yes"
                             android:hint="@string/prompt_email">
 
                             <com.google.android.material.textfield.TextInputEditText
@@ -168,6 +171,7 @@
                                 style="@style/Widget.App.TextInputEditText.Auth"
                                 android:inputType="textEmailAddress"
                                 android:autofillHints="emailAddress"
+                                android:importantForAutofill="yes"
                                 android:imeOptions="actionNext" />
                         </com.google.android.material.textfield.TextInputLayout>
 
@@ -190,6 +194,7 @@
                             android:id="@+id/input_layout_password_inline"
                             style="@style/Widget.App.TextInputLayout.Auth"
                             android:layout_marginBottom="24dp"
+                            android:importantForAutofill="yes"
                             android:hint="@string/prompt_password"
                             app:endIconMode="password_toggle"
                             app:errorIconDrawable="@null">
@@ -199,6 +204,7 @@
                                 style="@style/Widget.App.TextInputEditText.Auth"
                                 android:inputType="textPassword"
                                 android:autofillHints="password"
+                                android:importantForAutofill="yes"
                                 android:imeOptions="actionDone" />
                         </com.google.android.material.textfield.TextInputLayout>
 
