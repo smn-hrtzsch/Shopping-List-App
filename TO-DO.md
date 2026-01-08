@@ -64,11 +64,11 @@
 
 ## Bugs
 
-- [ ] Loading Skeleton beim Setzen eines Benutzernamens (ohne verknpfte Anmelde-Methode) sollte anders aussehen, sieh dir @Screenshot_20260108-140247.png an, so sieht die Activity nach dem setzen des Usernames aus. Und so sollte auch das Skeleton beim laden nach dem setzen des User names aussehen. Erstelle es und nutze es für dieses Szenario.
 - [ ] Das Einladen eines Nutzers zu einer geteilten Liste über die Email Adresse ist nur möglich, wenn der User auch einen Nutzernamen gesetzt hat, aber das sollte nicht nötig sein. Wenn ein erfolgreich bestätigtes (Email verifizier) Konto mit der Email existiert, sollte man den Nutzer auch über die Email einladen können, ohne, dass der User einen Username gesetzt hat. Aber sobald der User einen Nutzernamen setzt, sollte dieser auch anstatt der Email in der liste der member einer Liste auftauchen.
 - [ ] Google-Verknpüfung vom Konto sollte unabhängig von der E-Mail des Google Kontos geschehen. Momentan gibt es ein Problem, wenn ein User eine Google-Mail Adresse nutzt für den E-Mail login und ein anderer User seinen Account mit dem Google Konto eben gleicher Google-Mail verknpüfen möchte. Es sollte möglich sein, dass beide Konten getrennt voneinander funktionieren, da der eine User die Google-Mail als Email Login nutzt und der andere User die Google Mail zum anmelden und verknüpfen über den Google Account nutzen möchte. Fixe diese Behandlung
 
 ## Fixed Bugs
 
+- [x] Loading Skeleton beim Setzen eines Benutzernamens (ohne verknpfte Anmelde-Methode) sollte anders aussehen, sieh dir @Screenshot_20260108-140247.png an, so sieht die Activity nach dem setzen des Usernames aus. Und so sollte auch das Skeleton beim laden nach dem setzen des User names aussehen. Erstelle es und nutze es für dieses Szenario.
 - [x] Beim Klicken auf die Bestätigungstaste auf der Tastatur im Benutzer Einladen dialog, sollte automatisch der einladen button betätigt werden.
 - [x] Beim klicken auf Account Löschen bei einem anonymen Nutzer mit Nutzernamen sollten auch alle geteilten Listen, die der Nutzer erstellt hat aus der Datenbank gelöscht werden. Auch sollte er aus den Listen entfernt werden, in denen er Mitglied ist.

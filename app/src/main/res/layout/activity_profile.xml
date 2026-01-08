@@ -81,7 +81,6 @@
                         android:id="@+id/text_view_current_username"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="..."
                         android:textSize="32sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface"
