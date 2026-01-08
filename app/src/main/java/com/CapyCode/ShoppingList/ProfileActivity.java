@@ -126,6 +126,7 @@ public class ProfileActivity extends BaseActivity {
 
         if (getIntent().getBooleanExtra("EXTRA_IS_SIGNING_OUT", false)) {
             isSigningOut = true;
+            getIntent().removeExtra("EXTRA_IS_SIGNING_OUT");
         }
 
         super.onCreate(savedInstanceState);
@@ -944,7 +945,16 @@ public class ProfileActivity extends BaseActivity {
         if (username.length() < 3) { UiUtils.makeCustomToast(this, R.string.profile_error_short, Toast.LENGTH_SHORT).show(); return; }
         if (username.contains(" ")) { UiUtils.makeCustomToast(this, R.string.profile_error_whitespace, Toast.LENGTH_SHORT).show(); return; }
         
-        showLoading(getString(R.string.loading_saving), false);
+        // Use specific skeleton for anonymous user setting username
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || user.isAnonymous()) {
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile_anonymous_with_username, 1);
+        } else {
+            // Default skeleton for others
+            initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
+        }
+
+        showLoading(getString(R.string.loading_saving), true); // showSkeleton=true to trigger immediate visual update
         
         Runnable proceedToSave = () -> {
             userRepository.setUsername(username, new UserRepository.OnProfileActionListener() {
