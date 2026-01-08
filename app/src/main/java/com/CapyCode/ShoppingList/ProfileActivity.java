@@ -703,7 +703,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void showVerificationDialog(FirebaseUser user, boolean isLinkedAccount) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_vertical_buttons, null);
         builder.setView(dialogView);
         builder.setCancelable(false);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
