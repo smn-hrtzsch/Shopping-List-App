@@ -182,8 +182,8 @@
     <string name="error_login_register_hint">If you don\'t have an account yet, please register.</string>
     <string name="dialog_switch_account_title">Switch Account?</string>
     <string name="dialog_switch_account_message">You are about to sign in to a different account. Your current local lists and data will be deleted.\n\nDo you really want to switch accounts?</string>
-    <string name="dialog_switch_account_message_guest">This account is already linked to another profile.\n\nDo you want to switch to this profile? Your current guest profile and all associated data (including lists) will be irrevocably deleted.</string>
-    <string name="dialog_switch_account_message_conflict">This account is already linked to another profile.\n\nYou cannot link it to your current profile. Do you want to switch to this other profile instead?</string>
+    <string name="dialog_switch_account_message_guest">This account is already linked to another profile. Do you want to switch to this profile?\n\nWARNING: Since you have no other login method set for your current guest profile, it and all associated data (including lists) will be irrevocably deleted.</string>
+    <string name="dialog_switch_account_message_conflict">This account is already linked to another profile.\n\nYou cannot link it to your current profile. Do you want to switch to this other profile instead?\n\nNOTE: If you switch, your current local unsaved data will be cleared.</string>
     <string name="button_switch_and_link">Switch Account</string>
     <string name="action_link_email">Connect with Email</string>
     <string name="action_link_google">Connect with Google</string>
