@@ -60,6 +60,6 @@ public class UserRepositoryTest {
         
         userRepository.getUserProfile(listener);
         
-        verify(listener).onLoaded(null, null);
+        verify(listener).onLoaded(null, null, false);
     }
 }
