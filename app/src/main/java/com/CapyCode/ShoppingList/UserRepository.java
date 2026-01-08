@@ -1,8 +1,10 @@
 package com.CapyCode.ShoppingList;
 
 import android.content.Context;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserInfo;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -47,6 +49,26 @@ public class UserRepository {
 
     public boolean isAuthenticated() {
         return auth.getCurrentUser() != null;
+    }
+
+    public boolean isUserVerified() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) return false;
+        if (user.isAnonymous()) return true;
+
+        boolean hasEmailProvider = false;
+        for (com.google.firebase.auth.UserInfo profile : user.getProviderData()) {
+            if (com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                hasEmailProvider = true;
+                break;
+            }
+        }
+
+        if (hasEmailProvider) {
+            return user.isEmailVerified();
+        }
+
+        return true; // Google etc. are considered verified
     }
 
     public String getCurrentUserId() {
@@ -106,6 +128,11 @@ public class UserRepository {
             listener.onError(context.getString(R.string.auth_required));
             return;
         }
+        
+        if (!isUserVerified()) {
+            listener.onError("Email not verified.");
+            return;
+        }
 
         // 1. Check if username is taken by someone else
         db.collection("users")
@@ -159,7 +186,7 @@ public class UserRepository {
     }
 
     public void syncEmailToFirestore() {
-        if (!isAuthenticated()) return;
+        if (!isAuthenticated() || !isUserVerified()) return;
         String email = auth.getCurrentUser().getEmail();
         if (email != null) {
             Map<String, Object> update = new HashMap<>();
@@ -272,6 +299,8 @@ public class UserRepository {
     }
 
     public void updateProfileImage(String url, OnProfileActionListener listener) {
+        if (!isAuthenticated() || !isUserVerified()) return;
+        
         Map<String, Object> updateData = new HashMap<>();
         updateData.put("profileImageUrl", url); // Firestore handles null correctly (sets to null or deletes field? update handles null as value)
         // Ideally we use FieldValue.delete() if url is null, but setting to null is fine for now if we check != null in code

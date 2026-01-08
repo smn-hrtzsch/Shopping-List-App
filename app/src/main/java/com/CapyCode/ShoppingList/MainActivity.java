@@ -568,8 +568,24 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
             fab.show();
             editTextNewListName.setText("");
         }
+        
+        checkEmailVerification();
+        
         showLoading(R.string.loading_lists);
         loadShoppingLists();
+    }
+
+    private void checkEmailVerification() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && !user.isAnonymous()) {
+            user.reload().addOnCompleteListener(task -> {
+                if (isFinishing() || isDestroyed()) return;
+                if (!userRepository.isUserVerified()) {
+                    Intent intent = new Intent(this, ProfileActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }
     }
 
     private void loadShoppingLists() {

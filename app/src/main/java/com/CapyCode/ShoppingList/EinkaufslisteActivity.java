@@ -319,6 +319,25 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        checkEmailVerification();
+    }
+
+    private void checkEmailVerification() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && !user.isAnonymous()) {
+            user.reload().addOnCompleteListener(task -> {
+                if (isFinishing() || isDestroyed()) return;
+                if (!new UserRepository(this).isUserVerified()) {
+                    Intent intent = new Intent(this, ProfileActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         syncIconHandler.removeCallbacksAndMessages(null);
