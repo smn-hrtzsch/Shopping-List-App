@@ -65,6 +65,7 @@
 ## Bugs
 
 - [ ] Nach Abmelden von einem Account werden keine Autofill Vorschläge mehr im Email Feld für die Anmelden Section gemacht. Erst nachdem man die Activity neu lädt oder neu öffnet.
+- [ ] Wenn lokal Listen erstellt wurden (auch ohne User oder Benutzername) und auf den Google Anmelden Button oder die Anmeldung über Email geklickt wird, sollte vor dem Anmelden und Wechseln auf den Account erst noch der Account wechseln Dialog kommen, der einem klar macht, dass die lokalen Listen verloren gehen, falls man zu einem anderen bestehenden Account wechselt.
 - [ ] Google-Verknpüfung vom Konto sollte unabhängig von der E-Mail des Google Kontos geschehen. Momentan gibt es ein Problem, wenn ein User eine Google-Mail Adresse nutzt für den E-Mail login und ein anderer User seinen Account mit dem Google Konto eben gleicher Google-Mail verknpüfen möchte. Es sollte möglich sein, dass beide Konten getrennt voneinander funktionieren, da der eine User die Google-Mail als Email Login nutzt und der andere User die Google Mail zum anmelden und verknüpfen über den Google Account nutzen möchte. Fixe diese Behandlung
 
 ## Fixed Bugs
