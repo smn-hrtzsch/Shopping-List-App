@@ -433,8 +433,10 @@ public class ProfileActivity extends BaseActivity {
         btnRegister.setEnabled(false);
 
         Runnable onLoginSuccess = () -> {
-            if (dialog != null) dialog.dismiss();
+            emailField.setEnabled(true);
+            passwordField.setEnabled(true);
             commitAutofill();
+            if (dialog != null) dialog.dismiss();
             userRepository.syncEmailToFirestore();
             UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
             ShoppingListRepository repository = new ShoppingListRepository(getApplicationContext());
@@ -668,6 +670,8 @@ public class ProfileActivity extends BaseActivity {
                 currentUser.linkWithCredential(credential)
                         .addOnCompleteListener(this, task -> {
                             if (task.isSuccessful()) {
+                                emailField.setEnabled(true);
+                                passwordField.setEnabled(true);
                                 commitAutofill();
                                 startVerificationFlow(currentUser, true, dialog);
                             } else {
@@ -681,6 +685,8 @@ public class ProfileActivity extends BaseActivity {
                 mAuth.createUserWithEmailAndPassword(input, password)
                         .addOnCompleteListener(this, task -> {
                             if (task.isSuccessful()) {
+                                emailField.setEnabled(true);
+                                passwordField.setEnabled(true);
                                 commitAutofill();
                                 startVerificationFlow(task.getResult().getUser(), false, dialog);
                             } else {
