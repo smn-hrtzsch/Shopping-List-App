@@ -66,6 +66,7 @@
 
 - [ ] Google-Verknpüfung vom Konto sollte unabhängig von der E-Mail des Google Kontos geschehen. Momentan gibt es ein Problem, wenn ein User eine Google-Mail Adresse nutzt für den E-Mail login und ein anderer User seinen Account mit dem Google Konto eben gleicher Google-Mail verknpüfen möchte. Es sollte möglich sein, dass beide Konten getrennt voneinander funktionieren, da der eine User die Google-Mail als Email Login nutzt und der andere User die Google Mail zum anmelden und verknüpfen über den Google Account nutzen möchte. Fixe diese Behandlung
 - [ ] Beim klicken auf "mit Google Verknüpfen" während man mit einem Account angemeldet ist, der nur mit E-Mail verknüpft ist, wird nicht nochmal der Konto Wechseln Dialog angezeigt, bevor man zum anderen Account, der schon mit dem ausgewählten Google Konto verknüpft ist, weitergeleitet wird.
+- [ ] Wenn ein Account ohne Nutzername existiert und dann die letzte verknüpfte Anmeldemethode entfernt wird, sollte das Konto gelöscht werden und auch korrekt in Firestore gehandhabt werden. Es sollte auch ein passender Warn-Dialog mit passenden Texten angezeigt werden.
 
 ## Fixed Bugs
 
