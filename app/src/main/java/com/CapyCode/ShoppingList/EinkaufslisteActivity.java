@@ -60,6 +60,7 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
     private ImageView toolbarCloudIcon;
     private com.google.firebase.firestore.ListenerRegistration listSnapshotListener;
     private com.google.firebase.firestore.ListenerRegistration itemsSnapshotListener;
+    private com.google.firebase.firestore.ListenerRegistration membersListener;
     private final android.os.Handler syncIconHandler = new android.os.Handler();
     private final android.os.Handler undoBarHandler = new android.os.Handler();
     private FirebaseAuth mAuth;
@@ -352,38 +353,47 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
         if (itemId == R.id.action_clear_list) { showClearListOptionsDialog(); return true; }
+        else if (itemId == R.id.action_view_members) { showMembersListDialog(); return true; }
         else if (itemId == R.id.action_share_list) { shareShoppingList(); return true; }
-        else if (itemId == R.id.action_view_members) { showMembersDialog(); return true; }
         return super.onOptionsItemSelected(item);
     }
 
-    private void showMembersDialog() {
-        if (firebaseListId == null) return;
-        
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(EinkaufslisteActivity.this);
+    private void showMembersListDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_members_list, null);
         builder.setView(dialogView);
         androidx.appcompat.app.AlertDialog dialog = builder.create();
-        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
         View buttonAdd = dialogView.findViewById(R.id.button_add_member);
         View buttonClose = dialogView.findViewById(R.id.button_close_dialog);
-        
-        buttonAdd.setOnClickListener(v -> showInviteUserDialog(() -> populateMembersList(dialogView, dialog)));
+
+        buttonAdd.setOnClickListener(v -> showInviteUserDialog(null)); // onSuccess handled by real-time listener
         buttonClose.setOnClickListener(v -> dialog.dismiss());
-        
+
+        dialog.setOnDismissListener(d -> {
+            if (membersListener != null) {
+                membersListener.remove();
+                membersListener = null;
+            }
+        });
+
         populateMembersList(dialogView, dialog);
         dialog.show();
     }
 
     private void populateMembersList(View dialogView, androidx.appcompat.app.AlertDialog dialog) {
         android.widget.LinearLayout container = dialogView.findViewById(R.id.container_members_list);
-        container.removeAllViews(); // Clear existing
         
-        shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
+        if (membersListener != null) membersListener.remove();
+        
+        membersListener = shoppingListRepository.getMembersWithNames(firebaseListId, new ShoppingListRepository.OnMembersLoadedListener() {
             @Override
             public void onLoaded(List<Map<String, String>> membersWithNames) {
                 if (dialog.isShowing()) {
+                    container.removeAllViews(); // Clear existing right before adding new ones
                     String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
                     for (Map<String, String> member : membersWithNames) {
                         android.widget.LinearLayout row = new android.widget.LinearLayout(EinkaufslisteActivity.this);
@@ -444,7 +454,11 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         View btnClose = dialogView.findViewById(R.id.dialog_button_close_preview);
         
         titleView.setText(R.string.profile_picture);
-        usernameView.setText(username);
+        if (username != null) {
+            usernameView.setText(username);
+        } else {
+            usernameView.setVisibility(View.GONE);
+        }
         
         Glide.with(this)
              .load(imageUrl)

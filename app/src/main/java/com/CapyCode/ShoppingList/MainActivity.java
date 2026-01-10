@@ -65,7 +65,6 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private UserRepository userRepository;
-    private ShoppingListRepository shoppingListRepository;
     private String pendingListName;
 
     private final androidx.activity.result.ActivityResultLauncher<Intent> profileActivityLauncher =
@@ -105,7 +104,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         userRepository = new UserRepository(this);
-        shoppingListRepository = new ShoppingListRepository(this);
+        shoppingListManager = new ShoppingListManager(this);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         // Automatic anonymous sign-in removed to allow local-only usage until profile is created.
@@ -273,7 +272,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         if (isShared) {
             createSharedListInFirestore(listName);
         } else {
-            int nextPosition = shoppingListRepository.getNextPosition();
+            int nextPosition = shoppingListManager.getNextPosition();
             long newId = shoppingListManager.addShoppingList(listName, nextPosition, false);
             if (newId != -1) {
                 UiUtils.makeCustomToast(this, getString(R.string.local_list_created, listName), Toast.LENGTH_SHORT).show();
@@ -298,7 +297,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
 
         if (syncDefault && hasAccount) {
             UiUtils.makeCustomToast(MainActivity.this, R.string.syncing_data, Toast.LENGTH_SHORT).show();
-            shoppingListRepository.migrateLocalListsToCloud(this::loadShoppingLists);
+            shoppingListManager.migrateLocalListsToCloud(this::loadShoppingLists);
         } else {
             loadShoppingLists();
         }
@@ -326,13 +325,16 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
         showLoading(R.string.loading_saving);
         ensureAuthenticated(() -> {
             FirebaseUser currentUser = mAuth.getCurrentUser();
-            // Check if user has a username profile
-            userRepository.getCurrentUsername(new UserRepository.OnUsernameLoadedListener() {
+            // Check if user has a username profile or at least a verified email
+            userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
                 @Override
-                public void onLoaded(String username) {
-                    if (username == null) {
+                public void onLoaded(String username, String imageUrl, boolean syncPrivateByDefault) {
+                    String email = currentUser.getEmail();
+                    boolean hasEmail = email != null && userRepository.isUserVerified();
+                    
+                    if (username == null && !hasEmail) {
                         hideLoading();
-                        // No profile yet
+                        // No profile and no verified email yet
                         pendingListName = listName; // Save for later
                         showCustomDialog(
                                 getString(R.string.profile_required_title),
@@ -347,13 +349,15 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
                                 () -> pendingListName = null
                         );
                     } else {
-                        // User has a profile, proceed
+                        // User has a username or a verified email, proceed
                         String userId = currentUser.getUid();
                         Map<String, Object> shoppingList = new HashMap<>();
                         shoppingList.put("name", listName);
                         shoppingList.put("ownerId", userId);
                         shoppingList.put("isShared", true);
                         shoppingList.put("members", new ArrayList<>(Arrays.asList(userId)));
+                        shoppingList.put("pending_members", new ArrayList<>());
+                        shoppingList.put("lastModified", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
                         db.collection("shopping_lists")
                                 .add(shoppingList)
@@ -373,8 +377,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
                 @Override
                 public void onError(String error) {
                     hideLoading();
-                    UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_profile_check, error), Toast.LENGTH_SHORT).show();
-                    pendingListName = null;
+                    UiUtils.makeCustomToast(MainActivity.this, getString(R.string.error_generic_message, error), Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -651,7 +654,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
     @Override
     public void onJoinClicked(ShoppingList list) {
         if (list.getFirebaseId() == null) return;
-        shoppingListRepository.acceptInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
+        shoppingListManager.acceptInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
             @Override
             public void onSuccess() {
                 UiUtils.makeCustomToast(MainActivity.this, R.string.toast_invitation_accepted, Toast.LENGTH_SHORT).show();
@@ -675,7 +678,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
             getString(R.string.button_decline),
             getString(R.string.button_cancel),
             () -> {
-                shoppingListRepository.declineInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
+                shoppingListManager.declineInvitation(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
                     @Override
                     public void onSuccess() {
                         UiUtils.makeCustomToast(MainActivity.this, R.string.toast_invitation_declined, Toast.LENGTH_SHORT).show();
@@ -702,7 +705,7 @@ public class MainActivity extends BaseActivity implements ListRecyclerViewAdapte
                 getString(R.string.button_leave_confirm),
                 getString(R.string.button_cancel),
                 () -> {
-                    shoppingListRepository.leaveList(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
+                    shoppingListManager.leaveList(list.getFirebaseId(), new UserRepository.OnProfileActionListener() {
                         @Override
                         public void onSuccess() {
                             UiUtils.makeCustomToast(MainActivity.this, R.string.toast_list_left, Toast.LENGTH_SHORT).show();
