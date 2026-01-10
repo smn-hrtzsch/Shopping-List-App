@@ -264,7 +264,9 @@ public class ListRecyclerViewAdapter extends RecyclerView.Adapter<ListRecyclerVi
                        o.getItemCount() == n.getItemCount() &&
                        o.isShared() == n.isShared() &&
                        java.util.Objects.equals(o.getFirebaseId(), n.getFirebaseId()) &&
-                       java.util.Objects.equals(o.getOwnerUsername(), n.getOwnerUsername());
+                       java.util.Objects.equals(o.getOwnerUsername(), n.getOwnerUsername()) &&
+                       java.util.Objects.equals(o.getMembers(), n.getMembers()) &&
+                       java.util.Objects.equals(o.getPendingMembers(), n.getPendingMembers());
             }
         });
 

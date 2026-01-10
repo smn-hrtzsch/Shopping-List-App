@@ -13,7 +13,7 @@
   - Hier ist ein Befehl für WSL auf Windows:
 
     ```bash
-    export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+    export JAVA_HOME="$HOME/.nix-profile/lib/openjdk"
     ```
 
 - Nutze für Standard Dialoge das vorgefertigte Layout 'app/src/main/res/layout/dialog_standard.xml' oder 'app/src/main/res/layout/dialog_vertical_buttons.xml'

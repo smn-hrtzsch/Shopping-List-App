@@ -19,6 +19,8 @@ public class ShoppingListRepository {
     private FirebaseAuth mAuth;
     private Context context;
     private UserRepository userRepository;
+    private com.google.firebase.firestore.ListenerRegistration listsListener1;
+    private com.google.firebase.firestore.ListenerRegistration listsListener2;
 
     public interface OnListsLoadedListener {
         void onListsLoaded(List<ShoppingList> shoppingLists, boolean fromServer);
@@ -62,6 +64,17 @@ public class ShoppingListRepository {
         return dbHelper.getMaxPosition() + 1;
     }
 
+    public void stopListeningToLists() {
+        if (listsListener1 != null) {
+            listsListener1.remove();
+            listsListener1 = null;
+        }
+        if (listsListener2 != null) {
+            listsListener2.remove();
+            listsListener2 = null;
+        }
+    }
+
     public void getAllShoppingLists(OnListsLoadedListener listener) {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         
@@ -73,6 +86,8 @@ public class ShoppingListRepository {
         if (!userRepository.isUserVerified()) {
             return; // Don't sync cloud lists if email is not verified
         }
+
+        stopListeningToLists();
 
         String userId = currentUser.getUid();
         
@@ -87,8 +102,8 @@ public class ShoppingListRepository {
             refreshAllListsFromServer(userId, listener);
         };
 
-        db.collection("shopping_lists").whereArrayContains("members", userId).addSnapshotListener(syncListener);
-        db.collection("shopping_lists").whereArrayContains("pending_members", userId).addSnapshotListener(syncListener);
+        listsListener1 = db.collection("shopping_lists").whereArrayContains("members", userId).addSnapshotListener(syncListener);
+        listsListener2 = db.collection("shopping_lists").whereArrayContains("pending_members", userId).addSnapshotListener(syncListener);
     }
 
     private void refreshAllListsFromServer(String userId, OnListsLoadedListener listener) {
@@ -138,7 +153,9 @@ public class ShoppingListRepository {
             db.collection("users").document(ownerId).get()
                 .addOnSuccessListener(userDoc -> {
                     if (userDoc.exists()) {
-                        list.setOwnerUsername(userDoc.getString("username"));
+                        String username = userDoc.getString("username");
+                        String email = userDoc.getString("email");
+                        list.setOwnerUsername(username != null ? username : (email != null ? email : "Unbekannt"));
                     } else {
                         list.setOwnerUsername("Unbekannt");
                     }
@@ -546,71 +563,76 @@ public class ShoppingListRepository {
         void onError(String error);
     }
 
-    public void getMembersWithNames(String firebaseListId, OnMembersLoadedListener listener) {
-        db.collection("shopping_lists").document(firebaseListId).get()
-            .addOnSuccessListener(doc -> {
-                if (!doc.exists()) {
-                    listener.onError("Liste nicht gefunden.");
-                    return;
-                }
-                @SuppressWarnings("unchecked")
-                List<String> memberIds = (List<String>) doc.get("members");
-                @SuppressWarnings("unchecked")
-                List<String> pendingIds = (List<String>) doc.get("pending_members");
-                
-                List<String> allIds = new ArrayList<>();
-                if (memberIds != null) allIds.addAll(memberIds);
-                if (pendingIds != null) allIds.addAll(pendingIds);
+    public com.google.firebase.firestore.ListenerRegistration getMembersWithNames(String firebaseListId, OnMembersLoadedListener listener) {
+        return db.collection("shopping_lists").document(firebaseListId).addSnapshotListener((doc, e) -> {
+            if (e != null) {
+                listener.onError(e.getMessage());
+                return;
+            }
+            if (doc == null || !doc.exists()) {
+                listener.onError("Liste nicht gefunden.");
+                return;
+            }
+            @SuppressWarnings("unchecked")
+            List<String> memberIds = (List<String>) doc.get("members");
+            @SuppressWarnings("unchecked")
+            List<String> pendingIds = (List<String>) doc.get("pending_members");
+            
+            List<String> allIds = new ArrayList<>();
+            if (memberIds != null) allIds.addAll(memberIds);
+            if (pendingIds != null) allIds.addAll(pendingIds);
 
-                if (allIds.isEmpty()) {
-                    listener.onLoaded(new ArrayList<>());
-                    return;
-                }
+            if (allIds.isEmpty()) {
+                listener.onLoaded(new ArrayList<>());
+                return;
+            }
 
-                List<Map<String, String>> result = new ArrayList<>();
-                java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
-                
-                for (String uid : allIds) {
-                    db.collection("users").document(uid).get()
-                        .addOnSuccessListener(userDoc -> {
-                            Map<String, String> memberInfo = new HashMap<>();
-                            memberInfo.put("uid", uid);
-                            if (userDoc.exists()) {
-                                memberInfo.put("username", userDoc.getString("username"));
-                                memberInfo.put("profileImageUrl", userDoc.getString("profileImageUrl"));
-                            } else {
-                                memberInfo.put("username", "Unbekannt");
-                            }
-                            
-                            String role = context.getString(R.string.member_role_member);
-                            if (uid.equals(doc.getString("ownerId"))) role = context.getString(R.string.member_role_owner);
-                            else if (pendingIds != null && pendingIds.contains(uid)) role = context.getString(R.string.member_role_invited);
-                            
-                            memberInfo.put("role", role);
-                            result.add(memberInfo);
-                            if (counter.incrementAndGet() == allIds.size()) {
-                                // Sort result based on order in allIds to maintain consistency (e.g. join order)
-                                result.sort((m1, m2) -> {
-                                    int idx1 = allIds.indexOf(m1.get("uid"));
-                                    int idx2 = allIds.indexOf(m2.get("uid"));
-                                    return Integer.compare(idx1, idx2);
-                                });
-                                listener.onLoaded(result);
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            if (counter.incrementAndGet() == allIds.size()) {
-                                // Even on partial failure, sort what we have
-                                result.sort((m1, m2) -> {
-                                    int idx1 = allIds.indexOf(m1.get("uid"));
-                                    int idx2 = allIds.indexOf(m2.get("uid"));
-                                    return Integer.compare(idx1, idx2);
-                                });
-                                listener.onLoaded(result);
-                            }
-                        });
-                }
-            });
+            List<Map<String, String>> result = new ArrayList<>();
+            java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(0);
+            
+            for (String uid : allIds) {
+                db.collection("users").document(uid).get()
+                    .addOnSuccessListener(userDoc -> {
+                        Map<String, String> memberInfo = new HashMap<>();
+                        memberInfo.put("uid", uid);
+                        if (userDoc.exists()) {
+                            String username = userDoc.getString("username");
+                            String email = userDoc.getString("email");
+                            memberInfo.put("username", username != null ? username : (email != null ? email : "Unbekannt"));
+                            memberInfo.put("profileImageUrl", userDoc.getString("profileImageUrl"));
+                        } else {
+                            memberInfo.put("username", "Unbekannt");
+                        }
+                        
+                        String role = context.getString(R.string.member_role_member);
+                        if (uid.equals(doc.getString("ownerId"))) role = context.getString(R.string.member_role_owner);
+                        else if (pendingIds != null && pendingIds.contains(uid)) role = context.getString(R.string.member_role_invited);
+                        
+                        memberInfo.put("role", role);
+                        result.add(memberInfo);
+                        if (counter.incrementAndGet() == allIds.size()) {
+                            // Sort result based on order in allIds to maintain consistency (e.g. join order)
+                            result.sort((m1, m2) -> {
+                                int idx1 = allIds.indexOf(m1.get("uid"));
+                                int idx2 = allIds.indexOf(m2.get("uid"));
+                                return Integer.compare(idx1, idx2);
+                            });
+                            listener.onLoaded(result);
+                        }
+                    })
+                    .addOnFailureListener(err -> {
+                        if (counter.incrementAndGet() == allIds.size()) {
+                            // Even on partial failure, sort what we have
+                            result.sort((m1, m2) -> {
+                                int idx1 = allIds.indexOf(m1.get("uid"));
+                                int idx2 = allIds.indexOf(m2.get("uid"));
+                                return Integer.compare(idx1, idx2);
+                            });
+                            listener.onLoaded(result);
+                        }
+                    });
+            }
+        });
     }
 
     public String getCurrentUserId() {

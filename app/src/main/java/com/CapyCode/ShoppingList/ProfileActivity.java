@@ -335,6 +335,8 @@ public class ProfileActivity extends BaseActivity {
                 }
             }
             showVerificationDialog(user, hasOtherProvider);
+        } else if (user != null) {
+            userRepository.syncEmailToFirestore();
         }
     }
 
@@ -802,6 +804,7 @@ public class ProfileActivity extends BaseActivity {
                     if (user.isEmailVerified()) {
                         verificationDialog.dismiss();
                         verificationDialog = null;
+                        userRepository.syncEmailToFirestore();
                         UiUtils.makeCustomToast(ProfileActivity.this, getString(R.string.auth_success), Toast.LENGTH_SHORT).show();
                         loadCurrentProfile();
                     } else {
@@ -1242,6 +1245,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void loadCurrentProfile() {
+        userRepository.syncEmailToFirestore();
         // Reset skeleton to profile type in case it was changed to auth type during sign out
         int skeletonResId = isSigningOut ? R.layout.skeleton_logout : R.layout.skeleton_profile;
         initLoadingOverlay(findViewById(R.id.profile_content_container), skeletonResId, 1);

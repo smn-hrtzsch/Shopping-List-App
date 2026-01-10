@@ -107,6 +107,10 @@ public class ShoppingListManager {
         repository.getAllShoppingLists(listener::onListsLoaded);
     }
 
+    public void stopListeningToLists() {
+        repository.stopListeningToLists();
+    }
+
     public ShoppingList getShoppingList(long listId) {
         return repository.getShoppingListById(listId);
     }
@@ -129,5 +133,25 @@ public class ShoppingListManager {
 
     public long addItemToShoppingList(long listId, ShoppingItem item) {
         return repository.addItemToShoppingList(listId, item);
+    }
+
+    public int getNextPosition() {
+        return repository.getNextPosition();
+    }
+
+    public void migrateLocalListsToCloud(Runnable onComplete) {
+        repository.migrateLocalListsToCloud(onComplete);
+    }
+
+    public void acceptInvitation(String firebaseListId, UserRepository.OnProfileActionListener listener) {
+        repository.acceptInvitation(firebaseListId, listener);
+    }
+
+    public void declineInvitation(String firebaseListId, UserRepository.OnProfileActionListener listener) {
+        repository.declineInvitation(firebaseListId, listener);
+    }
+
+    public void leaveList(String firebaseListId, UserRepository.OnProfileActionListener listener) {
+        repository.leaveList(firebaseListId, listener);
     }
 }
