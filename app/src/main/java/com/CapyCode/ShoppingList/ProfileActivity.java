@@ -988,6 +988,29 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void removeUsername(androidx.appcompat.app.AlertDialog dialog) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && user.isAnonymous()) {
+            // Special warning for anonymous users: removing the name makes them "invisible"
+            showThreeOptionDialog(
+                getString(R.string.dialog_remove_username_title),
+                getString(R.string.dialog_remove_username_anonymous_warning),
+                getString(R.string.button_remove_only_name),
+                getString(R.string.button_delete_account_entirely),
+                () -> {
+                    if (dialog != null) dialog.dismiss();
+                    performRemoveUsername(null);
+                },
+                () -> {
+                    if (dialog != null) dialog.dismiss();
+                    deleteAccount();
+                }
+            );
+        } else {
+            performRemoveUsername(dialog);
+        }
+    }
+
+    private void performRemoveUsername(androidx.appcompat.app.AlertDialog dialog) {
         initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showLoading(getString(R.string.loading_saving), true);
         

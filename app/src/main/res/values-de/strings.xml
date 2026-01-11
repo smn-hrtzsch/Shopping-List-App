@@ -135,6 +135,10 @@
     <string name="profile_delete_account">Cloud-Konto &amp; Daten löschen</string>
     <string name="profile_saved">Profil gespeichert!</string>
     <string name="username_removed">Benutzername entfernt.</string>
+    <string name="dialog_remove_username_title">Identität entfernen</string>
+    <string name="dialog_remove_username_anonymous_warning">Achtung: Du nutzt ein anonymes Konto. Wenn du deinen Benutzernamen entfernst, wirst du für andere als \'Unbekannt\' angezeigt und verlierst deine eindeutige Identifizierung in geteilten Listen.\n\nMöchtest du nur den Namen entfernen oder das Konto komplett löschen?</string>
+    <string name="button_remove_only_name">Nur Name entfernen</string>
+    <string name="button_delete_account_entirely">Konto komplett löschen</string>
     <string name="profile_error_username_taken">Benutzername ist leider schon vergeben.</string>
     <string name="profile_error_check_failed">Fehler beim Prüfen des Namens.</string>
     <string name="profile_error_empty">Bitte Namen eingeben</string>
