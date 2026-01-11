@@ -111,28 +111,38 @@ jobs:
           chmod +x gradlew
           # Wenn eine Version übergeben wurde (Release), erzwingen wir diese Version!
           if [ -n "${{ inputs.version }}" ]; then
-            ./gradlew assembleRelease -PversionName="${{ inputs.version }}"
+            ./gradlew assembleRelease bundleRelease -PversionName="${{ inputs.version }}"
           else
-            ./gradlew assembleRelease \
+            ./gradlew assembleRelease bundleRelease \
               -PversionCode=${{ steps.version.outputs.versionCode }} \
               -PversionName="${{ steps.version.outputs.fullVersion }}"
           fi
 
-      - name: Find and Rename APK
-        id: apk
+      - name: Find and Rename Artifacts
+        id: artifacts
         run: |
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          AAB_PATH=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
           
-          # Rename to standard format
-          NEW_NAME="ShoppingList-android-${{ steps.version.outputs.filenameVersion }}.apk"
-          NEW_PATH="$(dirname "$APK_PATH")/$NEW_NAME"
-          mv "$APK_PATH" "$NEW_PATH"
+          # Rename APK
+          NEW_APK_NAME="ShoppingList-android-${{ steps.version.outputs.filenameVersion }}.apk"
+          NEW_APK_PATH="$(dirname "$APK_PATH")/$NEW_APK_NAME"
+          mv "$APK_PATH" "$NEW_APK_PATH"
           
-          echo "Renamed APK to: $NEW_PATH"
-          echo "apkPath=$NEW_PATH" >> "$GITHUB_OUTPUT"
+          # Rename AAB
+          NEW_AAB_NAME="ShoppingList-android-${{ steps.version.outputs.filenameVersion }}.aab"
+          NEW_AAB_PATH="$(dirname "$AAB_PATH")/$NEW_AAB_NAME"
+          mv "$AAB_PATH" "$NEW_AAB_PATH"
+          
+          echo "Renamed APK to: $NEW_APK_PATH"
+          echo "Renamed AAB to: $NEW_AAB_PATH"
+          echo "apkPath=$NEW_APK_PATH" >> "$GITHUB_OUTPUT"
+          echo "aabPath=$NEW_AAB_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: ${{ steps.apk.outputs.apkPath }}
+          name: android-artifacts
+          path: |
+            ${{ steps.artifacts.outputs.apkPath }}
+            ${{ steps.artifacts.outputs.aabPath }}

@@ -69,7 +69,7 @@ jobs:
       - name: Download Android Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: android-apk
+          name: android-artifacts
           path: release-assets
 
       - name: Create Release

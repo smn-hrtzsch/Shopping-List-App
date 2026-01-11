@@ -32,6 +32,10 @@ Um die App rechtlich abzusichern, wurden Impressum und Datenschutzrichtlinie int
 - [ ] **Enforcement:** In der Firebase Console auf "Enforcement" umstellen (nach erstem Store-Upload).
 - [x] **Keys:** `local.properties` sicher konfiguriert (wird nicht committet).
 
+### D. Automated Release Pipeline (Erledigt ✅)
+- [x] **GitHub Workflows:** Umgestellt auf simultanen Build von signierter **APK** (für Tester) und **AAB** (für Play Store).
+- [x] **Artifacts:** Automatisches Umbenennen und Bereitstellen beider Formate in den GitHub Releases.
+
 ---
 
 ## 3. Store-Präsenz & Assets
