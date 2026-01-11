@@ -26,4 +26,10 @@
 -keep class com.CapyCode.ShoppingList.ShoppingList { *; }
 -keep class com.CapyCode.ShoppingList.User { *; }
 
+# --- Remove Logs in Release ---
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+}
+
 # If you have other POJOs/Data models, add them here.
