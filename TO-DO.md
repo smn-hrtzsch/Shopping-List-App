@@ -64,6 +64,8 @@
 - [ ] **Offline-Modus:** Visueller Indikator, wenn die App offline ist und Änderungen nur lokal gespeichert sind
 - [ ] **Passwort-Manager:** App Icon wird nicht korrekt angezeigt im Google Passwort Manager
 
+## Bugs
+
 ## Fixed Bugs
 
 - [x] Wenn ein Username gesetzt wird für eine Account, der mit Email verknüpft ist, dann wird die UI in der ProfileActivity auf einem anderen Gerät nicht in Echtzeit korrekt aktualisiert, sie lädt den username erst, wenn man die acitivity neu startet
