@@ -1,21 +1,29 @@
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# --- Firebase General ---
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses
+-keepattributes EnclosingMethod
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# --- Firebase Auth & Firestore ---
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# --- Glide ---
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public class * extends com.bumptech.glide.module.AppGlideModule
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+  **[] $VALUES;
+  public *;
+}
+
+# --- Preserve your own data models (ShoppingItem, ShoppingList) ---
+# This is crucial because Firestore uses reflection to map documents to these classes.
+-keep class com.CapyCode.ShoppingList.ShoppingItem { *; }
+-keep class com.CapyCode.ShoppingList.ShoppingList { *; }
+-keep class com.CapyCode.ShoppingList.User { *; }
+
+# If you have other POJOs/Data models, add them here.

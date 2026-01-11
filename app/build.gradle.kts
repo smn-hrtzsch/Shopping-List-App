@@ -59,7 +59,8 @@ android {
             // Hier sagen wir dem Release-Build, dass er die Config von oben nutzen soll
             signingConfig = signingConfigs.getByName("release")
 
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

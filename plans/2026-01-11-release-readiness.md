@@ -14,12 +14,12 @@ Um die App rechtlich abzusichern, müssen Impressum und Datenschutzrichtlinie in
 - `app/src/main/res/values/strings.xml` (und `values-de/strings.xml`)
 - `app/src/main/res/layout/activity_profile.xml` (Hinzufügen der Links)
 - `app/src/main/java/com/CapyCode/ShoppingList/ProfileActivity.java` (Logik zum Öffnen der Links)
-- `app/src/main/res/layout/dialog_standard.xml` (Optional für In-App Anzeige)
+- `app/src/main/res/layout/dialog_legal.xml` (Natives Styling)
 
 ### Schritte:
-- [ ] **Content Erstellung:** Texte für Impressum und Datenschutz (DSGVO-konform) erstellen. Empfehlung: Hosting auf einer einfachen statischen Webseite (z.B. GitHub Pages) oder als In-App Dialog.
-- [ ] **UI Integration:** Zwei neue Buttons oder anklickbare TextViews am Ende der `ProfileActivity` hinzufügen.
-- [ ] **Logik:** Implementierung eines `Intent.ACTION_VIEW` zum Öffnen der Web-URLs oder eines WebViews/Dialogs.
+- [x] **Content Erstellung:** Texte für Impressum und Datenschutz (DSGVO-konform) erstellt und direkt in `strings.xml` integriert.
+- [x] **UI Integration:** Kompakte Fußzeile am Ende der `ProfileActivity` hinzugefügt.
+- [x] **Logik:** Nativer Dialog mit scrollbarer TextView und anklickbaren Links implementiert.
 
 ---
 
@@ -28,9 +28,9 @@ Um die App rechtlich abzusichern, müssen Impressum und Datenschutzrichtlinie in
 Basierend auf der Code-Analyse sind folgende Punkte für einen professionellen Release notwendig:
 
 ### A. Obfuscation & Optimierung (ProGuard/R8)
-Aktuell ist `isMinifyEnabled = false` in `app/build.gradle.kts`.
-- [ ] **Aktion:** Auf `true` setzen für den Release-Build.
-- [ ] **Test:** Prüfen, ob Firebase und Glide nach der Obfuskation noch korrekt funktionieren (evtl. Regeln in `proguard-rules.pro` ergänzen).
+Aktuell ist `isMinifyEnabled = true` in `app/build.gradle.kts`.
+- [x] **Aktion:** Auf `true` gesetzt für den Release-Build.
+- [x] **Test:** Regeln für Firebase, Glide und Datenmodelle in `proguard-rules.pro` ergänzt und erfolgreich via signierten Release-Build verifiziert.
 
 ### B. App Check Enforcements
 Die App nutzt bereits App Check (Debug/Play Integrity).
