@@ -42,6 +42,7 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.UserInfo;
+import com.google.firebase.firestore.ListenerRegistration;
 
 public class ProfileActivity extends BaseActivity {
 
@@ -80,6 +81,7 @@ public class ProfileActivity extends BaseActivity {
     private GoogleSignInClient mGoogleSignInClient;
     private androidx.appcompat.app.AlertDialog currentAuthDialog = null;
     private androidx.appcompat.app.AlertDialog verificationDialog = null;
+    private ListenerRegistration profileListener;
 
     private String currentImageUrl = null;
     private boolean isSigningOut = false;
@@ -1259,7 +1261,10 @@ public class ProfileActivity extends BaseActivity {
         showLoading(getString(R.string.loading_profile), true, true);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
-            userRepository.getUserProfile(new UserRepository.OnUserProfileLoadedListener() {
+            if (profileListener != null) {
+                profileListener.remove();
+            }
+            profileListener = userRepository.subscribeToUserProfile(new UserRepository.OnUserProfileLoadedListener() {
                 @Override
                 public void onLoaded(String username, String imageUrl, boolean syncPrivate) {
                     if (isFinishing() || isDestroyed()) return;
@@ -1882,5 +1887,14 @@ public class ProfileActivity extends BaseActivity {
                 }
             });
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (profileListener != null) {
+            profileListener.remove();
+            profileListener = null;
+        }
     }
 }
