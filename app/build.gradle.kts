@@ -23,8 +23,8 @@ android {
         applicationId = "com.CapyCode.ShoppingList"
         minSdk = 24
         targetSdk = 36
-        versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 8
-        versionName = project.findProperty("versionName") as String? ?: "2.3.1"
+        versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 9
+        versionName = project.findProperty("versionName") as String? ?: "2.3.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
