@@ -44,6 +44,7 @@
     <string name="button_delete_list">Delete List</string>
     <string name="button_edit_item">Edit Item</string>
     <string name="button_delete_item">Delete Item</string>
+    <string name="button_remove_username">Remove Username</string>
 
     <string name="button_clear_list_all">Delete all items</string>
     <string name="button_clear_list_done">Delete checked</string>
@@ -114,6 +115,7 @@
     <string name="profile_warning_anonymous">Attention: Your account is currently tied to this device (Anonymous).\nTo strictly secure your lists, you should register your Account via Email or Google.</string>
     <string name="profile_delete_account">Delete Cloud Account &amp; Data</string>
     <string name="profile_saved">Profile saved!</string>
+    <string name="username_removed">Username removed.</string>
     <string name="profile_error_username_taken">Username is unfortunately already taken.</string>
     <string name="profile_error_check_failed">Error checking name.</string>
     <string name="profile_error_empty">Please enter a name</string>

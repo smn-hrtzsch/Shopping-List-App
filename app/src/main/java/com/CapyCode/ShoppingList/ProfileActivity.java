@@ -946,14 +946,14 @@ public class ProfileActivity extends BaseActivity {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
-        View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
-        EditText editText = includeDialog.findViewById(R.id.field_id_x_secure_no_fill);
+        EditText editText = dialogView.findViewById(R.id.edit_text_username_dialog);
         
         AuthUiHelper.disableAutofillForView(editText);
         
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
-        View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
-        View btnSave = includeDialog.findViewById(R.id.username_action_button);
+        View btnRemoveImg = dialogView.findViewById(R.id.button_option_remove_image);
+        View btnSave = dialogView.findViewById(R.id.button_save_username_dialog);
+        View btnRemoveUsername = dialogView.findViewById(R.id.button_remove_username);
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         editText.setText(currentLoadedUsername != null ? currentLoadedUsername : "");
@@ -968,7 +968,7 @@ public class ProfileActivity extends BaseActivity {
             pickImageLauncher.launch("image/*");
             dialog.dismiss();
         });
-        btnRemove.setOnClickListener(v -> {
+        btnRemoveImg.setOnClickListener(v -> {
             if (currentLoadedUsername == null || currentLoadedUsername.isEmpty()) {
                 UiUtils.makeCustomToast(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show();
                 return;
@@ -979,9 +979,37 @@ public class ProfileActivity extends BaseActivity {
         btnSave.setOnClickListener(v -> {
             saveUsername(editText.getText().toString().trim(), dialog);
         });
+        btnRemoveUsername.setOnClickListener(v -> {
+            removeUsername(dialog);
+        });
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+
+    private void removeUsername(androidx.appcompat.app.AlertDialog dialog) {
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
+        showLoading(getString(R.string.loading_saving), true);
+        
+        userRepository.removeUsername(new UserRepository.OnProfileActionListener() {
+            @Override
+            public void onSuccess() {
+                hideLoading();
+                UiUtils.makeCustomToast(ProfileActivity.this, R.string.username_removed, Toast.LENGTH_SHORT).show();
+                currentLoadedUsername = null;
+                textViewCurrentUsername.setText("...");
+                editTextUsernameInline.setText(""); // Clear the input field
+                setResult(RESULT_OK);
+                if (dialog != null) dialog.dismiss();
+                updateUIForUsername();
+            }
+
+            @Override
+            public void onError(String message) {
+                hideLoading();
+                UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void saveUsername(String username, androidx.appcompat.app.AlertDialog dialog) {

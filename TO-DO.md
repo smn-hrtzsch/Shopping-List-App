@@ -26,7 +26,7 @@
 - [x] Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen, ?-Button im Anmeldedialog, der genauer erklärt, was der Unterschied ist?
 - [x] Wenn der Dialog zum Anzeigen des Profilbilds in der ProfileActivity geöffnet ist, sollte zusätzlich zum Schließen Button auch noch ein Bearbeiten Button im Dialog angezeigt werden, der einen dann direkt zum Profil Bearbeiten Dialog führt.
 - [ ] Überprüfung, welche Richtlinien beim Passwort aktiv sein müssen.
-- [ ] Möglichkeit zum entfernen, löschen des Username (z.B. im Profil bearbeiten Dialog neben dem Speichern Button für die Eingabe des Username)
+- [x] Möglichkeit zum entfernen, löschen des Username (z.B. im Profil bearbeiten Dialog neben dem Speichern Button für die Eingabe des Username)
 
 ## Platformen
 
@@ -66,6 +66,8 @@
 - [ ] **Passwort-Manager:** App Icon wird nicht korrekt angezeigt im Google Passwort Manager
 
 ## Bugs
+
+- [ ] Wenn noch kein Profilbild gesetzt ist und man auf den Platzhalter klickt, sollte ein Dialog aufgehen, der sagt, dass noch kein PB gesetzt ist und fragt, ob man ein neues setzen möchte. Dann gibt es zwei Buttons: abbrechen und Profilbild auswählen, welche dann die Funktionalität des "Neues Bild wählen" Button übernimmt.
 
 ## Fixed Bugs
 
