@@ -452,6 +452,11 @@ public class EinkaufslisteActivity extends BaseActivity implements MyRecyclerVie
         ImageView imageView = dialogView.findViewById(R.id.dialog_image_preview);
         TextView usernameView = dialogView.findViewById(R.id.dialog_username_preview);
         View btnClose = dialogView.findViewById(R.id.dialog_button_close_preview);
+        View btnEdit = dialogView.findViewById(R.id.dialog_button_edit_preview);
+        
+        if (btnEdit != null) {
+            btnEdit.setVisibility(View.GONE);
+        }
         
         titleView.setText(R.string.profile_picture);
         if (username != null) {

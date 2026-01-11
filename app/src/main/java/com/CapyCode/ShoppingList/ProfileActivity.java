@@ -867,6 +867,7 @@ public class ProfileActivity extends BaseActivity {
         ImageView imageView = dialogView.findViewById(R.id.dialog_image_preview);
         TextView usernameView = dialogView.findViewById(R.id.dialog_username_preview);
         View btnClose = dialogView.findViewById(R.id.dialog_button_close_preview);
+        View btnEdit = dialogView.findViewById(R.id.dialog_button_edit_preview);
 
         titleView.setText(R.string.profile_picture);
         if (username != null) {
@@ -882,6 +883,12 @@ public class ProfileActivity extends BaseActivity {
              
         if (btnClose != null) {
             btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+        if (btnEdit != null) {
+            btnEdit.setOnClickListener(v -> {
+                dialog.dismiss();
+                showEditProfileDialog();
+            });
         }
         dialog.show();
     }
