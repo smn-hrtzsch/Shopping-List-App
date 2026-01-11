@@ -1164,7 +1164,7 @@ public class ProfileActivity extends BaseActivity {
                         loadCurrentProfile();
                     } else {
                         hideLoading();
-                        String msg = task.getException() != null ? task.getException().getMessage() : "Authentication failed";
+                        String msg = AuthErrorMapper.getErrorMessage(ProfileActivity.this, task.getException());
                         UiUtils.makeCustomToast(ProfileActivity.this, msg, Toast.LENGTH_LONG).show();
                     }
                 });
