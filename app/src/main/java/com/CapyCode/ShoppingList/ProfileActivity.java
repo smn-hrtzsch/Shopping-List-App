@@ -316,6 +316,39 @@ public class ProfileActivity extends BaseActivity {
         }
 
         setupSyncSwitch();
+
+        // Legal buttons
+        findViewById(R.id.button_imprint).setOnClickListener(v -> showLegalDialog("imprint"));
+        findViewById(R.id.button_privacy_policy).setOnClickListener(v -> showLegalDialog("privacy"));
+    }
+
+    private void showLegalDialog(String type) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_legal, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        TextView titleView = dialogView.findViewById(R.id.dialog_legal_title);
+        TextView textView = dialogView.findViewById(R.id.dialog_legal_text);
+        View btnClose = dialogView.findViewById(R.id.button_dialog_close);
+
+        // Make links clickable
+        textView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+
+        if (type.equals("imprint")) {
+            titleView.setText(R.string.label_imprint);
+            textView.setText(android.text.Html.fromHtml(getString(R.string.content_imprint), android.text.Html.FROM_HTML_MODE_COMPACT));
+        } else {
+            titleView.setText(R.string.label_privacy_policy);
+            textView.setText(android.text.Html.fromHtml(getString(R.string.content_privacy_policy), android.text.Html.FROM_HTML_MODE_COMPACT));
+        }
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     @Override

@@ -318,4 +318,32 @@
     <string name="notification_invitation_message">Du wurdest von %2$s zur Liste \"%1$s\" eingeladen</string>
     <string name="notification_action_accept">Annehmen</string>
     <string name="notification_action_decline">Ablehnen</string>
+
+    <!-- Rechtliches -->
+    <string name="label_legal">Rechtliche Informationen</string>
+    <string name="label_imprint">Impressum</string>
+    <string name="label_privacy_policy">Datenschutzerklärung</string>
+
+    <string name="content_imprint"><![CDATA[
+        <b>Verantwortlich</b><br/>
+        Simon Hörtzsch<br/>
+        Schillerstraße 41A<br/>
+        09427 Ehrenfriedersdorf<br/><br/>
+        <b>Kontakt</b><br/>
+        E-Mail: CapyCard.CapyCart.info@gmail.com<br/><br/>
+        <i>Erstellt mit <a href="https://www.activemind.de">activeMind.de</a></i>
+    ]]></string>
+
+    <string name="content_privacy_policy"><![CDATA[
+        Diese App (CapyCart) wird von CapyCode als kostenloser Dienst bereitgestellt.<br/><br/>
+        <b>Datenerfassung</b><br/>
+        Wir erfassen anonyme Nutzungsdaten (IP-Adresse, Geräte-Typ) sowie Ihre E-Mail und Einkaufslisten zur Synchronisation.<br/><br/>
+        <b>Dienste von Drittanbietern</b><br/>
+        - <a href="https://www.google.com/policies/privacy/">Google Play Services</a><br/>
+        - <a href="https://firebase.google.com/support/privacy">Firebase (Auth, Firestore, Analytics, Crashlytics)</a><br/><br/>
+        <b>Ihre Rechte</b><br/>
+        Sie können Ihre Daten jederzeit über die Funktion "Account löschen" in der App entfernen.<br/><br/>
+        <b>Kontakt</b><br/>
+        E-Mail: CapyCard.CapyCart.info@gmail.com
+    ]]></string>
 </resources>

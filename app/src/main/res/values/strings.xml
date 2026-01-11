@@ -302,4 +302,33 @@
     <string name="notification_invitation_message">You have been invited to the list \"%1$s\" by %2$s</string>
     <string name="notification_action_accept">Accept</string>
     <string name="notification_action_decline">Decline</string>
+
+    <!-- Legal -->
+    <string name="label_legal">Legal Information</string>
+    <string name="label_imprint">Imprint</string>
+    <string name="label_privacy_policy">Privacy Policy</string>
+
+    <string name="content_imprint"><![CDATA[
+        <b>Responsible Person</b><br/>
+        Simon Hörtzsch<br/>
+        Schillerstraße 41A<br/>
+        09427 Ehrenfriedersdorf<br/>
+        Germany<br/><br/>
+        <b>Contact</b><br/>
+        Email: CapyCard.CapyCart.info@gmail.com<br/><br/>
+        <i>Created with <a href="https://www.activemind.de">activeMind.de</a></i>
+    ]]></string>
+
+    <string name="content_privacy_policy"><![CDATA[
+        CapyCart is provided by CapyCode as a free service.<br/><br/>
+        <b>Data Collection</b><br/>
+        We collect anonymous usage data (IP, device type) and your email/shopping lists for synchronization.<br/><br/>
+        <b>Third Party Services</b><br/>
+        - <a href="https://www.google.com/policies/privacy/">Google Play Services</a><br/>
+        - <a href="https://firebase.google.com/support/privacy">Firebase (Auth, Firestore, Analytics, Crashlytics)</a><br/><br/>
+        <b>Your Rights</b><br/>
+        You can delete your data anytime using the "Delete Account" function.<br/><br/>
+        <b>Contact</b><br/>
+        Email: CapyCard.CapyCart.info@gmail.com
+    ]]></string>
 </resources>
