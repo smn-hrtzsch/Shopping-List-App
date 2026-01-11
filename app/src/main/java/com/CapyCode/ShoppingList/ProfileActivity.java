@@ -1509,7 +1509,30 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void confirmUnlink(String providerId) {
-        showVerticalDialog(getString(R.string.dialog_unlink_title), getString(R.string.dialog_unlink_message), getString(R.string.button_unlink), () -> unlinkProvider(providerId));
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        int providerCount = 0;
+        for (UserInfo profile : user.getProviderData()) {
+            if (GoogleAuthProvider.PROVIDER_ID.equals(profile.getProviderId()) ||
+                EmailAuthProvider.PROVIDER_ID.equals(profile.getProviderId())) {
+                providerCount++;
+            }
+        }
+
+        boolean isLastProvider = providerCount <= 1;
+        boolean hasUsername = currentLoadedUsername != null && !currentLoadedUsername.isEmpty();
+
+        if (isLastProvider && !hasUsername) {
+            showVerticalDialog(
+                getString(R.string.dialog_delete_account_title),
+                getString(R.string.dialog_unlink_last_no_username_message),
+                getString(R.string.button_delete),
+                this::deleteAccount
+            );
+        } else {
+            showVerticalDialog(getString(R.string.dialog_unlink_title), getString(R.string.dialog_unlink_message), getString(R.string.button_unlink), () -> unlinkProvider(providerId));
+        }
     }
 
     private void unlinkProvider(String providerId) {

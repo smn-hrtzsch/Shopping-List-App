@@ -281,4 +281,5 @@
     <string name="button_delete_and_sign_out">Delete &amp; Sign Out</string>
     <string name="toast_lists_uploaded">Lists uploaded</string>
     <string name="toast_local_data_cleared">Local data cleared</string>
+    <string name="dialog_unlink_last_no_username_message">You are about to remove your last login method. Since you have no username, your account and all cloud data will be permanently deleted. Continue?</string>
 </resources>

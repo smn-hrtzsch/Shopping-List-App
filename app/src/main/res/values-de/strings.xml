@@ -297,4 +297,5 @@
     <string name="dialog_sign_out_message_unsaved">Du hast lokale Listen, die nicht in der Cloud gesichert sind.\n\nMöchtest du sie vor dem Abmelden hochladen oder von diesem Gerät löschen?</string>
     <string name="button_upload_and_sign_out">Hochladen &amp; Abmelden</string>
     <string name="button_delete_and_sign_out">Löschen &amp; Abmelden</string>
+    <string name="dialog_unlink_last_no_username_message">Du bist dabei, deine letzte Anmeldemethode zu entfernen. Da du keinen Benutzernamen hast, werden dein Konto und alle Cloud-Daten dauerhaft gelöscht. Fortfahren?</string>
 </resources>
