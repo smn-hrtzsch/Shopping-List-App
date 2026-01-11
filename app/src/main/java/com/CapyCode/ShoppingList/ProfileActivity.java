@@ -1052,7 +1052,8 @@ public class ProfileActivity extends BaseActivity {
                         } else {
                              if (task.getException() instanceof FirebaseAuthUserCollisionException) {
                                  checkIfAccountIsEmpty(isEmpty -> {
-                                     if (isEmpty) {
+                                     // Only skip dialog if account is truly empty AND anonymous (temp user)
+                                     if (isEmpty && mAuth.getCurrentUser().isAnonymous()) {
                                          performGoogleSignIn(credential);
                                      } else {
                                          hideLoading();
