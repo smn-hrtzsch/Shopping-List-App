@@ -1357,6 +1357,26 @@ public class ProfileActivity extends BaseActivity {
                     
                     currentImageUrl = imageUrl;
 
+                    FirebaseUser user = mAuth.getCurrentUser();
+                    boolean isAnonymousWithImage = user != null && user.isAnonymous() && imageUrl != null && !imageUrl.isEmpty();
+                    
+                    // Adjust profile image size for anonymous users with images
+                    int imageSizeDp = isAnonymousWithImage ? 200 : 120;
+                    float density = getResources().getDisplayMetrics().density;
+                    int sizePx = (int) (imageSizeDp * density);
+                    
+                    android.view.ViewGroup.LayoutParams imgParams = imageProfile.getLayoutParams();
+                    imgParams.width = sizePx;
+                    imgParams.height = sizePx;
+                    imageProfile.setLayoutParams(imgParams);
+                    
+                    // Also adjust the FrameLayout container to center properly and avoid layout shifts
+                    View imageContainer = (View) imageProfile.getParent();
+                    android.view.ViewGroup.LayoutParams containerParams = imageContainer.getLayoutParams();
+                    containerParams.width = sizePx;
+                    containerParams.height = sizePx;
+                    imageContainer.setLayoutParams(containerParams);
+
                     // Update sync switch without triggering listener
                     switchSyncPrivate.setOnCheckedChangeListener(null);
                     switchSyncPrivate.setChecked(syncPrivate);
