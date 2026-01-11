@@ -311,4 +311,11 @@
     <string name="auth_help_title">Anmelden vs Registrieren</string>
     <string name="auth_help_message"><![CDATA[<b>Anmelden:</b><br/>Du hast bereits ein Konto? Dann melde dich hier mit deiner E-Mail und deinem Passwort an.<br/><br/><b>Registrieren:</b><br/>Du bist neu hier? Erstelle ein kostenloses Konto, um deine Listen zu sichern und zu teilen.]]></string>
     <string name="auth_help_close">Verstanden</string>
+    <string name="notification_channel_id">invitation_notifications</string>
+    <string name="notification_channel_name">Einladungen</string>
+    <string name="notification_channel_description">Benachrichtigungen für Einladungen zu geteilten Listen</string>
+    <string name="notification_invitation_title">Neue Einladung</string>
+    <string name="notification_invitation_message">Du wurdest von %2$s zur Liste \"%1$s\" eingeladen</string>
+    <string name="notification_action_accept">Annehmen</string>
+    <string name="notification_action_decline">Ablehnen</string>
 </resources>

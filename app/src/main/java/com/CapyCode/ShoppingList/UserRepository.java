@@ -36,6 +36,11 @@ public class UserRepository {
 
         return db.collection("users").document(getCurrentUserId()).addSnapshotListener((documentSnapshot, e) -> {
             if (e != null) {
+                // Ignore PERMISSION_DENIED errors as they often happen during logout/auth-state changes
+                // before the listener is properly removed.
+                if (e.getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                    return;
+                }
                 listener.onError("Ladefehler: " + e.getMessage());
                 return;
             }
@@ -384,7 +389,14 @@ public class UserRepository {
                         listener.onLoaded(null, null, true);
                     }
                 })
-                .addOnFailureListener(e -> listener.onError("Ladefehler: " + e.getMessage()));
+                .addOnFailureListener(e -> {
+                    // Ignore PERMISSION_DENIED as it can happen during auth transitions
+                    if (e instanceof com.google.firebase.firestore.FirebaseFirestoreException &&
+                        ((com.google.firebase.firestore.FirebaseFirestoreException)e).getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        return;
+                    }
+                    listener.onError("Ladefehler: " + e.getMessage());
+                });
     }
 
     public void setSyncPreference(boolean isChecked, OnProfileActionListener listener) {
@@ -428,4 +440,3 @@ public class UserRepository {
                 });
     }
 }
-

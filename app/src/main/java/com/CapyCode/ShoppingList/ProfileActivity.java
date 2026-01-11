@@ -656,6 +656,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performSwitchLogin(String email, String password, Runnable onSuccess, TextView errorView, Runnable onError) {
+        stopProfileListener();
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
         repo.clearLocalDatabase();
         cleanupAnonymousUserAndThen(() -> {
@@ -1253,6 +1254,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void performGoogleSignIn(AuthCredential credential) {
+        stopProfileListener();
         initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
         showLoading();
         ShoppingListRepository repo = new ShoppingListRepository(getApplicationContext());
@@ -1354,6 +1356,13 @@ public class ProfileActivity extends BaseActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void stopProfileListener() {
+        if (profileListener != null) {
+            profileListener.remove();
+            profileListener = null;
+        }
+    }
+
     private void loadCurrentProfile() {
         userRepository.syncEmailToFirestore();
         // Reset skeleton to profile type in case it was changed to auth type during sign out
@@ -1362,9 +1371,7 @@ public class ProfileActivity extends BaseActivity {
         showLoading(getString(R.string.loading_profile), true, true);
         containerContent.setVisibility(View.GONE);
         Runnable fetchProfileData = () -> {
-            if (profileListener != null) {
-                profileListener.remove();
-            }
+            stopProfileListener();
             profileListener = userRepository.subscribeToUserProfile(new UserRepository.OnUserProfileLoadedListener() {
                 @Override
                 public void onLoaded(String username, String imageUrl, boolean syncPrivate) {
@@ -1802,6 +1809,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void performSimpleSignOut() {
         try {
+            stopProfileListener();
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
@@ -1826,6 +1834,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void performDestructiveSignOut() {
         try {
+            stopProfileListener();
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
@@ -1850,6 +1859,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void performSafeSignOut() {
         try {
+            stopProfileListener();
             initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
             showLoading(getString(R.string.loading), true, true);
             isSigningOut = true;
@@ -1979,6 +1989,7 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void deleteAccount() {
+        stopProfileListener();
         initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_logout, 1);
         showLoading(getString(R.string.loading), true, true);
         isSigningOut = true;

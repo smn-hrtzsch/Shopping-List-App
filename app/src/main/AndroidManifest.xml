@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ShoppingListApplication"
@@ -54,6 +55,13 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <receiver android:name=".InvitationActionReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="ACCEPT_INVITATION" />
+                <action android:name="DECLINE_INVITATION" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
