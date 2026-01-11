@@ -303,6 +303,9 @@
     <string name="notification_action_accept">Accept</string>
     <string name="notification_action_decline">Decline</string>
 
+    <!-- Google Sign-In -->
+    <string name="default_web_client_id">444207703472-rta5t0n3ov6ue4eav6823j78dhdtc035.apps.googleusercontent.com</string>
+
     <!-- Legal -->
     <string name="label_legal">Legal Information</string>
     <string name="label_imprint">Imprint</string>
