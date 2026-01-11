@@ -36,6 +36,7 @@
 ## Geteilte Listen
 
 - [ ] Verwaltung von Nutzerrechten (Admin, Editor, Viewer)
+- [ ] Möglichkeit User aus Listen zu entfernen (als Admin/Creator der Liste).
 - [ ] Benachrichtigungen bei Änderungen in geteilten Listen (Name des Akteurs, Anzahl der Artikel, die neu hinzugrfügt wurden und Titel der Liste)
 
 ## Members & Einladungen
