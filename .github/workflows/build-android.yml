@@ -124,25 +124,22 @@ jobs:
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           AAB_PATH=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
           
-          # Rename APK
+          # Create a flat directory for artifacts
+          mkdir dist
+          
+          # Define names
           NEW_APK_NAME="ShoppingList-android-${{ steps.version.outputs.filenameVersion }}.apk"
-          NEW_APK_PATH="$(dirname "$APK_PATH")/$NEW_APK_NAME"
-          mv "$APK_PATH" "$NEW_APK_PATH"
-          
-          # Rename AAB
           NEW_AAB_NAME="ShoppingList-android-${{ steps.version.outputs.filenameVersion }}.aab"
-          NEW_AAB_PATH="$(dirname "$AAB_PATH")/$NEW_AAB_NAME"
-          mv "$AAB_PATH" "$NEW_AAB_PATH"
           
-          echo "Renamed APK to: $NEW_APK_PATH"
-          echo "Renamed AAB to: $NEW_AAB_PATH"
-          echo "apkPath=$NEW_APK_PATH" >> "$GITHUB_OUTPUT"
-          echo "aabPath=$NEW_AAB_PATH" >> "$GITHUB_OUTPUT"
+          # Copy to flat directory
+          cp "$APK_PATH" "dist/$NEW_APK_NAME"
+          cp "$AAB_PATH" "dist/$NEW_AAB_NAME"
+          
+          echo "apkPath=dist/$NEW_APK_NAME" >> "$GITHUB_OUTPUT"
+          echo "aabPath=dist/$NEW_AAB_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-artifacts
-          path: |
-            ${{ steps.artifacts.outputs.apkPath }}
-            ${{ steps.artifacts.outputs.aabPath }}
+          path: dist/*
