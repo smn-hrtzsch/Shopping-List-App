@@ -24,7 +24,7 @@
 - [ ] 2FA (Two-Factor Authentication) implementieren
 - [x] Profilbild hochladen und ändern
 - [ ] Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen, ?-Button im Anmeldedialog, der genauer erklärt, was der Unterschied ist?
-- [ ] Wenn der Dialog zum Anzeigen des Profilbilds in der ProfileActivity geöffnet ist, sollte zusätzlich zum Schließen Button auch noch ein Bearbeiten Button im Dialog angezeigt werden, der einen dann direkt zum Profil Bearbeiten Dialog führt.
+- [x] Wenn der Dialog zum Anzeigen des Profilbilds in der ProfileActivity geöffnet ist, sollte zusätzlich zum Schließen Button auch noch ein Bearbeiten Button im Dialog angezeigt werden, der einen dann direkt zum Profil Bearbeiten Dialog führt.
 - [ ] Überprüfung, welche Richtlinien beim Passwort aktiv sein müssen.
 - [ ] Möglichkeit zum entfernen, löschen des Username (z.B. im Profil bearbeiten Dialog neben dem Speichern Button für die Eingabe des Username)
 

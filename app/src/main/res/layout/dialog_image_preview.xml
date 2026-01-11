@@ -26,7 +26,16 @@
             android:id="@+id/dialog_button_close_preview"
             style="@style/Widget.App.Button.Close"
             android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true" />
+            android:layout_centerVertical="true"
+            android:contentDescription="@string/close" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/dialog_button_edit_preview"
+            style="@style/Widget.App.Button.Edit"
+            android:layout_toStartOf="@id/dialog_button_close_preview"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/edit" />
     </RelativeLayout>
 
     <ImageView
