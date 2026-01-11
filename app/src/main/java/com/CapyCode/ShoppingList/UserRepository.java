@@ -349,6 +349,20 @@ public class UserRepository {
         }
     }
 
+    public void removeUsername(OnProfileActionListener listener) {
+        if (!isAuthenticated()) {
+            listener.onError(context.getString(R.string.auth_required));
+            return;
+        }
+
+        Map<String, Object> deleteData = new HashMap<>();
+        deleteData.put("username", com.google.firebase.firestore.FieldValue.delete());
+        db.collection("users").document(getCurrentUserId())
+                .update(deleteData)
+                .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
     public void getUserProfile(OnUserProfileLoadedListener listener) {
         if (!isAuthenticated()) {
              listener.onLoaded(null, null, true); // Default to true

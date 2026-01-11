@@ -946,14 +946,14 @@ public class ProfileActivity extends BaseActivity {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
 
-        View includeDialog = dialogView.findViewById(R.id.include_username_input_dialog);
-        EditText editText = includeDialog.findViewById(R.id.field_id_x_secure_no_fill);
+        EditText editText = dialogView.findViewById(R.id.edit_text_username_dialog);
         
         AuthUiHelper.disableAutofillForView(editText);
         
         View btnNew = dialogView.findViewById(R.id.button_option_new_image);
-        View btnRemove = dialogView.findViewById(R.id.button_option_remove_image);
-        View btnSave = includeDialog.findViewById(R.id.username_action_button);
+        View btnRemoveImg = dialogView.findViewById(R.id.button_option_remove_image);
+        View btnSave = dialogView.findViewById(R.id.button_save_username_dialog);
+        View btnRemoveUsername = dialogView.findViewById(R.id.button_remove_username);
         View btnClose = dialogView.findViewById(R.id.button_dialog_close);
 
         editText.setText(currentLoadedUsername != null ? currentLoadedUsername : "");
@@ -968,7 +968,7 @@ public class ProfileActivity extends BaseActivity {
             pickImageLauncher.launch("image/*");
             dialog.dismiss();
         });
-        btnRemove.setOnClickListener(v -> {
+        btnRemoveImg.setOnClickListener(v -> {
             if (currentLoadedUsername == null || currentLoadedUsername.isEmpty()) {
                 UiUtils.makeCustomToast(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show();
                 return;
@@ -979,9 +979,60 @@ public class ProfileActivity extends BaseActivity {
         btnSave.setOnClickListener(v -> {
             saveUsername(editText.getText().toString().trim(), dialog);
         });
+        btnRemoveUsername.setOnClickListener(v -> {
+            removeUsername(dialog);
+        });
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
+    }
+
+    private void removeUsername(androidx.appcompat.app.AlertDialog dialog) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null && user.isAnonymous()) {
+            // Special warning for anonymous users: removing the name makes them "invisible"
+            showThreeOptionDialog(
+                getString(R.string.dialog_remove_username_title),
+                getString(R.string.dialog_remove_username_anonymous_warning),
+                getString(R.string.button_remove_only_name),
+                getString(R.string.button_delete_account_entirely),
+                () -> {
+                    if (dialog != null) dialog.dismiss();
+                    performRemoveUsername(null);
+                },
+                () -> {
+                    if (dialog != null) dialog.dismiss();
+                    deleteAccount();
+                }
+            );
+        } else {
+            performRemoveUsername(dialog);
+        }
+    }
+
+    private void performRemoveUsername(androidx.appcompat.app.AlertDialog dialog) {
+        initLoadingOverlay(findViewById(R.id.profile_content_container), R.layout.skeleton_profile, 1);
+        showLoading(getString(R.string.loading_saving), true);
+        
+        userRepository.removeUsername(new UserRepository.OnProfileActionListener() {
+            @Override
+            public void onSuccess() {
+                hideLoading();
+                UiUtils.makeCustomToast(ProfileActivity.this, R.string.username_removed, Toast.LENGTH_SHORT).show();
+                currentLoadedUsername = null;
+                textViewCurrentUsername.setText("...");
+                editTextUsernameInline.setText(""); // Clear the input field
+                setResult(RESULT_OK);
+                if (dialog != null) dialog.dismiss();
+                updateUIForUsername();
+            }
+
+            @Override
+            public void onError(String message) {
+                hideLoading();
+                UiUtils.makeCustomToast(ProfileActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void saveUsername(String username, androidx.appcompat.app.AlertDialog dialog) {
@@ -1305,6 +1356,26 @@ public class ProfileActivity extends BaseActivity {
                     containerContent.setVisibility(View.VISIBLE);
                     
                     currentImageUrl = imageUrl;
+
+                    FirebaseUser user = mAuth.getCurrentUser();
+                    boolean isAnonymousWithImage = user != null && user.isAnonymous() && imageUrl != null && !imageUrl.isEmpty();
+                    
+                    // Adjust profile image size for anonymous users with images
+                    int imageSizeDp = isAnonymousWithImage ? 200 : 120;
+                    float density = getResources().getDisplayMetrics().density;
+                    int sizePx = (int) (imageSizeDp * density);
+                    
+                    android.view.ViewGroup.LayoutParams imgParams = imageProfile.getLayoutParams();
+                    imgParams.width = sizePx;
+                    imgParams.height = sizePx;
+                    imageProfile.setLayoutParams(imgParams);
+                    
+                    // Also adjust the FrameLayout container to center properly and avoid layout shifts
+                    View imageContainer = (View) imageProfile.getParent();
+                    android.view.ViewGroup.LayoutParams containerParams = imageContainer.getLayoutParams();
+                    containerParams.width = sizePx;
+                    containerParams.height = sizePx;
+                    imageContainer.setLayoutParams(containerParams);
 
                     // Update sync switch without triggering listener
                     switchSyncPrivate.setOnCheckedChangeListener(null);
