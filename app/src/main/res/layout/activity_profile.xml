@@ -149,14 +149,46 @@
                         android:importantForAutofill="yes"
                         android:padding="24dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <RelativeLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="@string/auth_dialog_title"
-                            android:textSize="16sp"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="16dp"/>
+                            android:layout_marginBottom="16dp">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerVertical="true"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/auth_dialog_title"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/button_auth_inline_help"
+                                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                                    android:layout_width="32sp"
+                                    android:layout_height="32sp"
+                                    android:layout_marginStart="2sp"
+                                    android:contentDescription="@string/help"
+                                    android:insetLeft="0dp"
+                                    android:insetTop="0dp"
+                                    android:insetRight="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    app:icon="@drawable/ic_help_outline"
+                                    app:iconGravity="textStart"
+                                    app:iconPadding="0dp"
+                                    app:iconSize="20sp"
+                                    app:iconTint="?attr/colorOnSurface" />
+                            </LinearLayout>
+                        </RelativeLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/input_layout_email_inline"

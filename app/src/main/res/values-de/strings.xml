@@ -21,6 +21,7 @@
     <string name="title">Titel</string>
     <string name="message">Nachricht</string>
     <string name="edit">Bearbeiten</string>
+    <string name="help">Hilfe</string>
     <string name="edit_item_hint">Neuen Artikelnamen eingeben</string>
     <string name="edit_item_title">Artikel bearbeiten</string>
     <string name="edit_list_hint">Neuen Listennamen eingeben</string>
@@ -298,4 +299,7 @@
     <string name="button_upload_and_sign_out">Hochladen &amp; Abmelden</string>
     <string name="button_delete_and_sign_out">Löschen &amp; Abmelden</string>
     <string name="dialog_unlink_last_no_username_message">Du bist dabei, deine letzte Anmeldemethode zu entfernen. Da du keinen Benutzernamen hast, werden dein Konto und alle Cloud-Daten dauerhaft gelöscht. Fortfahren?</string>
+    <string name="auth_help_title">Anmelden vs Registrieren</string>
+    <string name="auth_help_message"><![CDATA[<b>Anmelden:</b><br/>Du hast bereits ein Konto? Dann melde dich hier mit deiner E-Mail und deinem Passwort an.<br/><br/><b>Registrieren:</b><br/>Du bist neu hier? Erstelle ein kostenloses Konto, um deine Listen zu sichern und zu teilen.]]></string>
+    <string name="auth_help_close">Verstanden</string>
 </resources>
