@@ -13,7 +13,8 @@
     <string name="shopping_list_overview">Your shopping lists</string>
     <string name="enter_item_name">Enter item name</string>
     <string name="delete">Delete</string> <string name="deleted">deleted</string>
-    <string name="clear">Clear</string> <string name="cancel">Cancel</string> <string name="add_item">Add item</string> <string name="add_list">Add list</string> <string name="title">Title</string> <string name="message">Message</string> <string name="edit">Edit</string>
+    <string name="clear">Clear</string> <string name="cancel">Cancel</string> <string name="add_item">Add item</string> <string name="add_list">Add list</string> <string name="title">Title</string> <string name="message">Message</string>     <string name="edit">Edit</string>
+    <string name="help">Help</string>
     <string name="edit_item_hint">Enter new item name</string> <string name="edit_item_title">Edit item</string> <string name="edit_list_hint">Enter new list name</string> <string name="edit_list_title">Edit list</string> <string name="ok">OK</string> <string name="error_loading_lists">Error loading shopping lists. Please try again.</string>
     <string name="error_adding_list">Error adding shopping list. Please try again.</string>
     <string name="error_deleting_list">Error deleting shopping list. Please try again.</string>
@@ -282,4 +283,7 @@
     <string name="toast_lists_uploaded">Lists uploaded</string>
     <string name="toast_local_data_cleared">Local data cleared</string>
     <string name="dialog_unlink_last_no_username_message">You are about to remove your last login method. Since you have no username, your account and all cloud data will be permanently deleted. Continue?</string>
+    <string name="auth_help_title">Sign In vs Register</string>
+    <string name="auth_help_message"><![CDATA[<b>Sign In:</b><br/>You already have an account? Log in with your email and password here.<br/><br/><b>Register:</b><br/>New here? Create a free account to back up and share your lists.]]></string>
+    <string name="auth_help_close">Got it</string>
 </resources>

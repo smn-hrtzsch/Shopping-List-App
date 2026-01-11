@@ -23,7 +23,7 @@
 - [x] Zurücksetzen des Passworts via E-Mail
 - [ ] 2FA (Two-Factor Authentication) implementieren
 - [x] Profilbild hochladen und ändern
-- [ ] Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen, ?-Button im Anmeldedialog, der genauer erklärt, was der Unterschied ist?
+- [x] Unterscheidung zwischen Anmeldung und Registrierung in der UI klarer machen, ?-Button im Anmeldedialog, der genauer erklärt, was der Unterschied ist?
 - [x] Wenn der Dialog zum Anzeigen des Profilbilds in der ProfileActivity geöffnet ist, sollte zusätzlich zum Schließen Button auch noch ein Bearbeiten Button im Dialog angezeigt werden, der einen dann direkt zum Profil Bearbeiten Dialog führt.
 - [ ] Überprüfung, welche Richtlinien beim Passwort aktiv sein müssen.
 - [ ] Möglichkeit zum entfernen, löschen des Username (z.B. im Profil bearbeiten Dialog neben dem Speichern Button für die Eingabe des Username)
@@ -36,6 +36,7 @@
 ## Geteilte Listen
 
 - [ ] Verwaltung von Nutzerrechten (Admin, Editor, Viewer)
+- [ ] Möglichkeit User aus Listen zu entfernen (als Admin/Creator der Liste).
 - [ ] Benachrichtigungen bei Änderungen in geteilten Listen (Name des Akteurs, Anzahl der Artikel, die neu hinzugrfügt wurden und Titel der Liste)
 
 ## Members & Einladungen

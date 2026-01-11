@@ -163,6 +163,8 @@ public class ProfileActivity extends BaseActivity {
         buttonRegisterGoogle = findViewById(R.id.button_register_google);
         buttonSignOut = findViewById(R.id.button_sign_out);
         textViewCurrentUsername = findViewById(R.id.text_view_current_username);
+        imageProfile = findViewById(R.id.image_profile);
+        progressImage = findViewById(R.id.progress_image);
         textViewWarning = findViewById(R.id.text_view_warning_anonymous);
         layoutLinkedMethods = findViewById(R.id.layout_linked_methods);
         layoutViewMode = findViewById(R.id.layout_view_mode);
@@ -247,9 +249,12 @@ public class ProfileActivity extends BaseActivity {
         buttonRegisterInline.setOnClickListener(v -> performDialogRegister(null, editTextEmailInline, editTextPasswordInline, errorTextEmailInline, errorTextPasswordInline, errorTextGeneralInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline, buttonLoginInline, buttonRegisterInline));
         buttonGoogleInline.setOnClickListener(v -> signInWithGoogle());
         textForgotPasswordInline.setOnClickListener(v -> performDialogResetPassword(editTextEmailInline, errorTextEmailInline, authLoadingContainerInline, dot1Inline, dot2Inline, dot3Inline));
-
-        imageProfile = findViewById(R.id.image_profile);
-        progressImage = findViewById(R.id.progress_image);
+        
+        View buttonAuthInlineHelp = findViewById(R.id.button_auth_inline_help);
+        if (buttonAuthInlineHelp != null) {
+            buttonAuthInlineHelp.setOnClickListener(v -> showAuthHelpDialog());
+        }
+        
         cardSyncPreferences = findViewById(R.id.card_sync_preferences);
         cardLinkedMethods = findViewById(R.id.card_linked_methods);
         switchSyncPrivate = findViewById(R.id.switch_sync_private);
@@ -359,6 +364,23 @@ public class ProfileActivity extends BaseActivity {
 
     // --- Auth Dialog Implementation ---
 
+    private void showAuthHelpDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_help, null);
+        builder.setView(dialogView);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+        TextView textMessage = dialogView.findViewById(R.id.dialog_message);
+        View buttonClose = dialogView.findViewById(R.id.button_dialog_close);
+
+        textMessage.setText(android.text.Html.fromHtml(getString(R.string.auth_help_message), android.text.Html.FROM_HTML_MODE_COMPACT));
+        
+        buttonClose.setOnClickListener(v -> dialog.dismiss());
+        
+        dialog.show();
+    }
+
     private void showAuthDialog() {
         cancelAutofill();
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
@@ -389,6 +411,7 @@ public class ProfileActivity extends BaseActivity {
         View dot3 = dialogView.findViewById(R.id.dot3);
         View textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
         View buttonClose = dialogView.findViewById(R.id.button_dialog_close);
+        View buttonHelp = dialogView.findViewById(R.id.button_dialog_help);
 
         android.text.TextWatcher clearErrorWatcher = new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -415,6 +438,9 @@ public class ProfileActivity extends BaseActivity {
         buttonRegister.setOnClickListener(v -> performDialogRegister(dialog, editTextEmail, editTextPassword, errorTextEmail, errorTextPassword, errorTextGeneral, authLoadingContainer, dot1, dot2, dot3, buttonLogin, buttonRegister));
         textForgotPassword.setOnClickListener(v -> performDialogResetPassword(editTextEmail, errorTextEmail, authLoadingContainer, dot1, dot2, dot3));
         buttonClose.setOnClickListener(v -> dialog.dismiss());
+        if (buttonHelp != null) {
+            buttonHelp.setOnClickListener(v -> showAuthHelpDialog());
+        }
 
         dialog.show();
     }
@@ -1818,11 +1844,11 @@ public class ProfileActivity extends BaseActivity {
         showCustomDialog(getString(R.string.dialog_delete_account_title), getString(R.string.dialog_delete_account_message), getString(R.string.button_delete), this::deleteAccount);
     }
 
-    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction) {
+    private void showCustomDialog(String title, CharSequence message, String positiveButtonText, Runnable onPositiveAction) {
         showCustomDialog(title, message, positiveButtonText, onPositiveAction, null);
     }
 
-    private void showCustomDialog(String title, String message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
+    private void showCustomDialog(String title, CharSequence message, String positiveButtonText, Runnable onPositiveAction, Runnable onNegativeAction) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_standard, null);
         builder.setView(dialogView);
