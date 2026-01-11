@@ -14,6 +14,8 @@ import android.net.Uri;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.firebase.firestore.ListenerRegistration;
+
 public class UserRepository {
 
     private FirebaseFirestore db;
@@ -24,6 +26,33 @@ public class UserRepository {
     public interface OnUserSearchListener {
         void onUserFound(String uid);
         void onError(String message);
+    }
+
+    public ListenerRegistration subscribeToUserProfile(OnUserProfileLoadedListener listener) {
+        if (!isAuthenticated()) {
+             listener.onLoaded(null, null, true);
+             return null;
+        }
+
+        return db.collection("users").document(getCurrentUserId()).addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                listener.onError("Ladefehler: " + e.getMessage());
+                return;
+            }
+            
+            if (documentSnapshot != null && documentSnapshot.exists()) {
+                String username = documentSnapshot.getString("username");
+                String imageUrl = documentSnapshot.getString("profileImageUrl");
+                boolean syncPrivate = true;
+                if (documentSnapshot.contains("syncPrivateByDefault")) {
+                    Boolean value = documentSnapshot.getBoolean("syncPrivateByDefault");
+                    if (value != null) syncPrivate = value;
+                }
+                listener.onLoaded(username, imageUrl, syncPrivate);
+            } else {
+                listener.onLoaded(null, null, true);
+            }
+        });
     }
 
     public interface OnProfileActionListener {
