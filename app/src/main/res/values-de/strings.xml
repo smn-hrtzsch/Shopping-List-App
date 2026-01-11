@@ -198,6 +198,9 @@
     <string name="button_sign_out">Abmelden</string>
     <string name="account_info">Konto Informationen</string>
     <string name="profile_picture">Profilbild</string>
+    <string name="dialog_no_profile_pic_title">Kein Profilbild</string>
+    <string name="dialog_no_profile_pic_message">Du hast noch kein Profilbild gesetzt. Möchtest du jetzt eines auswählen?</string>
+    <string name="button_choose_image">Profilbild auswählen</string>
     <string name="close">Schließen</string>
     <string name="change_profile_picture">Bild ändern</string>
     <string name="action_register_email">Mit E-Mail registrieren</string>

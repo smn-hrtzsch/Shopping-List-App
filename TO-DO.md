@@ -67,10 +67,10 @@
 
 ## Bugs
 
-- [ ] Wenn noch kein Profilbild gesetzt ist und man auf den Platzhalter klickt, sollte ein Dialog aufgehen, der sagt, dass noch kein PB gesetzt ist und fragt, ob man ein neues setzen möchte. Dann gibt es zwei Buttons: abbrechen und Profilbild auswählen, welche dann die Funktionalität des "Neues Bild wählen" Button übernimmt.
 
 ## Fixed Bugs
 
+- [x] Wenn noch kein Profilbild gesetzt ist und man auf den Platzhalter klickt, sollte ein Dialog aufgehen, der sagt, dass noch kein PB gesetzt ist und fragt, ob man ein neues setzen möchte. Dann gibt es zwei Buttons: abbrechen und Profilbild auswählen, welche dann die Funktionalität des "Neues Bild wählen" Button übernimmt.
 - [x] Wenn ein Username gesetzt wird für eine Account, der mit Email verknüpft ist, dann wird die UI in der ProfileActivity auf einem anderen Gerät nicht in Echtzeit korrekt aktualisiert, sie lädt den username erst, wenn man die acitivity neu startet
 - [x] Wenn ein Account ohne Nutzername existiert und dann die letzte verknüpfte Anmeldemethode entfernt wird, sollte das Konto gelöscht werden und auch korrekt in Firestore gehandhabt werden. Es sollte auch ein passender Warn-Dialog mit passenden Texten angezeigt werden.
 - [x] Beim klicken auf "mit Google Verknüpfen" während man mit einem Account angemeldet ist, der nur mit E-Mail verknüpft ist, wird nicht nochmal der Konto Wechseln Dialog angezeigt, bevor man zum anderen Account, der schon mit dem ausgewählten Google Konto verknüpft ist, weitergeleitet wird.

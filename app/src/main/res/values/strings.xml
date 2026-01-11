@@ -179,6 +179,9 @@
     <string name="button_sign_out">Sign Out</string>
     <string name="account_info">Account Info</string>
     <string name="profile_picture">Profile Picture</string>
+    <string name="dialog_no_profile_pic_title">No Profile Picture</string>
+    <string name="dialog_no_profile_pic_message">You haven\'t set a profile picture yet. Would you like to set a new one now?</string>
+    <string name="button_choose_image">Select Profile Picture</string>
     <string name="close">Close</string>
     <string name="change_profile_picture">Change Picture</string>
     <string name="action_register_email">Register with Email</string>

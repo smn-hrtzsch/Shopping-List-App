@@ -279,6 +279,8 @@ public class ProfileActivity extends BaseActivity {
         imageProfile.setOnClickListener(v -> {
             if (currentImageUrl != null && !currentImageUrl.isEmpty()) {
                 showImagePreviewDialog(currentImageUrl, currentLoadedUsername);
+            } else {
+                showNoProfilePicDialog();
             }
         });
 
@@ -871,6 +873,21 @@ public class ProfileActivity extends BaseActivity {
         } else {
             user.delete().addOnCompleteListener(t -> onComplete.run());
         }
+    }
+
+    private void showNoProfilePicDialog() {
+        showCustomDialog(
+                getString(R.string.dialog_no_profile_pic_title),
+                getString(R.string.dialog_no_profile_pic_message),
+                getString(R.string.button_choose_image),
+                () -> {
+                    if (currentLoadedUsername == null || currentLoadedUsername.isEmpty()) {
+                        UiUtils.makeCustomToast(this, R.string.profile_error_empty, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    pickImageLauncher.launch("image/*");
+                }
+        );
     }
 
     private void showError(TextView errorView, String message) {
