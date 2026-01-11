@@ -566,6 +566,10 @@ public class ShoppingListRepository {
     public com.google.firebase.firestore.ListenerRegistration getMembersWithNames(String firebaseListId, OnMembersLoadedListener listener) {
         return db.collection("shopping_lists").document(firebaseListId).addSnapshotListener((doc, e) -> {
             if (e != null) {
+                // Ignore PERMISSION_DENIED as it often happens during auth state transitions
+                if (e.getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                    return;
+                }
                 listener.onError(e.getMessage());
                 return;
             }
