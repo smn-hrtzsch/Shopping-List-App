@@ -21,6 +21,7 @@ public class ShoppingListRepository {
     private UserRepository userRepository;
     private com.google.firebase.firestore.ListenerRegistration listsListener1;
     private com.google.firebase.firestore.ListenerRegistration listsListener2;
+    private static boolean isInitialPendingLoad = true;
 
     public interface OnListsLoadedListener {
         void onListsLoaded(List<ShoppingList> shoppingLists, boolean fromServer);
@@ -91,19 +92,49 @@ public class ShoppingListRepository {
 
         String userId = currentUser.getUid();
         
-        com.google.firebase.firestore.EventListener<com.google.firebase.firestore.QuerySnapshot> syncListener = (value, e) -> {
-            if (e != null) {
-                Log.w("Firestore", "Listen for lists failed.", e);
-                // On failure, we might want to signal that "loading" is done (failed) so UI doesn't hang
-                // but for now let's keep it silent or maybe send current local data as "fromServer"?
-                // listener.onListsLoaded(dbHelper.getAllShoppingLists(), true); 
-                return;
-            }
-            refreshAllListsFromServer(userId, listener);
-        };
+        listsListener1 = db.collection("shopping_lists").whereArrayContains("members", userId)
+            .addSnapshotListener((value, e) -> {
+                if (e != null) {
+                    Log.w("Firestore", "Listen for member lists failed.", e);
+                    return;
+                }
+                refreshAllListsFromServer(userId, listener);
+            });
 
-        listsListener1 = db.collection("shopping_lists").whereArrayContains("members", userId).addSnapshotListener(syncListener);
-        listsListener2 = db.collection("shopping_lists").whereArrayContains("pending_members", userId).addSnapshotListener(syncListener);
+        listsListener2 = db.collection("shopping_lists").whereArrayContains("pending_members", userId)
+            .addSnapshotListener((value, e) -> {
+                if (e != null) {
+                    Log.w("Firestore", "Listen for pending lists failed.", e);
+                    return;
+                }
+                
+                if (value != null && !value.getMetadata().hasPendingWrites()) {
+                    if (!isInitialPendingLoad) {
+                        for (com.google.firebase.firestore.DocumentChange dc : value.getDocumentChanges()) {
+                            if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
+                                String listId = dc.getDocument().getId();
+                                String listName = dc.getDocument().getString("name");
+                                String ownerId = dc.getDocument().getString("ownerId");
+                                
+                                if (ownerId != null) {
+                                    db.collection("users").document(ownerId).get().addOnSuccessListener(userDoc -> {
+                                        String ownerName = userDoc.getString("username");
+                                        if (ownerName == null) ownerName = userDoc.getString("email");
+                                        if (ownerName == null) ownerName = context.getString(R.string.member_role_owner); // Fallback
+                                        
+                                        NotificationHelper.showInvitationNotification(context, listId, listName, ownerName);
+                                    });
+                                }
+                            } else if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.REMOVED) {
+                                NotificationHelper.clearShownNotification(context, dc.getDocument().getId());
+                            }
+                        }
+                    }
+                    isInitialPendingLoad = false;
+                }
+                
+                refreshAllListsFromServer(userId, listener);
+            });
     }
 
     private void refreshAllListsFromServer(String userId, OnListsLoadedListener listener) {

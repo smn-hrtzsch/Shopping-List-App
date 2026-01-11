@@ -1,5 +1,7 @@
 # To-Dos Shopping List App
 
+## In Progress
+
 ## Allgemein
 
 - [ ] Impressum und Datenschutzrichtlinie erstellen und in der App verlinken
@@ -41,7 +43,7 @@
 
 ## Members & Einladungen
 
-- [ ] Benachrichtigungen bei Einladung zu einer geteilten Liste (Shortcuts zum Akzeptieren/Ablehnen)
+- [x] Benachrichtigungen bei Einladung zu einer geteilten Liste (Shortcuts zum Akzeptieren/Ablehnen)
 - [ ] Teilen von Listen via Link oder Code (ohne Account)
 - [x] Profilbilder der Member in der Member-Liste anzeigen
 - [ ] Einladungen blockieren (z.B. Spam-Einladungen verhindern), auch von spezifischen Nutzern

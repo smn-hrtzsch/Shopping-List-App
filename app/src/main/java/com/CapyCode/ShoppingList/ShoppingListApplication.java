@@ -30,5 +30,7 @@ public class ShoppingListApplication extends Application {
                 PlayIntegrityAppCheckProviderFactory.getInstance()
             );
         }
+
+        NotificationHelper.createNotificationChannel(this);
     }
 }

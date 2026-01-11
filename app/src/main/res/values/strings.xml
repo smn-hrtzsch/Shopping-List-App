@@ -295,4 +295,11 @@
     <string name="auth_help_title">Sign In vs Register</string>
     <string name="auth_help_message"><![CDATA[<b>Sign In:</b><br/>You already have an account? Log in with your email and password here.<br/><br/><b>Register:</b><br/>New here? Create a free account to back up and share your lists.]]></string>
     <string name="auth_help_close">Got it</string>
+    <string name="notification_channel_id">invitation_notifications</string>
+    <string name="notification_channel_name">Invitations</string>
+    <string name="notification_channel_description">Notifications for shared list invitations</string>
+    <string name="notification_invitation_title">New Invitation</string>
+    <string name="notification_invitation_message">You have been invited to the list \"%1$s\" by %2$s</string>
+    <string name="notification_action_accept">Accept</string>
+    <string name="notification_action_decline">Decline</string>
 </resources>
