@@ -16,6 +16,7 @@
 
 - [x] Ladezeit der MainActivity optimieren, lokale Kopie der Cloud Datenbank verwenden
 - [x] Während Ladezeit (z.B. nach Account Wechsel) einen Ladebildschirm anzeigen
+- [ ] Klarer anzeigen, wenn eine Liste noch nicht erfolgreich synchronisiert wurde, damit Nutzer nicht aus Versehen eine veraltete/unsynchrone Liste leeren oder löschen
 
 ## Accounts
 
@@ -66,6 +67,7 @@
 - [ ] **Cleanup verbessern:** Beim Löschen einer Liste via Cloud Functions auch die Subcollection "items" rekursiv löschen (verhindert verwaiste Daten)
 - [ ] **Offline-Modus:** Visueller Indikator, wenn die App offline ist und Änderungen nur lokal gespeichert sind
 - [ ] **Passwort-Manager:** App Icon wird nicht korrekt angezeigt im Google Passwort Manager
+- [ ] **Listen-Verlauf & Wiederherstellung:** Verlauf von Listenänderungen/gelöschten Einträgen besser speichern, sodass frühere Einträge bei Bedarf wiederhergestellt werden können
 
 ## Bugs
 
